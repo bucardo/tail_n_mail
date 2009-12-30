@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.5.3';
+our $VERSION = '1.5.4';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -717,7 +717,7 @@ __DATA__
 
 ## Config file for the tail_n_mail.pl program
 ## This file is automatically updated
-EMAIL: greg@hosting.endpoint.com
+EMAIL: someone@example.com
 
 FILE: /var/log/postgresql-%Y-%m-%d.log
 OFFSET: 0

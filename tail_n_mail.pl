@@ -5,7 +5,7 @@
 ## Greg Sabino Mullane <greg@endpoint.com>
 ## Selena Deckelmann <selena@endpoint.com>
 ## BSD licensed
-## For full documentation, please see: http://bucardo.org/tail_n_mail/
+## For full documentation, please see: http://bucardo.org/wiki/Tail_n_mail
 
 ##
 ## Quick usage:

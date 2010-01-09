@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.5.5';
+our $VERSION = '1.5.6';
 
 my $me = basename($0);
 my $hostname = qx{hostname};

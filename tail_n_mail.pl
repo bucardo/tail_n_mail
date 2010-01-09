@@ -591,16 +591,18 @@ sub process_line {
         return 0 if ($string =~ / duration: (\d+)/ and $1 < $custom_duration);
     }
 
+	## Make some adjustments to attempt to compress similar entries
+	$string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
+	$string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
+	$string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
+	$string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
+	$string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
+
     ## Try to separate into header and body, then check for similar entries
     if ($string =~ /(.+?)($levelre:.+)$/o) {
         my ($head,$body) = ($1,$2);
         ## Seen this body before?
         my $seenit = 0;
-
-        ## Apply some normalizations
-        if ($body =~ s{(where \w+ in \()\d+\)}{$1\$1)}) {
-            $string =~ s{(where \w+ in \()\d+\)}{$1\$1)};
-        }
 
         if (exists $similar{$body}) {
             $seenit = 1;

@@ -234,7 +234,7 @@ for my $file (sort keys %opt) {
         next;
     }
     if (! -f $filename) {
-        $quiet or warn qq{WARNING! Skipping non-file "$filename"\n};
+        warn qq{WARNING! Skipping non-file "$filename"\n};
         next;
     }
     my $size = -s _;

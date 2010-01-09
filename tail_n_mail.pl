@@ -270,7 +270,7 @@ for my $file (sort keys %opt) {
         $toolarge = '';
         if ($offset < $size) {
 
-            if ($maxsize and $size - $offset > $maxsize) {
+            if ($maxsize and $size - $offset > $maxsize and $custom_offset < 0) {
                 warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
                 $toolarge = "File too large: only read last $maxsize bytes (size=$size, offset=$offset)";
                 $offset = $size - $maxsize;

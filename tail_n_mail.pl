@@ -232,6 +232,10 @@ for my $file (sort keys %opt) {
         warn qq{WARNING! Skipping non-existent file "$filename"\n};
         next;
     }
+    if (! -f $filename) {
+        warn qq{WARNING! Skipping non-file "$filename"\n};
+        next;
+    }
     my $size = -s _;
     ## Determine the new offset
     $opt{$file}{offset} ||= 0;
@@ -529,14 +533,14 @@ if ($save and !$dryrun) {
         for my $email (@{$opt{$file}{email}}) {
             print "EMAIL: $email\n";
         }
+        if ($opt{$file}{customsubject}) {
+            print "MAILSUBJECT: $opt{$file}{mailsubject}\n";
+        }
         for my $include (@{$opt{$file}{include}}) {
             print "INCLUDE: $include\n";
         }
         for my $exclude (@{$opt{$file}{exclude}}) {
             print "EXCLUDE: $exclude\n";
-        }
-        if ($opt{$file}{customsubject}) {
-            print "MAILSUBJECT: $opt{$file}{mailsubject}\n";
         }
 
         print "\n";
@@ -580,11 +584,11 @@ sub process_line {
         $string = $arg;
     }
 
-    ## Bail if it matches the exclusion regex
-    return 0 if $exclude and $string =~ $exclude;
-
     ## Bail if it does not match the inclusion regex
     return 0 if $include and $string !~ $include;
+
+    ## Bail if it matches the exclusion regex
+    return 0 if $exclude and $string =~ $exclude;
 
     ## If in duration mode, and we have a minimum cutoff, discard faster ones
     if ($custom_type eq 'duration' and $custom_duration >= 0) {

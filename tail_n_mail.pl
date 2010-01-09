@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.5.4';
+our $VERSION = '1.5.5';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -529,11 +529,11 @@ if ($save and !$dryrun) {
         for my $email (@{$opt{$file}{email}}) {
             print "EMAIL: $email\n";
         }
-        for my $exclude (@{$opt{$file}{exclude}}) {
-            print "EXCLUDE: $exclude\n";
-        }
         for my $include (@{$opt{$file}{include}}) {
             print "INCLUDE: $include\n";
+        }
+        for my $exclude (@{$opt{$file}{exclude}}) {
+            print "EXCLUDE: $exclude\n";
         }
         if ($opt{$file}{customsubject}) {
             print "MAILSUBJECT: $opt{$file}{mailsubject}\n";

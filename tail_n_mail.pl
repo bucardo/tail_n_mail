@@ -73,11 +73,12 @@ my $levelre = qr{(?:$levels)};
 my $custom_type = 'normal';
 
 ## Read in the the options
-my ($verbose,$debug,$dryrun,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0);
+my ($verbose,$quiet,$debug,$dryrun,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file) = (-1,-1,'');
 my $result = GetOptions
  (
    'verbose'    => \$verbose,
+   'quiet'      => \$quiet,
    'debug'      => \$debug,
    'dryrun'     => \$dryrun,
    'reset'      => \$reset,
@@ -229,11 +230,11 @@ for my $file (sort keys %opt) {
     $verbose and warn "Checking file $filename\n";
     ## Does it exist?
     if (! -e $filename) {
-        warn qq{WARNING! Skipping non-existent file "$filename"\n};
+        $quiet or warn qq{WARNING! Skipping non-existent file "$filename"\n};
         next;
     }
     if (! -f $filename) {
-        warn qq{WARNING! Skipping non-file "$filename"\n};
+        $quiet or warn qq{WARNING! Skipping non-file "$filename"\n};
         next;
     }
     my $size = -s _;

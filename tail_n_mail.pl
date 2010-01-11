@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.5.6';
+our $VERSION = '1.5.7';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -438,6 +438,9 @@ for my $file (sort keys %opt) {
             print {$fh} "Auto-Submitted: auto-generated\n";
             print {$fh} "Precedence: bulk\n";
 
+			## Some minor help with debugging
+			print {$fh} "X-TNM-VERSION: $VERSION\n";
+
             ## Fill out the "To:" fields
             for my $email (@{$opt{DEFAULT}{email}}, @{$opt{$file}{email}}) {
                 print {$fh} "To: $email\n";
@@ -727,8 +730,8 @@ __DATA__
 EMAIL: someone@example.com
 
 FILE: /var/log/postgresql-%Y-%m-%d.log
-OFFSET: 0
 INCLUDE: ERROR:  
 INCLUDE: FATAL:  
 INCLUDE: PANIC:  
 MAILSUBJECT: Acme HOST Postgres errors (FILE)
+

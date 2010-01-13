@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.5.7';
+our $VERSION = '1.5.8';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -128,15 +128,15 @@ while (<$c>) {
             $filename = find_latest_logfile($filename);
         }
 
-		if ($custom_file) {
-			if ($custom_file =~ m{/}) {
-				$filename = $custom_file;
-			}
-			else {
-				my $dir = dirname($filename);
-				$filename = "$dir/$custom_file";
-			}
-		}
+        if ($custom_file) {
+            if ($custom_file =~ m{/}) {
+                $filename = $custom_file;
+            }
+            else {
+                my $dir = dirname($filename);
+                $filename = "$dir/$custom_file";
+            }
+        }
 
         $opt{$curr} =
             {
@@ -339,7 +339,7 @@ for my $file (sort keys %opt) {
             ## Postgres-specific multi-line grabbing stuff:
             my ($pgpid, $pgnum, $pgsub);
 
-			my $lastline = '';
+            my $lastline = '';
             while (<$fh>) {
                 ## Easiest to just remove the newline here and now
                 chomp;
@@ -376,12 +376,12 @@ for my $file (sort keys %opt) {
                         ## Store the line number if we don't have one yet for this PID
                         $pidline{$pgpid}{line} ||= ($. + $newlines);
 
-						$lastline = $_;
+                        $lastline = $_;
                     }
                     elsif ($lastpid) {
                         ## Append this to the previous entry
                         $pgnum = $current_pid_num{$lastpid} + 1;
-						s{^\t}{ };
+                        s{^\t}{ };
                         $pidline{$lastpid}{string}{$pgnum} = $_;
                         $current_pid_num{$lastpid} = $pgnum;
                     }
@@ -438,8 +438,8 @@ for my $file (sort keys %opt) {
             print {$fh} "Auto-Submitted: auto-generated\n";
             print {$fh} "Precedence: bulk\n";
 
-			## Some minor help with debugging
-			print {$fh} "X-TNM-VERSION: $VERSION\n";
+            ## Some minor help with debugging
+            print {$fh} "X-TNM-VERSION: $VERSION\n";
 
             ## Fill out the "To:" fields
             for my $email (@{$opt{DEFAULT}{email}}, @{$opt{$file}{email}}) {
@@ -599,12 +599,17 @@ sub process_line {
         return 0 if ($string =~ / duration: (\d+)/ and $1 < $custom_duration);
     }
 
-	## Make some adjustments to attempt to compress similar entries
-	$string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
-	$string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
-	$string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
-	$string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
-	$string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
+    ## Make some adjustments to attempt to compress similar entries
+    $string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
+    $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
+    $string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
+    $string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
+    $string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
+
+    ## Compress all whitespace that is not inside of single quotes
+    1 while $string =~ s{('.*?) (.*?')}{$1SAFEDOUBLESPACE$2};
+    $string =~ s{ +}{ }g;
+    $string =~ s{SAFEDOUBLESPACE}{  }g;
 
     ## Try to separate into header and body, then check for similar entries
     if ($string =~ /(.+?)($levelre:.+)$/o) {

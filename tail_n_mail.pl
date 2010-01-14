@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.5.8';
+our $VERSION = '1.5.9';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -606,10 +606,8 @@ sub process_line {
     $string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
     $string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
 
-    ## Compress all whitespace that is not inside of single quotes
-    1 while $string =~ s{('.*?) (.*?')}{$1SAFEDOUBLESPACE$2};
-    $string =~ s{ +}{ }g;
-    $string =~ s{SAFEDOUBLESPACE}{  }g;
+    ## Compress all whitespace
+    $string =~ s/\s+/ /g;
 
     ## Try to separate into header and body, then check for similar entries
     if ($string =~ /(.+?)($levelre:.+)$/o) {

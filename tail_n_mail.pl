@@ -354,7 +354,7 @@ for my $file (sort keys %opt) {
                             ## If this is a statement or detail or hint or context, append to the previous entry
                             ## Do the same for a LOG: statement combo (e.g. following a duration)
                             if (/ (?:STATEMENT|DETAIL|HINT|CONTEXT):  /o
-                                or (/ LOG:  statement: /o and $lastline !~ /  statement: /)) {
+                                or (/ LOG:  statement: /o and $lastline !~ /  statement: |FATAL|PANIC/)) {
                                 $pgnum = $current_pid_num{$pgpid} + 1;
                             }
                             ## Is this a new entry for this PID? If so, process the old.

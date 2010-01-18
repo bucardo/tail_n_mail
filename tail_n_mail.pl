@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 ## Tail one or more files, mail the new stuff to one or more emails
 ## Developed at End Point Corporation by:
@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.5.9';
+our $VERSION = '1.5.10';
 
 my $me = basename($0);
 my $hostname = qx{hostname};

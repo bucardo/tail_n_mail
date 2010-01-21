@@ -112,9 +112,10 @@ my $in_standard_comments = 1;
 my (@comment, %itemcomment);
 while (<$c>) {
     if ($in_standard_comments) {
-        next if /^## Config file for/o;
-        next if /^## This file is automatically updated/o;
-        next if /^## Last update:/o;
+        next if /^## Config file for/;
+        next if /^## This file is automatically updated/;
+        next if /^## Last update:/;
+        next if /^\s*$/;
         $in_standard_comments = 0;
     }
 
@@ -556,8 +557,6 @@ if ($save and !$dryrun) {
         print "\n";
         add_comments('FILE');
         print "FILE: $file\n";
-        add_comments('FROM');
-        print "FROM: $opt{$file}{from}\n" if ($opt{$file}{from});
         print "LASTFILE: $opt{$file}{filename}\n";
         print "OFFSET: $opt{$file}{offset}\n";
         printf "MAXSIZE: %d\n",

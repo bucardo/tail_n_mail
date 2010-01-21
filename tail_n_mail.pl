@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.5.10';
+our $VERSION = '1.6.0';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -108,8 +108,32 @@ if ($configfile =~ /duration/i) {
 my %opt = (DEFAULT => { email => []});
 my $curr = 'DEFAULT';
 open my $c, '<', $configfile or die qq{Could not open "$configfile": $!\n};
+my $in_standard_comments = 1;
+my (@comment, %itemcomment);
 while (<$c>) {
-    next if /^\s*#/;
+    if ($in_standard_comments) {
+        next if /^## Config file for/o;
+        next if /^## This file is automatically updated/o;
+        next if /^## Last update:/o;
+        $in_standard_comments = 0;
+    }
+
+    if (/^\s*#/) {
+        ## Assume that this is an important comment, and store it for the next real word
+        push @comment => $_;
+        next;
+    }
+
+    ## Store comments as needed
+    if (@comment and m{^(\w+):}) {
+        chomp;
+        for my $c (@comment) {
+            push @{$itemcomment{$1}} => $c;
+            push @{$itemcomment{$_}} => $c;
+        }
+        undef @comment;
+    }
+
     ## Which files to check
     if (/^FILE:\s*(.+?)\s*$/) {
         $curr = $1;
@@ -204,6 +228,7 @@ while (<$c>) {
     }
 }
 close $c or die qq{Could not close "$configfile": $!\n};
+
 for (keys %opt) {
     delete $opt{$_} if /^_/;
 }
@@ -509,13 +534,13 @@ if ($save and !$dryrun) {
     print qq{
 ## Config file for the $me program
 ## This file is automatically updated
-## Last update: $now
+## Last updated: $now
 };
 
     for my $item (qw/ email from pgformat type duration find_line_number /) {
         next if ! exists $opt{DEFAULT}{$item};
         next if $item eq 'duration' and $custom_duration < 0;
-
+        add_comments(uc $item);
         if (ref $opt{DEFAULT}{$item} eq 'ARRAY') {
             for my $itemz (@{$opt{DEFAULT}{$item}}) {
                 printf "%s: %s\n", uc $item, $itemz;
@@ -528,22 +553,29 @@ if ($save and !$dryrun) {
 
     for my $file (sort keys %opt) {
         next if $file eq 'DEFAULT';
-        print "\nFILE: $file\n";
+        print "\n";
+        add_comments('FILE');
+        print "FILE: $file\n";
+        add_comments('FROM');
         print "FROM: $opt{$file}{from}\n" if ($opt{$file}{from});
         print "LASTFILE: $opt{$file}{filename}\n";
         print "OFFSET: $opt{$file}{offset}\n";
         printf "MAXSIZE: %d\n",
             exists $opt{$file}{maxsize} ? $opt{$file}{maxsize} : $MAXSIZE;
         for my $email (@{$opt{$file}{email}}) {
+            add_comments("EMAIL: $email");
             print "EMAIL: $email\n";
         }
         if ($opt{$file}{customsubject}) {
+            add_comments('MAILSUBJECT');
             print "MAILSUBJECT: $opt{$file}{mailsubject}\n";
         }
         for my $include (@{$opt{$file}{include}}) {
+            add_comments("INCLUDE: $include");
             print "INCLUDE: $include\n";
         }
         for my $exclude (@{$opt{$file}{exclude}}) {
+            add_comments("EXCLUDE: $exclude");
             print "EXCLUDE: $exclude\n";
         }
 
@@ -723,6 +755,16 @@ sub lines_of_interest {
     return;
 
 } ## end of lines_of_interest
+
+sub add_comments {
+    my $item = shift;
+    return if ! exists $itemcomment{$item};
+    for my $comline (@{$itemcomment{$item}}) {
+        print $comline;
+    }
+    return;
+} ## end of add_comments
+
 
 __DATA__
 

@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.6.0';
+our $VERSION = '1.6.1';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -74,13 +74,14 @@ my $custom_type = 'normal';
 
 ## Read in the the options
 my ($verbose,$quiet,$debug,$dryrun,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0);
-my ($custom_offset,$custom_duration,$custom_file) = (-1,-1,'');
+my ($custom_offset,$custom_duration,$custom_file,$nomail) = (-1,-1,'',0);
 my $result = GetOptions
  (
    'verbose'    => \$verbose,
    'quiet'      => \$quiet,
    'debug'      => \$debug,
    'dryrun'     => \$dryrun,
+   'nomail'     => \$nomail,
    'reset'      => \$reset,
    'limit=i'    => \$limit,
    'rewind=i'   => \$rewind,
@@ -438,7 +439,7 @@ for my $file (sort keys %opt) {
 
             if ($filename ne $opt{$curr}{filename} and ! $opt{$file}{rotated}) {
                 $verbose and warn "  Finished with previous file $filename, resuming scan of $opt{$file}{filename}\n";
-                $filename = $opt{$file}{filename};
+                $filename = $opt{$curr}{filename};
                 $opt{$file}{lastfilecount} = $count;
                 $opt{$file}{offset} = $offset = 0;
                 ## Set this because error $count might be zero, and thus not a good test
@@ -507,7 +508,7 @@ for my $file (sort keys %opt) {
             my $emails = join ' ' => @{$opt{DEFAULT}{email}}, @{$opt{$file}{email}};
             $verbose and warn "  Sending mail to: $emails\n";
             my $COM = qq{$MAILCOM $emails < $tempfile};
-            if ($dryrun) {
+            if ($dryrun or $nomail) {
                 warn "  DRYRUN: $COM\n";
             }
             else {

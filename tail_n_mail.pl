@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.6.1';
+our $VERSION = '1.6.2';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -115,7 +115,7 @@ while (<$c>) {
     if ($in_standard_comments) {
         next if /^## Config file for/;
         next if /^## This file is automatically updated/;
-        next if /^## Last update:/;
+        next if /^## Last updated:/;
         next if /^\s*$/;
         $in_standard_comments = 0;
     }

@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.6.2';
+our $VERSION = '1.6.3';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -631,15 +631,16 @@ sub process_line {
         return 0 if ($string =~ / duration: (\d+)/ and $1 < $custom_duration);
     }
 
+    ## Compress all whitespace
+    $string =~ s/\s+/ /g;
+
     ## Make some adjustments to attempt to compress similar entries
     $string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
     $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
     $string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
     $string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
     $string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
-
-    ## Compress all whitespace
-    $string =~ s/\s+/ /g;
+    $string =~ s{VALUES\s*\((.+?)\)}{$_=$1;s{[^,]+}{?}g;"VALUES ($_)"}gei;
 
     ## Try to separate into header and body, then check for similar entries
     if ($string =~ /(.+?)($levelre:.+)$/o) {

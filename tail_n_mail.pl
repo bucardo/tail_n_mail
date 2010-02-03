@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.6.3';
+our $VERSION = '1.6.4';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -74,7 +74,7 @@ my $custom_type = 'normal';
 
 ## Read in the the options
 my ($verbose,$quiet,$debug,$dryrun,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0);
-my ($custom_offset,$custom_duration,$custom_file,$nomail) = (-1,-1,'',0);
+my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
 my $result = GetOptions
  (
    'verbose'    => \$verbose,
@@ -89,6 +89,7 @@ my $result = GetOptions
    'offset=i'   => \$custom_offset,
    'duration=i' => \$custom_duration,
    'file=s'     => \$custom_file,
+   'flatten!'   => \$flatten,
   );
 ++$verbose if $debug;
 
@@ -631,16 +632,33 @@ sub process_line {
         return 0 if ($string =~ / duration: (\d+)/ and $1 < $custom_duration);
     }
 
-    ## Compress all whitespace
-    $string =~ s/\s+/ /g;
+	## Compress all whitespace
+	$string =~ s/\s+/ /g;
 
     ## Make some adjustments to attempt to compress similar entries
-    $string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
-    $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
-    $string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
-    $string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
-    $string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
-    $string =~ s{VALUES\s*\((.+?)\)}{$_=$1;s{[^,]+}{?}g;"VALUES ($_)"}gei;
+	if ($flatten) {
+		## Make all of this much smarter someday
+
+		## Flatten simple case of 'foo,bar' right away
+		$string =~ s/'[\w\d ]+\s*,\s*[\w\d ]+'/?/go;
+
+		my $ok2flatten = 0;
+		$string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{
+			my $final = '';
+			my @final = split /\s*,\s*/ => $2;
+			for my $section (@final) {
+				next if $section =~ s/E?'.*'/?/go;
+				next if $section =~ s/^\d+$/?/o;
+				next if $section =~ s/true|false/?/go;
+			}
+			"$1 (" . (join ',' => @final) . ')'
+			}geix;
+		$string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
+		$string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
+		$string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
+		$string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
+		$string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
+	}
 
     ## Try to separate into header and body, then check for similar entries
     if ($string =~ /(.+?)($levelre:.+)$/o) {

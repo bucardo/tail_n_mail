@@ -42,6 +42,7 @@ my %pgpidres = (
    1 => qr{.+?\[(\d+)\]: \[(\d+)\-(\d+)\]},
    2 => qr{.+?\d\d:\d\d:\d\d \w\w\w (\d+)},
    3 => qr{.+?\d\d:\d\d:\d\d (\w\w\w)}, ## Fake a PID
+   4 => qr{.+?\[(\d+)\]},
 );
 my $pgformat = 1;
 my $pgpidre = $pgpidres{$pgformat};
@@ -51,6 +52,7 @@ my %pgpiddateres = (
     1 => qr{(.+?\[\d+\]): \[\d+\-\d+\]},
     2 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
     3 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
+    4 => qr{(.+? \w\w\w)},
 );
 my $pgpiddatere = $pgpiddateres{$pgformat};
 

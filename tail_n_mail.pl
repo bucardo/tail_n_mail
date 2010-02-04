@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.6.5';
+our $VERSION = '1.6.6';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -615,6 +615,8 @@ sub process_line {
 
     if (ref $arg eq 'HASH') {
         for my $l (sort {$a<=>$b} keys %{$arg->{string}}) {
+            ## Some Postgres/syslog combos produce ugly output
+            $arg->{string}{$l} =~ s/^(?:\s*#011\s*)+//;
             $string .= ' '.$arg->{string}{$l};
         }
         $line = $arg->{line};

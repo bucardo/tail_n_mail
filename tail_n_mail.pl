@@ -248,36 +248,63 @@ my ($fh, $tempfile);
 my ($exclude, $include, %current_pid_num, $toolarge);
 my (%find, %similar, $lastpid, %sorthelp);
 
-for my $file (sort keys %opt) {
+EACHFILE: for my $file (sort keys %opt) {
 
     undef %find;
     undef %similar;
     undef %current_pid_num;
     my %pidline;
 
-    next if $file eq 'DEFAULT';
+    next EACHFILE if $file eq 'DEFAULT';
+
     my $filename = $opt{$file}{filename};
     $verbose and warn "Checking file $filename\n";
-    ## Does it exist?
-    if (! -e $filename) {
-        $quiet or warn qq{WARNING! Skipping non-existent file "$filename"\n};
-        next;
-    }
-    if (! -f $filename) {
-        warn qq{WARNING! Skipping non-file "$filename"\n};
-        next;
-    }
-    my $size = -s _;
-    ## Determine the new offset
-    $opt{$file}{offset} ||= 0;
-    my $offset = $opt{$file}{offset};
-    if (exists $opt{$file}{lastfile} and $opt{$file}{lastfile} ne $filename and ! $custom_file) {
-        $verbose and warn "  Logfile was rotated, checking end of last file.\n";
-        $filename = $opt{$file}{lastfile};
-    }
+
+    my $rotatedfile = 0;
 
     ## Come back to this point if we just finished with a rotated file
   ROTATED:
+
+    if ($rotatedfile) {
+        $rotatedfile = 0;
+        ## Reset the name back to the current one
+        $filename = $opt{$file}{filename};
+        ## If we just finished looking at the old rotated file, offset must be zero
+        $opt{$file}{offset} = 0;
+    }
+    ## If the last file we checked is not the current one, go back and finish up that one
+    elsif (exists $opt{$file}{lastfile} and $opt{$file}{lastfile} ne $filename and ! $custom_file) {
+        $verbose and warn "  Logfile was rotated, checking end of last file first.\n";
+        $filename = $opt{$file}{lastfile};
+        $rotatedfile = 1;
+    }
+
+    my $fileokay = 1;
+
+    ## Does it exist?
+    if (! -e $filename) {
+        $quiet or warn qq{WARNING! Skipping non-existent file "$filename"\n};
+        $fileokay = 0;
+    }
+    elsif (! -f $filename) {
+        warn qq{WARNING! Skipping non-file "$filename"\n};
+        $fileokay = 0;
+    }
+
+    if (!$fileokay) {
+        if ($rotatedfile) {
+            ## Failed to find the last file, so continue on with the real one
+            goto ROTATED;
+        }
+        next EACHFILE;
+    }
+
+    my $size = -s $filename;
+
+    ## Determine the new offset
+    $opt{$file}{offset} ||= 0;
+    my $offset = $opt{$file}{offset};
+
     ## Allow the offset to be changed on the command line
     if ($custom_offset>=0) {
         $offset = $custom_offset;
@@ -440,13 +467,9 @@ for my $file (sort keys %opt) {
             }
             $verbose and warn "  Lines found: $count\n";
 
-            if ($filename ne $opt{$curr}{filename} and ! $opt{$file}{rotated}) {
+            if ($rotatedfile) {
                 $verbose and warn "  Finished with previous file $filename, resuming scan of $opt{$file}{filename}\n";
-                $filename = $opt{$curr}{filename};
                 $opt{$file}{lastfilecount} = $count;
-                $opt{$file}{offset} = $offset = 0;
-                ## Set this because error $count might be zero, and thus not a good test
-                $opt{$file}{rotated} = 1;
                 goto ROTATED;
             }
 
@@ -519,15 +542,14 @@ for my $file (sort keys %opt) {
             }
             unlink $tempfile;
         }
-    }
+    } ## end of TAILIT
 
     ## If offset has changed, save it
-    if ($offset != $opt{$file}{offset} or $custom_offset >= 0) {
+    if (!$rotatedfile and $offset != $opt{$file}{offset}) {
         $opt{$file}{offset} = $offset;
         $save++;
         $verbose and warn "  Setting offset to $offset\n";
     }
-
 
 } ## end each file to check
 

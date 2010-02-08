@@ -77,6 +77,7 @@ my $custom_type = 'normal';
 ## Read in the the options
 my ($verbose,$quiet,$debug,$dryrun,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
+my ($timewarp) = (0);
 my $result = GetOptions
  (
    'verbose'    => \$verbose,
@@ -92,6 +93,7 @@ my $result = GetOptions
    'duration=i' => \$custom_duration,
    'file=s'     => \$custom_file,
    'flatten!'   => \$flatten,
+   'timewarp=i' => \$timewarp,
   );
 ++$verbose if $debug;
 
@@ -150,7 +152,8 @@ while (<$c>) {
             };
 
             $@ and die qq{Cannot use strftime formatting without the Perl POSIX module!\n};
-            $filename = POSIX::strftime($curr, localtime); ## no critic (ProhibitCallsToUnexportedSubs)
+            my @ltime = localtime(time + $timewarp);
+            $filename = POSIX::strftime($curr, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
         }
 
         if ($filename =~ /LATEST/) {

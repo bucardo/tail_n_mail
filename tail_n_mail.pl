@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.6.6';
+our $VERSION = '1.7.0';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -661,14 +661,15 @@ sub process_line {
     ## Compress all whitespace
     $string =~ s/\s+/ /g;
 
+    ## Save the pre-flattened version
+    my $nonflat = $string;
+
     ## Make some adjustments to attempt to compress similar entries
     if ($flatten) {
-        ## Make all of this much smarter someday
 
         ## Flatten simple case of 'foo,bar' right away
         $string =~ s/'[\w\d ]+\s*,\s*[\w\d ]+'/?/go;
 
-        my $ok2flatten = 0;
         $string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{
             my $final = '';
             my @final = split /\s*,\s*/ => $2;
@@ -702,6 +703,7 @@ sub process_line {
                 $find{$line} = $similar{$body};
                 ## Set the new information:
                 $similar{$body}{earliest} = $string;
+                $similar{$body}{earliestnonflat} = $nonflat;
                 $similar{$body}{earliestline} = $line;
             }
             ## See if this is the new latest one
@@ -718,6 +720,7 @@ sub process_line {
         if (!$seenit) {
             ## Store as the earliest and latest version we've seen
             $similar{$body}{earliest} = $similar{$body}{latest} = $string;
+            $similar{$body}{earliestnonflat} = $nonflat;
             $similar{$body}{earliestline} = $similar{$body}{latestline} = $line;
             ## Start counting these items
             $similar{$body}{count} = 1;
@@ -767,7 +770,7 @@ sub lines_of_interest {
         if (ref $find{$line} eq 'HASH') {
             ## If there is only one, we just print as a normal line
             if ($find{$line}{count} <= 1) {
-                $find{$line} = $find{$line}{earliest};
+                $find{$line} = $find{$line}{earliestnonflat};
                 ## pass through to below
             }
             else {

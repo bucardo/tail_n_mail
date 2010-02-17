@@ -22,7 +22,7 @@ use Getopt::Long   qw( GetOptions       );
 use File::Basename qw( basename dirname );
 use 5.008003;
 
-our $VERSION = '1.7.0';
+our $VERSION = '1.7.1';
 
 my $me = basename($0);
 my $hostname = qx{hostname};
@@ -30,9 +30,6 @@ chomp $hostname;
 
 ## Number the entries?
 my $USE_NUMBERING = 1;
-
-## Postgres PID mode?
-my $POSTGRES_PID_MODE = 1;
 
 ## Get the line number from the log file, even when seeking
 my $find_line_number = 1;
@@ -77,7 +74,7 @@ my $custom_type = 'normal';
 ## Read in the the options
 my ($verbose,$quiet,$debug,$dryrun,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
-my ($timewarp) = (0);
+my ($timewarp,$pgmode) = (0,1);
 my $result = GetOptions
  (
    'verbose'    => \$verbose,
@@ -94,6 +91,7 @@ my $result = GetOptions
    'file=s'     => \$custom_file,
    'flatten!'   => \$flatten,
    'timewarp=i' => \$timewarp,
+   'pgmode=i'   => \$pgmode,
   );
 ++$verbose if $debug;
 
@@ -404,7 +402,7 @@ EACHFILE: for my $file (sort keys %opt) {
                 ## Easiest to just remove the newline here and now
                 chomp;
 
-                if ($POSTGRES_PID_MODE) {
+                if ($pgmode) {
                     if ($_ =~ $pgpidre) {
                         ($pgpid, $pgsub, $pgnum) = ($1,$2||1,$3||1);
                         $lastpid = $pgpid;
@@ -633,7 +631,7 @@ sub process_line {
     my $arg = shift;
 
     ## What line was this string first spotted at?
-    my $line = 0;
+    my $line = shift || 0;
 
     ## The final string
     my $string = '';
@@ -663,6 +661,12 @@ sub process_line {
 
     ## Compress all whitespace
     $string =~ s/\s+/ /g;
+
+    ## If not in Postgres mode, we avoid all the mangling below
+    if (!$pgmode) {
+        $find{$line} = $string;
+        return 1;
+    }
 
     ## Save the pre-flattened version
     my $nonflat = $string;
@@ -783,7 +787,7 @@ sub lines_of_interest {
                 ## If we can, show just the interesting part
                 my $latest = $find{$line}{latest};
                 my $earliest = $find{$line}{earliest};
-                if ($POSTGRES_PID_MODE == 1 and $earliest =~ s/$pgpiddatere(.+)/$2/) {
+                if ($pgmode == 1 and $earliest =~ s/$pgpiddatere(.+)/$2/) {
                     my $headstart = $1;
                     $latest =~ /$pgpiddatere/ or die "Latest did not match?!\n";
                     my $headend = $1; ## no critic (ProhibitCaptureWithoutTest)

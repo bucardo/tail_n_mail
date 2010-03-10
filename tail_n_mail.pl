@@ -16,65 +16,31 @@
 
 use strict;
 use warnings;
-use Data::Dumper   qw( Dumper           );
-use File::Temp     qw( tempfile         );
-use Getopt::Long   qw( GetOptions       );
-use File::Basename qw( basename dirname );
+use Data::Dumper   qw( Dumper     );
+use Getopt::Long   qw( GetOptions );
+use File::Temp     qw( tempfile   );
+use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.7.1';
+our $VERSION = '1.8.0';
 
-my $me = basename($0);
-my $hostname = qx{hostname};
-chomp $hostname;
-
-## Number the entries?
-my $USE_NUMBERING = 1;
-
-## Get the line number from the log file, even when seeking
-my $find_line_number = 1;
-
-## Regexen for Postgres PIDs:
-my %pgpidres = (
-   1 => qr{.+?\[(\d+)\]: \[(\d+)\-(\d+)\]},
-   2 => qr{.+?\d\d:\d\d:\d\d \w\w\w (\d+)},
-   3 => qr{.+?\d\d:\d\d:\d\d (\w\w\w)}, ## Fake a PID
-   4 => qr{.+?\[(\d+)\]},
-);
-my $pgformat = 1;
-my $pgpidre = $pgpidres{$pgformat};
-
-## Regexes to extract the date part from a line:
-my %pgpiddateres = (
-    1 => qr{(.+?\[\d+\]): \[\d+\-\d+\]},
-    2 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
-    3 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
-    4 => qr{(.+? \w\w\w)},
-);
-my $pgpiddatere = $pgpiddateres{$pgformat};
-
-## The mail program
+## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail';
 
-## We never go back more than this number of bytes. Can be overriden in the config file.
+## We never go back more than this number of bytes. Can be overriden in the config file and command line.
 my $MAXSIZE = 80_000_000;
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST';
 
-## The possible types of levels in Postgres logs
-my %level = map { $_ => 1 } qw{PANIC FATAL ERROR WARNING NOTICE LOG INFO};
-for (1..5) { $level{"DEBUG$_"} = 1; }
-my $levels = join '|' => keys %level;
-my $levelre = qr{(?:$levels)};
-
 ## We can define custom types, e.g. "duration" that get printed differently
 my $custom_type = 'normal';
 
-## Read in the the options
+## Set defaults for all the options, then read them in from command line
 my ($verbose,$quiet,$debug,$dryrun,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
-my ($timewarp,$pgmode) = (0,1);
+my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
+
 my $result = GetOptions
  (
    'verbose'    => \$verbose,
@@ -92,12 +58,15 @@ my $result = GetOptions
    'flatten!'   => \$flatten,
    'timewarp=i' => \$timewarp,
    'pgmode=i'   => \$pgmode,
+   'pgformat=i' => \$pgformat,
+   'maxsize=i'  => \$maxsize,
+   'type=s'     => \$custom_type,
   );
 ++$verbose if $debug;
 
 if ($version) {
-    print "$0 version $VERSION\n";
-    exit 0;
+	print "$0 version $VERSION\n";
+	exit 0;
 }
 
 ## First option is always the config file, which must exist.
@@ -105,722 +74,1006 @@ my $configfile = shift or die qq{Usage: $0 configfile\n};
 
 ## If the file has the name 'duration' in it, switch to that type as the default
 if ($configfile =~ /duration/i) {
-    $custom_type = 'duration';
+	$custom_type = 'duration';
 }
+
+## Save away our hostname
+my $hostname = qx{hostname};
+chomp $hostname;
+
+## Regexen for Postgres PIDs:
+my %pgpidres = (
+   1 => qr{.+?\[(\d+)\]: \[(\d+)\-(\d+)\]},
+   2 => qr{.+?\d\d:\d\d:\d\d \w\w\w (\d+)},
+   3 => qr{.+?\d\d:\d\d:\d\d (\w\w\w)}, ## Fake a PID
+   4 => qr{.+?\[(\d+)\]},
+);
+
+my $pgpidre = $pgpidres{$pgformat};
+
+## Regexes to extract the date part from a line:
+my %pgpiddateres = (
+	1 => qr{(.+?\[\d+\]): \[\d+\-\d+\]},
+	2 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
+	3 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
+	4 => qr{(.+? \w\w\w)},
+);
+my $pgpiddatere = $pgpiddateres{$pgformat};
+
+## The possible types of levels in Postgres logs
+my %level = map { $_ => 1 } qw{PANIC FATAL ERROR WARNING NOTICE LOG INFO};
+for (1..5) { $level{"DEBUG$_"} = 1; }
+my $levels = join '|' => keys %level;
+my $levelre = qr{(?:$levels)};
+
+## We use a CURRENT key for future expansion
+my $curr = 'CURRENT';
 
 ## Read in and parse the config file
-my %opt = (DEFAULT => { email => []});
-my $curr = 'DEFAULT';
-open my $c, '<', $configfile or die qq{Could not open "$configfile": $!\n};
-my $in_standard_comments = 1;
-my (@comment, %itemcomment);
-while (<$c>) {
-    if ($in_standard_comments) {
-        next if /^## Config file for/;
-        next if /^## This file is automatically updated/;
-        next if /^## Last updated:/;
-        next if /^\s*$/;
-        $in_standard_comments = 0;
-    }
+my (%opt, %itemcomment);
+parse_config_file();
 
-    if (/^\s*#/) {
-        ## Assume that this is an important comment, and store it for the next real word
-        push @comment => $_;
-        next;
-    }
+## Keep track of changes to know if we need to rewrite the config file or not
+my $changes = 0;
 
-    ## Store comments as needed
-    if (@comment and m{^(\w+):}) {
-        chomp;
-        for my $c (@comment) {
-            push @{$itemcomment{$1}} => $c;
-            push @{$itemcomment{$_}} => $c;
-        }
-        undef @comment;
-    }
+## Global regex: may change per file
+my ($exclude, $include);
 
-    ## Which files to check
-    if (/^FILE:\s*(.+?)\s*$/) {
-        $curr = $1;
-        ## Transform if needed
-        my $filename = $curr;
-        if ($curr =~ /%/) {
-            eval { ## no critic (RequireCheckingReturnValueOfEval)
-                require POSIX;
-            };
+## Note if we bumped into maxsize when trying to read a file
+my (%toolarge);
 
-            $@ and die qq{Cannot use strftime formatting without the Perl POSIX module!\n};
-            my @ltime = localtime(time + $timewarp);
-            $filename = POSIX::strftime($curr, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
-        }
+# Actual matching strings are stored here
+my %find;
 
-        if ($filename =~ /LATEST/) {
-            $filename = find_latest_logfile($filename);
-        }
+## Keep track of which entries are similar to the ones we've seen before for possible flattening
+my %similar;
 
-        if ($custom_file) {
-            if ($custom_file =~ m{/}) {
-                $filename = $custom_file;
-            }
-            else {
-                my $dir = dirname($filename);
-                $filename = "$dir/$custom_file";
-            }
-        }
+## Map filenames to "A", "B", etc. for clean output of multiple matches
+my %fab;
 
-        $opt{$curr} =
-            {
-             email         => [],
-             exclude       => [],
-             include       => [],
-             mailsubject   => $DEFAULT_SUBJECT,
-             customsubject => 0,
-             filename      => $filename,
-             };
-    }
-    ## The last filename we used
-    elsif (/^LASTFILE:\s*(.+?)\s*$/) {
-        $opt{$curr}{lastfile} = $1;
-    }
-    ## Who to send emails to for this file
-    elsif (/^EMAIL:\s*(.+?)\s*$/) {
-        push @{$opt{$curr}{email}}, $1;
-    }
-    ## Who to send emails from
-    elsif (/^FROM:\s*(.+?)\s*$/) {
-        $opt{$curr}{from} = $1;
-    }
-    ## The pg format to use
-    elsif (/^PGFORMAT:\s*(\d)\s*$/) {
-        $opt{DEFAULT}{pgformat} = $pgformat = $1;
-        $pgpidre = $pgpidres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
-        $pgpiddatere = $pgpiddateres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
-    }
-    ## What type of report this is
-    elsif (/^TYPE:\s*(.+?)\s*$/) {
-        $custom_type = $1;
-    }
-    ## Exclude durations below this number
-    elsif (/^DURATION:\s*(\d+)/) {
-        ## Command line still wins
-        if ($custom_duration < 0) {
-            $custom_duration = $opt{DEFAULT}{duration} = $1;
-        }
-    }
-    ## Force line number lookup on or off
-    elsif (/^FIND_LINE_NUMBER:\s*(\d+)/) {
-        $find_line_number = $opt{DEFAULT}{find_line_number} = $1;
-    }
-    ## Which lines to exclude from the report
-    elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
-        push @{$opt{$curr}{exclude}}, $1;
-    }
-    ## Which lines to include in the report
-    elsif (/^INCLUDE:\s*(.+)/) {
-        push @{$opt{$curr}{include}}, $1;
-    }
-    ## The current offset into the file
-    elsif (/^OFFSET:\s*(\d+)/) {
-        $opt{$curr}{offset} = $1;
-    }
-    ## The custom maxsize for this file
-    elsif (/^MAXSIZE:\s*(\d+)/) {
-        $opt{$curr}{maxsize} = $1;
-    }
-    ## The subject line for this file
-    elsif (/^MAILSUBJECT:\s*(.+)/) { ## Want whitespace
-        $opt{$curr}{mailsubject} = $1;
-        $opt{$curr}{customsubject} = 1;
-    }
-}
-close $c or die qq{Could not close "$configfile": $!\n};
+## Are we viewing the older version of the file because it was rotated?
+my $rotatedfile = 0;
 
-for (keys %opt) {
-    delete $opt{$_} if /^_/;
-}
-$debug and warn Dumper \%opt;
+## Did we handle more than one file this round?
+my $multifile = 0;
 
-## Any changes that need saving?
-my $save = 0;
+my ($offset);
 
-my ($fh, $tempfile);
-## Process each file in turn:
-
-my ($exclude, $include, %current_pid_num, $toolarge);
-my (%find, %similar, $lastpid, %sorthelp);
-
-EACHFILE: for my $file (sort keys %opt) {
-
-    undef %find;
-    undef %similar;
-    undef %current_pid_num;
-    my %pidline;
-
-    next EACHFILE if $file eq 'DEFAULT';
-
-    my $filename = $opt{$file}{filename};
-    $verbose and warn "Checking file $filename\n";
-
-    my $rotatedfile = 0;
-
-    ## Come back to this point if we just finished with a rotated file
-  ROTATED:
-
-    if ($rotatedfile) {
-        $rotatedfile = 0;
-        ## Reset the name back to the current one
-        $filename = $opt{$file}{filename};
-        ## If we just finished looking at the old rotated file, offset must be zero
-        $opt{$file}{offset} = 0;
-    }
-    ## If the last file we checked is not the current one, go back and finish up that one
-    elsif (exists $opt{$file}{lastfile} and $opt{$file}{lastfile} ne $filename and ! $custom_file) {
-        $verbose and warn "  Logfile was rotated, checking end of last file first.\n";
-        $filename = $opt{$file}{lastfile};
-        $rotatedfile = 1;
-    }
-
-    my $fileokay = 1;
-
-    ## Does it exist?
-    if (! -e $filename) {
-        $quiet or warn qq{WARNING! Skipping non-existent file "$filename"\n};
-        $fileokay = 0;
-    }
-    elsif (! -f $filename) {
-        warn qq{WARNING! Skipping non-file "$filename"\n};
-        $fileokay = 0;
-    }
-
-    if (!$fileokay) {
-        if ($rotatedfile) {
-            ## Failed to find the last file, so continue on with the real one
-            goto ROTATED;
-        }
-        next EACHFILE;
-    }
-
-    my $size = -s $filename;
-
-    ## Determine the new offset
-    $opt{$file}{offset} ||= 0;
-    my $offset = $opt{$file}{offset};
-
-    ## Allow the offset to be changed on the command line
-    if ($custom_offset>=0) {
-        $offset = $custom_offset;
-    }
-    elsif ($custom_offset < -1) {
-        $offset = $size + $custom_offset;
-        $offset = 0 if $offset < 0;
-    }
-
-    my $maxsize = exists $opt{$file}{maxsize} ? $opt{$file}{maxsize} : $MAXSIZE;
-    $verbose and warn "  Offset: $offset Size: $size Maxsize: $maxsize\n";
-    if ($reset) {
-        $offset = $size;
-        $verbose and warn "  Resetting offset to $offset\n";
-    }
-
-    ## The file may have shrunk due to a logrotate
-    if ($offset > $size) {
-        $verbose and warn "  File has shrunk - resetting offset to 0\n";
-        $offset = 0;
-    }
-
-    ## Read in the lines if necessary
-  TAILIT: {
-        $toolarge = '';
-        if ($offset < $size) {
-
-            if ($maxsize and $size - $offset > $maxsize and $custom_offset < 0) {
-                warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
-                $toolarge = "File too large: only read last $maxsize bytes (size=$size, offset=$offset)";
-                $offset = $size - $maxsize;
-            }
-
-            my $original_offset = $offset;
-            $offset = 10 if $offset < 10; ## We go back before the newline
-            open $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
-            seek $fh, $offset-10, 0;
-            if ($rewind) {
-                seek $fh, -$rewind, 1;
-            }
-
-            ## Figure out what line we are on (roughly)
-            my $pos = tell $fh;
-            my $newlines = 0;
-            if ($pos > 1 and $find_line_number) {
-                seek $fh, 0, 0;
-                ## Need to sysread up to $pos
-                my $blocksize = 100_000;
-                my $current = 0;
-                {
-                    my $chunksize = $blocksize;
-                    if ($current + $chunksize > $pos) {
-                        $chunksize = $pos - $current;
-                    }
-                    my $foobar;
-                    my $res = sysread $fh, $foobar, $chunksize;
-                    ## How many newlines in there?
-                    $newlines += $foobar =~ y/\n/\n/;
-                    $current += $chunksize;
-                    redo if $current < $pos;
-                }
-                seek $fh, 0, $pos;
-            }
-
-            ## Build an exclusion regex for this file
-            $exclude = '';
-            for my $ex (@{$opt{$file}{exclude}}) {
-                $debug and warn "  Adding exclusion: $ex\n";
-                my $regex = qr{$ex};
-                $exclude .= "$regex|";
-            }
-            $exclude =~ s/\|$//;
-            $verbose and $exclude and warn "  Exclusion: $exclude\n";
-
-            ## Build an inclusion regex for this file
-            $include = '';
-            for my $in (@{$opt{$file}{include}}) {
-                $debug and warn "  Adding inclusion: $in\n";
-                my $regex = qr{$in};
-                $include .= "$regex|";
-            }
-            $include =~ s/\|$//;
-            $verbose and $include and warn "  Inclusion: $include\n";
-
-            ## Discard previous line
-            $offset > 10 and <$fh>;
-            my $count = 0;
-
-            ## Postgres-specific multi-line grabbing stuff:
-            my ($pgpid, $pgnum, $pgsub);
-
-            my $lastline = '';
-            while (<$fh>) {
-                ## Easiest to just remove the newline here and now
-                chomp;
-
-                if ($pgmode) {
-                    if ($_ =~ $pgpidre) {
-                        ($pgpid, $pgsub, $pgnum) = ($1,$2||1,$3||1);
-                        $lastpid = $pgpid;
-                        ## We've found something that looks like: postgres[12345] [1-1]
-                        ## Have we seen this PID before?
-                        if (exists $pidline{$pgpid}) {
-                            ## If this is a statement or detail or hint or context, append to the previous entry
-                            ## Do the same for a LOG: statement combo (e.g. following a duration)
-                            if (/ (?:STATEMENT|DETAIL|HINT|CONTEXT):  /o
-                                or (/ LOG:  statement: /o
-									and
-									$pidline{$pgpid}{string}{$current_pid_num{$pgpid}}
-										!~ /  statement: |FATAL|PANIC/)) {
-                                $pgnum = $current_pid_num{$pgpid} + 1;
-                            }
-                            ## Is this a new entry for this PID? If so, process the old.
-                            if ($pgnum <= 1) {
-                                $count += process_line($pidline{$pgpid});
-                                ## Delete it so it gets recreated afresh below
-                                delete $pidline{$pgpid};
-                            }
-                            else {
-                                ## Trim the string up - no need to see the header info each time
-                                s/^.+?$pgpidre\s*//;
-                                ## No need to see the user more than once for supplemental information
-                                s/.+ (STATEMENT|DETAIL|HINT|CONTEXT):/$1:/;
-                            }
-                        }
-                        $pidline{$pgpid}{string}{$pgnum} = $_;
-                        $current_pid_num{$pgpid} = $pgnum;
-
-                        ## Store the line number if we don't have one yet for this PID
-                        $pidline{$pgpid}{line} ||= ($. + $newlines);
-
-                        $lastline = $_;
-                    }
-                    elsif ($lastpid) {
-                        ## Append this to the previous entry
-                        $pgnum = $current_pid_num{$lastpid} + 1;
-                        s{^\t}{ };
-                        $pidline{$lastpid}{string}{$pgnum} = $_;
-                        $current_pid_num{$lastpid} = $pgnum;
-                    }
-
-                    ## No need to do anything more right now
-                    next;
-                }
-
-                ## Just a bare entry, so process it right away
-                $count += process_line($_, $. + $newlines);
-
-            } ## end of each line in the file
-
-            seek $fh, 0, 1;
-            $offset = tell $fh;
-            close $fh or die qq{Could not close "$filename": $!\n};
-
-            ## Now add in any pids that have not been processed yet
-            for my $pid (keys %pidline) {
-                $count += process_line($pidline{$pid});
-            }
-
-            if (!$count) {
-                $verbose and warn "  No new lines found in file\n";
-                last TAILIT;
-            }
-            $verbose and warn "  Lines found: $count\n";
-
-            if ($rotatedfile) {
-                $verbose and warn "  Finished with previous file $filename, resuming scan of $opt{$file}{filename}\n";
-                $opt{$file}{lastfilecount} = $count;
-                goto ROTATED;
-            }
-
-            ## Create the mail message
-            ($fh, $tempfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm');
-
-            if ($dryrun) {
-                close $fh or warn 'Could not close filehandle';
-                $fh = \*STDOUT;
-            }
-
-            ## Subject with replaced keywords:
-            my $subject = $opt{$file}{mailsubject};
-            $subject =~ s/FILE/$filename/g;
-            $subject =~ s/HOST/$hostname/g;
-            print {$fh} "Subject: $subject\n";
-
-            ## Discourage vacation programs from replying
-            print {$fh} "Auto-Submitted: auto-generated\n";
-            print {$fh} "Precedence: bulk\n";
-
-            ## Some minor help with debugging
-            print {$fh} "X-TNM-VERSION: $VERSION\n";
-
-            ## Fill out the "To:" fields
-            for my $email (@{$opt{DEFAULT}{email}}, @{$opt{$file}{email}}) {
-                print {$fh} "To: $email\n";
-            }
-
-            ## Custom From:
-            my $from_addr = $opt{DEFAULT}{from} || '';
-            if ($from_addr ne '') {
-                print {$fh} "From: $from_addr\n";
-                $MAILCOM .= " -f $from_addr";
-            }
-            ## End header section
-            print {$fh} "\n";
-
-            ## Indicate that we looked at multiple files
-            if ($opt{$file}{lastfilecount}) {
-                print {$fh} "Matches from $opt{$file}{lastfile}: $opt{$file}{lastfilecount}\n";
-            }
-            print {$fh} "Matches from $filename: $count\n";
-            my $now = scalar localtime;
-            print {$fh} "Date: $now\n";
-            print {$fh} "Host: $hostname\n";
-
-            ## Any other interesting things about this run
-            if ($custom_duration >= 0) {
-               print {$fh} "Minimum duration: $custom_duration\n";
-            }
-            if ($toolarge) {
-                print {$fh} "$toolarge\n";
-            }
-
-            ## The meat of the message
-            lines_of_interest($fh, $original_offset);
-
-            print {$fh} "\n";
-            close $fh or die qq{Could not close "$tempfile": $!\n};
-
-            my $emails = join ' ' => @{$opt{DEFAULT}{email}}, @{$opt{$file}{email}};
-            $verbose and warn "  Sending mail to: $emails\n";
-            my $COM = qq{$MAILCOM $emails < $tempfile};
-            if ($dryrun or $nomail) {
-                warn "  DRYRUN: $COM\n";
-            }
-            else {
-                system $COM;
-            }
-            unlink $tempfile;
-        }
-    } ## end of TAILIT
-
-    ## If offset has changed, save it
-    if (!$rotatedfile and $offset != $opt{$file}{offset}) {
-        $opt{$file}{offset} = $offset;
-        $save++;
-        $verbose and warn "  Setting offset to $offset\n";
-    }
-
-} ## end each file to check
-
-if ($save and !$dryrun) {
-    $verbose and warn "Saving new config file (save=$save)\n";
-    open $fh, '>', $configfile or die qq{Could not write "$configfile": $!\n};
-    my $oldselect = select $fh;
-    my $now = localtime;
-    print qq{
-## Config file for the $me program
-## This file is automatically updated
-## Last updated: $now
-};
-
-    for my $item (qw/ email from pgformat type duration find_line_number /) {
-        next if ! exists $opt{DEFAULT}{$item};
-        next if $item eq 'duration' and $custom_duration < 0;
-        add_comments(uc $item);
-        if (ref $opt{DEFAULT}{$item} eq 'ARRAY') {
-            for my $itemz (@{$opt{DEFAULT}{$item}}) {
-                printf "%s: %s\n", uc $item, $itemz;
-            }
-        }
-        else {
-            printf "%s: %s\n", uc $item, $opt{DEFAULT}{$item};
-        }
-    }
-
-    for my $file (sort keys %opt) {
-        next if $file eq 'DEFAULT';
-        print "\n";
-        add_comments('FILE');
-        print "FILE: $file\n";
-        print "LASTFILE: $opt{$file}{filename}\n";
-        print "OFFSET: $opt{$file}{offset}\n";
-        printf "MAXSIZE: %d\n",
-            exists $opt{$file}{maxsize} ? $opt{$file}{maxsize} : $MAXSIZE;
-        for my $email (@{$opt{$file}{email}}) {
-            add_comments("EMAIL: $email");
-            print "EMAIL: $email\n";
-        }
-        if ($opt{$file}{customsubject}) {
-            add_comments('MAILSUBJECT');
-            print "MAILSUBJECT: $opt{$file}{mailsubject}\n";
-        }
-        for my $include (@{$opt{$file}{include}}) {
-            add_comments("INCLUDE: $include");
-            print "INCLUDE: $include\n";
-        }
-        for my $exclude (@{$opt{$file}{exclude}}) {
-            add_comments("EXCLUDE: $exclude");
-            print "EXCLUDE: $exclude\n";
-        }
-
-        print "\n";
-    }
-    select $oldselect;
-    close $fh or die qq{Could not close "$configfile": $!\n};
+## Parse each file returned by pick_log_file until we start looping
+my $last_logfile = '';
+my @files_parsed;
+{
+	my $logfile = pick_log_file();
+	last if $last_logfile eq $logfile;
+	$debug and warn "Parsing file ($logfile)\n";
+	my $count = parse_file($logfile);
+	push @files_parsed => [$logfile, $count];
+	$last_logfile = $logfile;
+	redo;
 }
 
-exit;
+## We're done parsing the message, send an email if needed
+process_report();
+final_cleanup();
 
-sub find_latest_logfile {
+exit 0;
 
-    my $file = shift;
-    $file =~ s/LATEST/*/;
-    my $latest = qx{ls -rt1 $file | tail -1};
-    chomp $latest;
-    return $latest;
 
-} ## end of find_latest_logfile
+sub pick_log_file {
+
+	## Figure out which files we need to parse
+
+	## Basic flow:
+	## Start with "last" (and apply offset to it)
+	## Then walk forward until we hit the most recent one
+
+	## No lastfile makes it easy
+	exists $opt{$curr}{lastfile} or return $opt{$curr}{filename};
+
+	## If a custom file, we always just return the main filename
+	$custom_file and return $opt{$curr}{filename};
+
+	my $last = $opt{$curr}{lastfile};
+
+	## If we haven't processed the lastfile, do that one first
+	exists $find{$last} or return $last;
+
+	## If the last is the same as the current, return
+	$last eq $opt{$curr}{filename} and return $last;
+
+	## We've processed the last file, are there any files in between the two?
+	## For now, we only handle POSIX-based time travel
+	my $orig = $opt{$curr}{original_filename};
+	if ($orig =~ /%/) {
+
+		## Already have the list? Pop off items until we are done
+		if (exists $opt{$curr}{middle_filenames}) {
+			my $newfile = pop @{$opt{$curr}{middle_filenames}};
+			## When we run out, return the current file
+			return $newfile || $opt{$curr}{filename};
+		}
+
+		## We're going to walk backwards, 30 minutes at a time, and gather up
+		## all files between "now" and the "last"
+		my $timerewind = 60*30; ## 30 minutes
+		my $maxloops = 24*2 * 7; ## ax of 1 week
+		my $bail = 0;
+		my %seenfile;
+	  BACKINTIME: {
+
+			my @ltime = localtime(time - $timerewind);
+			my $newfile = POSIX::strftime($orig, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
+			last if $newfile eq $last;
+			if (! exists $seenfile{$newfile}) {
+				$seenfile{$newfile} = 1;
+				push @{$opt{$curr}{middle_filenames}} => $newfile;
+			}
+
+			$timerewind += 60*30;
+			++$bail > $maxloops and die "Too many loops ($bail): bailing\n";
+			redo;
+		}
+
+		return (keys %seenfile) ? (pop @{$opt{$curr}{middle_filenames}}) : $opt{$curr}{filename};
+	}
+
+	## Just return the current file
+	return $opt{$curr}{filename};
+
+} ## end of pick_log_file
+
+
+sub parse_config_file {
+
+	## Read in a configuration file and populate the global %opt
+
+	## Are we in the standard onn-user comments at the top of the file?
+	my $in_standard_comments = 1;
+
+	## Temporarily store user comments until we know where to put them
+	my (@comment);
+
+	open my $c, '<', $configfile or die qq{Could not open "$configfile": $!\n};
+	$debug and warn qq{Opened config file "$configfile"\n};
+	while (<$c>) {
+
+		## If we are at the top of the file, don't store standard comments
+		if ($in_standard_comments) {
+			next if /^## Config file for/;
+			next if /^## This file is automatically updated/;
+			next if /^## Last updated:/;
+			next if /^\s*$/;
+			## Once we reach the first non-comment, non-whitespace line,
+			## treat it as a normal line
+			$in_standard_comments = 0;
+		}
+
+		## Found a user comment; store it away until we have context for it
+		if (/^\s*#/) {
+			push @comment => $_;
+			next;
+		}
+
+		## A non-comment after one or comments allows us to map them to each other
+		if (@comment and m{^(\w+):}) {
+			chomp;
+			for my $c (@comment) {
+				## We store as both the keyword and the entire line
+				push @{$itemcomment{$1}} => $c;
+				push @{$itemcomment{$_}} => $c;
+			}
+			## Empty out our user comment queue
+			undef @comment;
+		}
+
+		## What file are we checking on?
+		if (/^FILE:\s*(.+?)\s*$/) {
+			my $filename = $opt{$curr}{original_filename} = $1;
+
+			if ($filename !~ /w/) {
+				die "No FILE found in the config file!\n";
+			}
+
+			## Transform the file name if it contains escapes
+			if ($filename =~ /%/) {
+				eval { ## no critic (RequireCheckingReturnValueOfEval)
+					require POSIX;
+				};
+
+				$@ and die qq{Cannot use strftime formatting without the Perl POSIX module!\n};
+
+				## Allow moving back in time with the timewarp argument (defaults to 0)
+				my @ltime = localtime(time + $timewarp);
+				$filename = POSIX::strftime($filename, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
+			}
+
+			## Transform the file name if they want the latest in a directory
+			## Note that this can be combined with the escapes above!
+			if ($filename =~ /LATEST/) {
+				$filename =~ s/LATEST/*/;
+				my $latest = qx{ls -rt1 $filename | tail -1};
+				chomp $latest;
+				$filename = $latest;
+			}
+
+			## If a custom file was specified, use that instead
+			if ($custom_file) {
+				## If it contains a path, use it directly
+				if ($custom_file =~ m{/}) {
+					$filename = $custom_file;
+				}
+				## Otherwise, replace the current file name but keep the directory
+				else {
+					my $dir = dirname($filename);
+					$filename = "$dir/$custom_file";
+				}
+			}
+
+			## Set some default values
+			$opt{$curr}{filename} = $filename;
+			$opt{$curr}{exclude} ||= [];
+			$opt{$curr}{include} ||= [];
+			$opt{$curr}{email}   ||= [];
+
+		} ## end of FILE:
+
+		## The last filename we used
+		elsif (/^LASTFILE:\s*(.+?)\s*$/) {
+			$opt{$curr}{lastfile} = $1;
+		}
+		## Who to send emails to for this file
+		elsif (/^EMAIL:\s*(.+?)\s*$/) {
+			push @{$opt{$curr}{email}}, $1;
+		}
+		## Who to send emails from
+		elsif (/^FROM:\s*(.+?)\s*$/) {
+			$opt{$curr}{from} = $1;
+		}
+		## The pg format to use
+		elsif (/^PGFORMAT:\s*(\d)\s*$/) {
+			## Change the global $pgformat as well
+			$opt{$curr}{pgformat} = $pgformat = $1;
+			## Assign new regex, bail if they don't exist
+			$pgpidre = $pgpidres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
+			$pgpiddatere = $pgpiddateres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
+		}
+		## What type of report this is
+		elsif (/^TYPE:\s*(.+?)\s*$/) {
+			$custom_type = $1;
+		}
+		## Exclude durations below this number
+		elsif (/^DURATION:\s*(\d+)/) {
+			## Command line still wins
+			if ($custom_duration < 0) {
+				$custom_duration = $opt{$curr}{duration} = $1;
+			}
+		}
+		## Force line number lookup on or off
+		elsif (/^FIND_LINE_NUMBER:\s*(\d+)/) {
+			$find_line_number = $opt{$curr}{find_line_number} = $1;
+		}
+		## Which lines to exclude from the report
+		elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
+			push @{$opt{$curr}{exclude}}, $1;
+		}
+		## Which lines to include in the report
+		elsif (/^INCLUDE:\s*(.+)/) {
+			push @{$opt{$curr}{include}}, $1;
+		}
+		## The current offset into the file
+		elsif (/^OFFSET:\s*(\d+)/) {
+			$opt{$curr}{offset} = $1;
+		}
+		## The custom maxsize for this file
+		elsif (/^MAXSIZE:\s*(\d+)/) {
+			$opt{$curr}{maxsize} = $1;
+		}
+		## The subject line for this file
+		elsif (/^MAILSUBJECT:\s*(.+)/) { ## Trailing whitespace is significant here
+			$opt{$curr}{mailsubject} = $1;
+			$opt{$curr}{customsubject} = 1;
+		}
+	}
+	close $c or die qq{Could not close "$configfile": $!\n};
+
+	if ($debug) {
+		local $Data::Dumper::Varname = 'opt';
+		warn Dumper \%opt;
+	}
+
+	## Set the maximum bytes to go back and scan
+	$maxsize = exists $opt{$curr}{maxsize} ? $opt{$curr}{maxsize} : $maxsize;
+
+	return;
+
+} ## end of parse_config_file
+
+
+sub parse_file {
+
+	## Parse the passed in file
+	## Returns the number of matches
+
+	my $filename = shift;
+
+	## Touch the hash so we know we've been here
+	$find{$filename} = {};
+
+	## Make sure the file exists and is readable
+	if (! -e $filename) {
+		$quiet or warn qq{WARNING! Skipping non-existent file "$filename"\n};
+		return 0;
+	}
+	if (! -f $filename) {
+		$quiet or warn qq{WARNING! Skipping non-file "$filename"\n};
+		return 0;
+	}
+
+	## Figure out where in the file we want to start scanning from
+	my $size = -s $filename;
+	my $offset = 0;
+
+	## Allow the offset to equal the size via --reset
+	if ($reset) {
+		$offset = $size;
+		$verbose and warn "  Resetting offset to $offset\n";
+	}
+	## Allow the offset to be changed on the command line (affects all files)
+	elsif ($custom_offset != -1) {
+		if ($custom_offset >= 0) {
+			$offset = $custom_offset;
+		}
+		elsif ($custom_offset < -1) {
+			$offset = $size + $custom_offset;
+			$offset = 0 if $offset < 0;
+		}
+	}
+	## We only set the offset if it's for the same file we saw last time
+	elsif (!exists $opt{$curr}{lastfile} or ($opt{$curr}{lastfile} eq $filename)) {
+		$offset = $opt{$curr}{offset};
+	}
+
+	$verbose and warn "  File: $filename Offset: $offset Size: $size Maxsize: $maxsize\n";
+
+	## The file may have shrunk due to a logrotate
+	if ($offset > $size) {
+		$verbose and warn "  File has shrunk - resetting offset to 0\n";
+		$offset = 0;
+	}
+
+	## If the offset is equal to the size, we're done!
+	return 0 if $offset >= $size;
+
+	## Store the original offset
+	my $original_offset = $offset;
+
+	open my $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
+
+	## Seek the right spot as needed
+	if ($offset and $offset < $size) {
+
+		## This can happen quite a bit on busy files!
+		if ($maxsize and $size - $offset > $maxsize and $custom_offset < 0) {
+			$quiet or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
+			$toolarge{$filename} = "File too large: only read last $maxsize bytes (size=$size, offset=$offset)";
+			$offset = $size - $maxsize;
+		}
+
+		## Because we go back by 10 characters below, always offset at least 10
+		$offset = 10 if $offset < 10;
+
+		## We go back 10 characters to get us before the newlines we (probably) ended with
+		seek $fh, $offset-10, 0;
+
+		## If a manual rewind request has been given, process it (inverse)
+		if ($rewind) {
+			seek $fh, -$rewind, 1;
+		}
+	}
+
+	## Optionally figure out what approximate line we are on
+	my $newlines = 0;
+	if ($find_line_number) {
+		my $pos = tell $fh;
+
+		## No sense in counting if we're at the start of the file!
+		if ($pos > 1) {
+
+			seek $fh, 0, 0;
+			## Need to sysread up to $pos
+			my $blocksize = 100_000;
+			my $current = 0;
+			{
+				my $chunksize = $blocksize;
+				if ($current + $chunksize > $pos) {
+					$chunksize = $pos - $current;
+				}
+				my $foobar;
+				my $res = sysread $fh, $foobar, $chunksize;
+				## How many newlines in there?
+				$newlines += $foobar =~ y/\n/\n/;
+				$current += $chunksize;
+				redo if $current < $pos;
+			}
+
+			## Return to the original position
+			seek $fh, 0, $pos;
+
+		} ## end pos > 1
+	} ## end find_line_number
+
+	## Get exclusion and inclusion regexes for this file
+	($exclude,$include) = generate_regexes($filename);
+
+	## Discard the previous line if needed (we rewound by 10 characters above)
+	$original_offset and <$fh>;
+
+	## Keep track of total matches
+	my $count = 0;
+
+	## Postgres-specific multi-line grabbing stuff:
+	my ($pgpid, $pgnum, $pgsub, %pidline, %current_pid_num, $lastpid);
+
+	my $lastline = '';
+	while (<$fh>) {
+		## Easiest to just remove the newline here and now
+		chomp;
+		if ($pgmode) {
+			if ($_ =~ $pgpidre) {
+				($pgpid, $pgsub, $pgnum) = ($1,$2||1,$3||1);
+				$lastpid = $pgpid;
+				## We've found something that looks like: postgres[12345] [1-1]
+				## Have we seen this PID before?
+				if (exists $pidline{$pgpid}) {
+					## If this is a statement or detail or hint or context, append to the previous entry
+					## Do the same for a LOG: statement combo (e.g. following a duration)
+					if (/ (?:STATEMENT|DETAIL|HINT|CONTEXT):  /o
+							or (/ LOG:  statement: /o
+							and
+							$pidline{$pgpid}{string}{$current_pid_num{$pgpid}}
+							or (/ LOG:  statement: /o and $lastline !~ /  statement: |FATAL|PANIC/))) {
+						$pgnum = $current_pid_num{$pgpid} + 1;
+					}
+					## Is this a new entry for this PID? If so, process the old.
+					if ($pgnum <= 1) {
+						$count += process_line($pidline{$pgpid}, 0, $filename);
+						## Delete it so it gets recreated afresh below
+						delete $pidline{$pgpid};
+					}
+					else {
+						## Trim the string up - no need to see the header info each time
+						s/^.+?$pgpidre\s*//;
+						## No need to see the user more than once for supplemental information
+						s/.+ (STATEMENT|DETAIL|HINT|CONTEXT):/$1:/;
+					}
+				}
+				$pidline{$pgpid}{string}{$pgnum} = $_;
+				$current_pid_num{$pgpid} = $pgnum;
+
+				## Store the line number if we don't have one yet for this PID
+				$pidline{$pgpid}{line} ||= ($. + $newlines);
+
+				$lastline = $_;
+			}
+			elsif ($lastpid) {
+				## Append this to the previous entry
+				$pgnum = $current_pid_num{$lastpid} + 1;
+				s{^\t}{ };
+				$pidline{$lastpid}{string}{$pgnum} = $_;
+				$current_pid_num{$lastpid} = $pgnum;
+			}
+
+			## No need to do anything more right now
+			next;
+		}
+
+		## Just a bare entry, so process it right away
+		$count += process_line($_, $. + $newlines, $filename);
+
+	} ## end of each line in the file
+
+	## Figure out the current position so we can store the new offset if needed
+	if (!exists $opt{$curr}{lastfile} or $opt{$curr}{lastfile} eq $filename) {
+		seek $fh, 0, 1;
+		$opt{$curr}{newoffset} = tell $fh;
+	}
+
+	close $fh or die qq{Could not close "$filename": $!\n};
+
+	## Now add in any pids that have not been processed yet
+	for my $pid (keys %pidline) {
+		$count += process_line($pidline{$pid}, 0, $filename);
+	}
+
+	if (!$count) {
+		$verbose and warn "  No new lines found in file $filename\n";
+	}
+	else {
+		$verbose and warn "  Lines found in $filename: $count\n";
+	}
+
+	$opt{grand_total} += $count;
+
+	return $count;
+
+} ## end of parse_file
+
+
+sub generate_regexes {
+
+	## Given a filename, generate exclusion and inclusion regexes for it
+
+	## Currently, all files get the same regex, so we cache it
+	if (exists $opt{globalexcluderegex}) {
+		return $opt{globalexcluderegex}, $opt{globalincluderegex};
+	}
+
+	## Build an exclusion regex
+	my $exclude = '';
+	for my $ex (@{$opt{$curr}{exclude}}) {
+		$debug and warn "  Adding exclusion: $ex\n";
+		my $regex = qr{$ex};
+		$exclude .= "$regex|";
+	}
+	$exclude =~ s/\|$//;
+	$verbose and $exclude and warn "  Exclusion: $exclude\n";
+
+	## Build an inclusion regex
+	my $include = '';
+	for my $in (@{$opt{$curr}{include}}) {
+		$debug and warn "  Adding inclusion: $in\n";
+		my $regex = qr{$in};
+		$include .= "$regex|";
+	}
+	$include =~ s/\|$//;
+	$verbose and $include and warn "  Inclusion: $include\n";
+
+	$opt{globalexcluderegex} = $exclude;
+	$opt{globalincluderegex} = $include;
+
+	return $exclude, $include;
+
+} ## end of generate_regexes
+
 
 sub process_line {
 
-    ## We've got a complete statement, so do something with it!
-    ## If it matches, we'll either put into %find directly, or store in %similar
+	## We've got a complete statement, so do something with it!
+	## If it matches, we'll either put into %find directly, or store in %similar
 
-    my $arg = shift;
+	my $arg = shift;
 
-    ## What line was this string first spotted at?
-    my $line = shift || 0;
+	## What line was this string first spotted at?
+	my $line = shift || 0;
 
-    ## The final string
-    my $string = '';
+	## What file did this come from?
+	my $filename = shift || die "Need a filename!\n";
 
-    if (ref $arg eq 'HASH') {
-        for my $l (sort {$a<=>$b} keys %{$arg->{string}}) {
-            ## Some Postgres/syslog combos produce ugly output
-            $arg->{string}{$l} =~ s/^(?:\s*#011\s*)+//;
-            $string .= ' '.$arg->{string}{$l};
-        }
-        $line = $arg->{line};
-    }
-    else {
-        $string = $arg;
-    }
+	## The final string
+	my $string = '';
 
-    ## Bail if it does not match the inclusion regex
-    return 0 if $include and $string !~ $include;
+	if (ref $arg eq 'HASH') {
+		for my $l (sort {$a<=>$b} keys %{$arg->{string}}) {
+			## Some Postgres/syslog combos produce ugly output
+			$arg->{string}{$l} =~ s/^(?:\s*#011\s*)+//;
+			$string .= ' '.$arg->{string}{$l};
+		}
+		$line = $arg->{line};
+	}
+	else {
+		$string = $arg;
+	}
 
-    ## Bail if it matches the exclusion regex
-    return 0 if $exclude and $string =~ $exclude;
+	## Bail if it does not match the inclusion regex
+	return 0 if $include and $string !~ $include;
 
-    ## If in duration mode, and we have a minimum cutoff, discard faster ones
-    if ($custom_type eq 'duration' and $custom_duration >= 0) {
-        return 0 if ($string =~ / duration: (\d+)/ and $1 < $custom_duration);
-    }
+	## Bail if it matches the exclusion regex
+	return 0 if $exclude and $string =~ $exclude;
 
-    ## Compress all whitespace
-    $string =~ s/\s+/ /g;
+	## If in duration mode, and we have a minimum cutoff, discard faster ones
+	if ($custom_type eq 'duration' and $custom_duration >= 0) {
+		return 0 if ($string =~ / duration: (\d+)/ and $1 < $custom_duration);
+	}
 
-    ## If not in Postgres mode, we avoid all the mangling below
-    if (!$pgmode) {
-        $find{$line} = $string;
-        return 1;
-    }
+	$debug and warn "MATCH at line $line of $filename\n";
 
-    ## Save the pre-flattened version
-    my $nonflat = $string;
+	## Compress all whitespace
+	$string =~ s/\s+/ /g;
 
-    ## Make some adjustments to attempt to compress similar entries
-    if ($flatten) {
+	## Strip leading whitespace
+	$string =~ s/^\s+//;
 
-        ## Flatten simple case of 'foo,bar' right away
-        $string =~ s/'[\w\d ]+\s*,\s*[\w\d ]+'/?/go;
+	## If not in Postgres mode, we avoid all the mangling below
+	if (!$pgmode) {
+		$find{$filename}{$line} =
+				{
+				 string   => $string,
+				 nonflat  => $string,
+				 line     => $line,
+				 filename => $filename,
+				 count    => 1,
+				 };
+		return 1;
+	}
 
-        $string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{
-            my $final = '';
-            my @final = split /\s*,\s*/ => $2;
-            for my $section (@final) {
-                next if $section =~ s/E?'.*'/?/go;
-                next if $section =~ s/^\d+$/?/o;
-                next if $section =~ s/true|false/?/go;
-            }
-            "$1 (" . (join ',' => @final) . ')'
-            }geix;
-        $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
-        $string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
-        $string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
-        $string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
-        $string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
-    }
+	## Save the pre-flattened version
+	my $nonflat = $string;
 
-    ## Try to separate into header and body, then check for similar entries
-    if ($string =~ /(.+?)($levelre:.+)$/o) {
-        my ($head,$body) = ($1,$2);
-        ## Seen this body before?
-        my $seenit = 0;
+	## Make some adjustments to attempt to compress similar entries
+	if ($flatten) {
 
-        if (exists $similar{$body}) {
-            $seenit = 1;
-            ## See if this is the new earliest one
-            if ($line < $similar{$body}{earliestline}) {
-                ## Remove the old winner
-                delete $find{$similar{$body}{earliestline}};
-                ## Replace with our new one:
-                $find{$line} = $similar{$body};
-                ## Set the new information:
-                $similar{$body}{earliest} = $string;
-                $similar{$body}{earliestnonflat} = $nonflat;
-                $similar{$body}{earliestline} = $line;
-            }
-            ## See if this is the new latest one
-            elsif ($line > $similar{$body}{latestline}) {
-                ## Set the new information:
-                $similar{$body}{latest} = $string;
-                $similar{$body}{latestline} = $line;
-            }
+		## Flatten simple case of 'foo,bar' right away
+		$string =~ s/'[\w\d ]+\s*,\s*[\w\d ]+'/?/go;
 
-            ## Increment the count
-            $similar{$body}{count}++;
-        }
+		$string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{
+			my $final = '';
+			my @final = split /\s*,\s*/ => $2;
+			for my $section (@final) {
+				next if $section =~ s/E?'.*'/?/go;
+				next if $section =~ s/^\d+$/?/o;
+				next if $section =~ s/true|false/?/go;
+			}
+			"$1 (" . (join ',' => @final) . ')'
+			}geix;
+		$string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
+		$string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
+		$string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
+		$string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
+		$string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
+	}
 
-        if (!$seenit) {
-            ## Store as the earliest and latest version we've seen
-            $similar{$body}{earliest} = $similar{$body}{latest} = $string;
-            $similar{$body}{earliestnonflat} = $nonflat;
-            $similar{$body}{earliestline} = $similar{$body}{latestline} = $line;
-            ## Start counting these items
-            $similar{$body}{count} = 1;
-            ## Store this away for eventual output
-            $find{$line} = $similar{$body};
-        }
-    }
-    else {
-        $find{$line} = $string;
-    }
+	## Try to separate into header and body, then check for similar entries
+	if ($string =~ /(.+?)($levelre:.+)$/o) {
+		my ($head,$body) = ($1,$2);
 
-    return 1;
+		## Seen this body before?
+		my $seenit = 0;
+
+		if (exists $similar{$body}) {
+			$seenit = 1;
+			## This becomes the new latest one
+			$similar{$body}{latest} =
+				{
+				 string   => $string,
+				 nonflat  => $nonflat,
+				 line     => $line,
+				 filename => $filename,
+				 };
+			## Increment the count
+			$similar{$body}{count}++;
+		}
+
+		if (!$seenit) {
+			## Store as the earliest and latest version we've seen
+			$similar{$body}{earliest} = $similar{$body}{latest} =
+				{
+				 string   => $string,
+				 nonflat  => $nonflat,
+				 line     => $line,
+				 filename => $filename,
+				 };
+			## Start counting these items
+			$similar{$body}{count} = 1;
+			## Store this away for eventual output
+			$find{$filename}{$line} = $similar{$body};
+		}
+	}
+	else {
+		$find{$filename}{$line} = $string;
+	}
+
+	return 1;
 
 } ## end of process_line
 
 
+sub process_report {
+
+	## Create the mail message
+	my ($fh, $tempfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm');
+
+	if ($dryrun) {
+		close $fh or warn 'Could not close filehandle';
+		$fh = \*STDOUT;
+	}
+
+	if (! @files_parsed) {
+		$quiet or warn qq{No files were read in, exiting\n};
+		exit 1;
+	}
+
+	## Total matches across all files
+	my $total_matches = 0;
+	## How many files actually had things?
+	my $matchfiles = 0;
+	## Which was the latest to contain something?
+	my $last_file_parsed;
+	for my $file (@files_parsed) {
+		next if ! $file->[1];
+		$total_matches += $file->[1];
+		$matchfiles++;
+		$last_file_parsed = $file->[0];
+	}
+	## If not files matched, output the last one processed
+	$last_file_parsed = $files_parsed[-1]->[0] if ! defined $last_file_parsed;
+
+	## Subject with replaced keywords:
+	my $subject = $opt{$curr}{mailsubject} || $DEFAULT_SUBJECT;
+	$subject =~ s/FILE/$last_file_parsed/g;
+	$subject =~ s/HOST/$hostname/g;
+	print {$fh} "Subject: $subject\n";
+
+	## Discourage vacation programs from replying
+	print {$fh} "Auto-Submitted: auto-generated\n";
+	print {$fh} "Precedence: bulk\n";
+
+	## Some minor help with debugging
+	print {$fh} "X-TNM-VERSION: $VERSION\n";
+
+	## Fill out the "To:" fields
+	for my $email (@{$opt{$curr}{email}}) {
+		print {$fh} "To: $email\n";
+	}
+	if (! @{$opt{$curr}{email}}) {
+		die "Cannot send email without knowing who to send to!\n";
+	}
+
+	## Custom From:
+	my $from_addr = $opt{$curr}{from} || '';
+	if ($from_addr ne '') {
+		print {$fh} "From: $from_addr\n";
+		$MAILCOM .= " -f $from_addr";
+	}
+	## End header section
+	print {$fh} "\n";
+
+	## If we parsed more than one file, label them now
+	if ($matchfiles > 1) {
+		my $letter = 0;
+		print {$fh} "Total matches: $opt{grand_total}\n";
+		for my $file (@files_parsed) {
+			next if ! $file->[1];
+			my $name = chr(65+$letter);
+			if ($letter >= 26) {
+				$name = sprintf '%s%s',
+					chr(64+($letter/26)), chr(65+($letter%26));
+			}
+			$letter++;
+
+			printf {$fh} "Matches from [%s] %s: %d\n",
+				$name, $file->[0], $file->[1];
+			$fab{$file->[0]} = $name;
+		}
+
+	}
+	else {
+		print {$fh} "Matches from $last_file_parsed: $total_matches\n";
+	}
+
+	my $now = scalar localtime;
+	print {$fh} "Date: $now\n";
+	print {$fh} "Host: $hostname\n";
+	if ($timewarp) {
+		print {$fh} "Timewarp: $timewarp\n";
+	}
+	if ($custom_duration >= 0) {
+		print {$fh} "Minimum duration: $custom_duration\n";
+	}
+	for my $file (@files_parsed) {
+		if (exists $toolarge{$file->[0]}) {
+			print {$fh} "$toolarge{$file->[0]}\n";
+		}
+	}
+
+	## The meat of the message
+	lines_of_interest($fh, $matchfiles);
+
+	print {$fh} "\n";
+	close $fh or die qq{Could not close "$tempfile": $!\n};
+
+	my $emails = join ' ' => @{$opt{$curr}{email}};
+	$verbose and warn "  Sending mail to: $emails\n";
+	my $COM = qq{$MAILCOM $emails < $tempfile};
+	if ($dryrun or $nomail) {
+		$quiet or warn "  DRYRUN: $COM\n";
+	}
+	else {
+		system $COM;
+	}
+	unlink $tempfile;
+
+	return;
+
+} ## end of process_report
+
+
 sub lines_of_interest {
 
-    ## Given a file handle, print all our current lines to it
+	## Given a file handle, print all our current lines to it
 
-    my ($lfh,$loffset) = @_;
+	my ($lfh,$matchfiles) = @_;
 
-    my $oldselect = select $lfh;
+	my $oldselect = select $lfh;
 
-    undef %sorthelp;
-    sub sortsub {
-        if ($custom_type eq 'duration') {
-            if (! exists $sorthelp{$find{$a}}) {
-                $sorthelp{$find{$a}} =
-                    $find{$a}{earliest} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
-            }
-            if (! exists $sorthelp{$find{$b}}) {
-                $sorthelp{$find{$b}} =
-                    $find{$b}{earliest} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
-            }
-            return ($sorthelp{$find{$b}} <=> $sorthelp{$find{$a}} or $a <=> $b);
-        }
+	our ($current_filename, %sorthelp);
 
-        return $a <=> $b;
+	sub sortsub {
+		if ($custom_type eq 'duration') {
+			if (! exists $sorthelp{$find{$current_filename}{$a}}) {
+				$sorthelp{$find{$current_filename}{$a}} =
+					$find{$current_filename}{$a}{earliest} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+			}
+			if (! exists $sorthelp{$find{$current_filename}{$b}}) {
+				$sorthelp{$find{$current_filename}{$b}} =
+					$find{$current_filename}{$b}{earliest} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+			}
+			return ($sorthelp{$find{$current_filename}{$b}} <=> $sorthelp{$find{$current_filename}{$a}} or $a <=> $b);
+		}
 
-    }
+		return $a <=> $b;
 
-    my $count = 1;
-    for my $line (sort sortsub keys %find) {
-        print "\n[$count]";
-        $count++;
-        if (ref $find{$line} eq 'HASH') {
-            ## If there is only one, we just print as a normal line
-            if ($find{$line}{count} <= 1) {
-                $find{$line} = $find{$line}{earliestnonflat};
-                ## pass through to below
-            }
-            else {
-                my $firstline = $find{$line}{earliestline};
-                my $lastline = $find{$line}{latestline};
-                print " Between lines $firstline and $lastline, occurs $find{$line}{count} times.";
-                ## If we can, show just the interesting part
-                my $latest = $find{$line}{latest};
-                my $earliest = $find{$line}{earliest};
-                if ($pgmode == 1 and $earliest =~ s/$pgpiddatere(.+)/$2/) {
-                    my $headstart = $1;
-                    $latest =~ /$pgpiddatere/ or die "Latest did not match?!\n";
-                    my $headend = $1; ## no critic (ProhibitCaptureWithoutTest)
-                    print "\nFirst: $headstart\nLast:  $headend\n";
-                    print "Statement: $earliest\n";
-                }
-                else {
-                    print " Earliest and latest:\n";
-                    print "$earliest\n$latest\n";
-                }
-                next;
-            }
-        }
-        ($find_line_number or !$loffset) and print " (from line $line)\n";
-        print "$find{$line}\n";
-    }
+	}
 
-    select $oldselect;
+	## Display all lines in some sort of order
+	## Default is per file parsed, then per line
 
-    return;
+	my $count = 1;
+  FIHL: for my $file (@files_parsed) {
+		next if ! $file->[1];
+		$current_filename = $file->[0];
+	  LIHN: for my $findline (sort sortsub keys %{$find{$current_filename}}) {
+			print "\n[$count]";
+			$count++;
+			my $f = $find{$current_filename}{$findline};
+
+			my $filename = exists $f->{earliest} ? $f->{earliest}{filename} : $f->{filename};
+
+			## If only a single entry, simpler output
+			if ($f->{count} == 1) {
+				if ($matchfiles > 1) {
+					printf " From file %s%s\n",
+						$fab{$filename},
+						$find_line_number ?  " (line $findline)" : '';
+				}
+				else {
+					($find_line_number) and print " (from line $findline)\n";
+				}
+				printf "%s\n", exists $f->{earliest} ? $f->{earliest}{string} : $f->{string};
+				next LIHN;
+			}
+
+			## More than one entry means we have an earliest and latest to look at
+			my $earliest = $f->{earliest};
+			my $latest = $f->{latest};
+
+			## Does it span multiple files?
+			my $samefile = $earliest->{filename} eq $latest->{filename} ? 1 : 0;
+			if ($samefile) {
+				if ($matchfiles > 1) {
+					print " From file $fab{$filename}";
+					if ($find_line_number) {
+						print " (between lines $findline and $latest->{line}, occurs $f->{count} times)";
+					}
+					print "\n";
+				}
+				else {
+					if ($find_line_number) {
+						print " (between lines $findline and $latest->{line}, occurs $f->{count} times)";
+					}
+					print "\n";
+				}
+			}
+			else {
+				my ($A,$B) = ($fab{$earliest->{filename}}, $fab{$latest->{filename}});
+				print " From files $A and $B";
+				if ($find_line_number) {
+					print " (between lines $findline of $A and $latest->{line} of $B, occurs $f->{count} times)";
+				}
+				print "\n";
+			}
+
+			## If we can, show just the interesting part
+			my $estring = $earliest->{string};
+			my $lstring = $latest->{string};
+			if ($pgmode == 1 and $estring =~ s/$pgpiddatere(.+)/$2/) {
+				my $headstart = $1;
+				$lstring =~ /$pgpiddatere/ or die "Latest did not match?!\n";
+				my $headend = $1; ## no critic (ProhibitCaptureWithoutTest)
+				printf "First: %s%s\nLast:  %s%s\n",
+					$samefile ? '' : "[$fab{$earliest->{filename}}] ",
+					$headstart,
+					$samefile ? '' : "[$fab{$latest->{filename}}] ",
+					$headend;
+				$estring =~ s/^\s+//;
+				print "$estring\n";
+			}
+			else {
+				print " Earliest and latest:\n";
+				print "$estring\n$lstring\n";
+			}
+
+		} ## end each line
+	} ## end each file
+
+	select $oldselect;
+
+	return;
 
 } ## end of lines_of_interest
 
+
+sub final_cleanup {
+
+	## If offset has changed, save it
+	my $newoffset = 0;
+	if (exists $opt{$curr}{newoffset}) {
+		$changes++;
+		$newoffset = $opt{$curr}{newoffset};
+		$verbose and warn "  Setting offset to $newoffset\n";
+	}
+
+	if ($changes and !$dryrun) {
+		$verbose and warn "Saving new config file (changes=$changes)\n";
+		open my $fh, '>', $configfile or die qq{Could not write "$configfile": $!\n};
+		my $oldselect = select $fh;
+		my $now = localtime;
+		print qq{
+## Config file for the tail_n_mail.pl program
+## This file is automatically updated
+## Last updated: $now
+};
+
+		for my $item (qw/ email from pgformat type duration find_line_number /) {
+			next if ! exists $opt{$curr}{$item};
+			next if $item eq 'duration' and $custom_duration < 0;
+			add_comments(uc $item);
+			if (ref $opt{$curr}{$item} eq 'ARRAY') {
+				for my $itemz (@{$opt{$curr}{$item}}) {
+					printf "%s: %s\n", uc $item, $itemz;
+				}
+			}
+			else {
+				printf "-->%s: %s\n", uc $item, $opt{$curr}{$item};
+			}
+		}
+		printf "MAXSIZE: %d\n",
+			exists $opt{$curr}{maxsize} ? $opt{$curr}{maxsize} : $maxsize;
+		if ($opt{$curr}{customsubject}) {
+			add_comments('MAILSUBJECT');
+			print "MAILSUBJECT: $opt{$curr}{mailsubject}\n";
+		}
+
+		print "\n";
+		add_comments('FILE');
+		print "FILE: $opt{$curr}{original_filename}\n";
+		print "LASTFILE: $opt{$curr}{filename}\n";
+		print "OFFSET: $newoffset\n";
+		for my $include (@{$opt{$curr}{include}}) {
+			add_comments("INCLUDE: $include");
+			print "INCLUDE: $include\n";
+		}
+		for my $exclude (@{$opt{$curr}{exclude}}) {
+			add_comments("EXCLUDE: $exclude");
+			print "EXCLUDE: $exclude\n";
+		}
+		print "\n";
+
+		select $oldselect;
+		close $fh or die qq{Could not close "$configfile": $!\n};
+	}
+
+	return;
+
+} ## end of final_cleanup
+
+
 sub add_comments {
-    my $item = shift;
-    return if ! exists $itemcomment{$item};
-    for my $comline (@{$itemcomment{$item}}) {
-        print $comline;
-    }
-    return;
+	my $item = shift;
+	return if ! exists $itemcomment{$item};
+	for my $comline (@{$itemcomment{$item}}) {
+		print $comline;
+	}
+	return;
 } ## end of add_comments
 
 

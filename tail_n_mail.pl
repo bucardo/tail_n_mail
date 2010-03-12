@@ -437,7 +437,7 @@ sub parse_file {
 				$offset = 0 if $offset < 0;
 			}
 		}
-		else {
+		elsif (exists $opt{$curr}{offset}) {
 			$offset = $opt{$curr}{offset};
 		}
 	}

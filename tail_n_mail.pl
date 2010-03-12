@@ -456,17 +456,18 @@ sub parse_file {
 	## Store the original offset
 	my $original_offset = $offset;
 
+
+	## This can happen quite a bit on busy files!
+	if ($maxsize and ($size - $offset > $maxsize) and $custom_offset < 0) {
+		$quiet or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
+		$toolarge{$filename} = "File too large: only read last $maxsize bytes (size=$size, offset=$offset)";
+		$offset = $size - $maxsize;
+	}
+
 	open my $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
 
 	## Seek the right spot as needed
 	if ($offset and $offset < $size) {
-
-		## This can happen quite a bit on busy files!
-		if ($maxsize and $size - $offset > $maxsize and $custom_offset < 0) {
-			$quiet or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
-			$toolarge{$filename} = "File too large: only read last $maxsize bytes (size=$size, offset=$offset)";
-			$offset = $size - $maxsize;
-		}
 
 		## Because we go back by 10 characters below, always offset at least 10
 		$offset = 10 if $offset < 10;
@@ -911,19 +912,18 @@ sub lines_of_interest {
 
 	sub sortsub {
 		if ($custom_type eq 'duration') {
-			if (! exists $sorthelp{$find{$current_filename}{$a}}) {
-				$sorthelp{$find{$current_filename}{$a}} =
-					$find{$current_filename}{$a}{earliest} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+			if (! exists $sorthelp{$current_filename}{$a}) {
+				$sorthelp{$current_filename}{$a} =
+					$find{$current_filename}{$a}{earliest}{string} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
 			}
-			if (! exists $sorthelp{$find{$current_filename}{$b}}) {
-				$sorthelp{$find{$current_filename}{$b}} =
-					$find{$current_filename}{$b}{earliest} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+			if (! exists $sorthelp{$current_filename}{$b}) {
+				$sorthelp{$current_filename}{$b} =
+					$find{$current_filename}{$b}{earliest}{string} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
 			}
-			return ($sorthelp{$find{$current_filename}{$b}} <=> $sorthelp{$find{$current_filename}{$a}} or $a <=> $b);
+			return ($sorthelp{$current_filename}{$b} <=> $sorthelp{$current_filename}{$a} or $a <=> $b);
 		}
 
 		return $a <=> $b;
-
 	}
 
 	## Display all lines in some sort of order

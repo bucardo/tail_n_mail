@@ -582,11 +582,9 @@ sub parse_file {
 
 	} ## end of each line in the file
 
-	## Figure out the current position so we can store the new offset if needed
-	if (!exists $opt{$curr}{lastfile} or $opt{$curr}{lastfile} eq $filename) {
-		seek $fh, 0, 1;
-		$opt{$curr}{newoffset} = tell $fh;
-	}
+	## Get the new offset and store it
+	seek $fh, 0, 1;
+	$opt{$curr}{newoffset} = tell $fh;
 
 	close $fh or die qq{Could not close "$filename": $!\n};
 
@@ -1016,6 +1014,8 @@ sub lines_of_interest {
 
 sub final_cleanup {
 
+	$debug and warn "  Performing final cleanup\n";
+
 	## If offset has changed, save it
 	my $newoffset = 0;
 	if (exists $opt{$curr}{newoffset}) {
@@ -1045,7 +1045,7 @@ sub final_cleanup {
 				}
 			}
 			else {
-				printf "-->%s: %s\n", uc $item, $opt{$curr}{$item};
+				printf "%s: %s\n", uc $item, $opt{$curr}{$item};
 			}
 		}
 		printf "MAXSIZE: %d\n",

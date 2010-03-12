@@ -137,7 +137,8 @@ my $rotatedfile = 0;
 ## Did we handle more than one file this round?
 my $multifile = 0;
 
-my ($offset);
+## Total matches across all files
+$opt{grand_total} = 0;
 
 ## Parse each file returned by pick_log_file until we start looping
 my $last_logfile = '';
@@ -153,7 +154,7 @@ my @files_parsed;
 }
 
 ## We're done parsing the message, send an email if needed
-process_report();
+process_report() if $opt{grand_total};
 final_cleanup();
 
 exit 0;
@@ -167,11 +168,15 @@ sub pick_log_file {
 	## Start with "last" (and apply offset to it)
 	## Then walk forward until we hit the most recent one
 
+	## If a custom file, we always just return the main filename
+	## We also remove the lastfile, as it's not important anymore
+	if ($custom_file) {
+		delete $opt{$curr}{lastfile};
+		return $opt{$curr}{filename};
+	}
+
 	## No lastfile makes it easy
 	exists $opt{$curr}{lastfile} or return $opt{$curr}{filename};
-
-	## If a custom file, we always just return the main filename
-	$custom_file and return $opt{$curr}{filename};
 
 	my $last = $opt{$curr}{lastfile};
 
@@ -413,24 +418,28 @@ sub parse_file {
 	my $size = -s $filename;
 	my $offset = 0;
 
-	## Allow the offset to equal the size via --reset
-	if ($reset) {
-		$offset = $size;
-		$verbose and warn "  Resetting offset to $offset\n";
-	}
-	## Allow the offset to be changed on the command line (affects all files)
-	elsif ($custom_offset != -1) {
-		if ($custom_offset >= 0) {
-			$offset = $custom_offset;
+	## Is the offset significant?
+	## Usually only is if the stored offset matches the current file
+
+	if (!exists $opt{$curr}{lastfile} or ($opt{$curr}{lastfile} eq $filename)) {
+		## Allow the offset to equal the size via --reset
+		if ($reset) {
+			$offset = $size;
+			$verbose and warn "  Resetting offset to $offset\n";
 		}
-		elsif ($custom_offset < -1) {
-			$offset = $size + $custom_offset;
-			$offset = 0 if $offset < 0;
+		## Allow the offset to be changed on the command line
+		elsif ($custom_offset != -1) {
+			if ($custom_offset >= 0) {
+				$offset = $custom_offset;
+			}
+			elsif ($custom_offset < -1) {
+				$offset = $size + $custom_offset;
+				$offset = 0 if $offset < 0;
+			}
 		}
-	}
-	## We only set the offset if it's for the same file we saw last time
-	elsif (!exists $opt{$curr}{lastfile} or ($opt{$curr}{lastfile} eq $filename)) {
-		$offset = $opt{$curr}{offset};
+		else {
+			$offset = $opt{$curr}{offset};
+		}
 	}
 
 	$verbose and warn "  File: $filename Offset: $offset Size: $size Maxsize: $maxsize\n";
@@ -508,7 +517,7 @@ sub parse_file {
 	## Discard the previous line if needed (we rewound by 10 characters above)
 	$original_offset and <$fh>;
 
-	## Keep track of total matches
+	## Keep track of matches for this file
 	my $count = 0;
 
 	## Postgres-specific multi-line grabbing stuff:

@@ -275,8 +275,8 @@ sub parse_config_file {
 		if (/^FILE:\s*(.+?)\s*$/) {
 			my $filename = $opt{$curr}{original_filename} = $1;
 
-			if ($filename !~ /w/) {
-				die "No FILE found in the config file!\n";
+			if ($filename !~ /\w/) {
+				die "No FILE found in the config file! (tried: $filename)\n";
 			}
 
 			## Transform the file name if it contains escapes
@@ -836,6 +836,16 @@ sub process_report {
 	## End header section
 	print {$fh} "\n";
 
+	my $now = scalar localtime;
+	print {$fh} "Date: $now\n";
+	print {$fh} "Host: $hostname\n";
+	if ($timewarp) {
+		print {$fh} "Timewarp: $timewarp\n";
+	}
+	if ($custom_duration >= 0) {
+		print {$fh} "Minimum duration: $custom_duration\n";
+	}
+
 	## If we parsed more than one file, label them now
 	if ($matchfiles > 1) {
 		my $letter = 0;
@@ -849,25 +859,18 @@ sub process_report {
 			}
 			$letter++;
 
-			printf {$fh} "Matches from [%s] %s: %d\n",
-				$name, $file->[0], $file->[1];
+			printf {$fh} "Matches from [%s]%s%s: %d\n",
+				$name,
+				(length $name > 1) ? ' ' : '  ',
+				$file->[0],
+				$file->[1];
 			$fab{$file->[0]} = $name;
 		}
-
 	}
 	else {
 		print {$fh} "Matches from $last_file_parsed: $total_matches\n";
 	}
 
-	my $now = scalar localtime;
-	print {$fh} "Date: $now\n";
-	print {$fh} "Host: $hostname\n";
-	if ($timewarp) {
-		print {$fh} "Timewarp: $timewarp\n";
-	}
-	if ($custom_duration >= 0) {
-		print {$fh} "Minimum duration: $custom_duration\n";
-	}
 	for my $file (@files_parsed) {
 		if (exists $toolarge{$file->[0]}) {
 			print {$fh} "$toolarge{$file->[0]}\n";

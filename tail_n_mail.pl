@@ -138,6 +138,8 @@ for my $arg (@ARGV) {
 parse_rc_files();
 ## Read in and parse the config file
 parse_config_file();
+## Read in any inherited config files and merge their information in
+parse_inherited_files();
 
 ## Keep track of changes to know if we need to rewrite the config file or not
 my $changes = 0;
@@ -293,7 +295,7 @@ sub parse_config_file {
 
 	## Read in a configuration file and populate the global %opt
 
-	## Are we in the standard onn-user comments at the top of the file?
+	## Are we in the standard non-user comments at the top of the file?
 	my $in_standard_comments = 1;
 
 	## Temporarily store user comments until we know where to put them
@@ -421,6 +423,10 @@ sub parse_config_file {
 		elsif (/^FIND_LINE_NUMBER:\s*(\d+)/) {
 			$find_line_number = $localopt{find_line_number} = $1;
 		}
+		## Any inheritance files to look at
+		elsif (/^INHERIT:\s*(.+)/) {
+			push @{$localopt{inherit}}, $1;
+		}
 		## Which lines to exclude from the report
 		elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
 			push @{$localopt{exclude}}, $1;
@@ -452,9 +458,14 @@ sub parse_config_file {
 	for my $k (keys %localopt) {
 		## Note it came from the config file so we rewrite it there
 		$opt{configfile}{$k} = 1;
+		## If an array, we also want to mark individual items
+		if (ref $localopt{$k} eq 'ARRAY') {
+			for my $ik (@{$localopt{$k}}) {
+				$opt{configfile}{"$k.$ik"} = 1;
+			}
+		}
 		$opt{$curr}{$k} = $localopt{$k};
 	}
-
 	if ($debug) {
 		local $Data::Dumper::Varname = 'opt';
 		warn Dumper \%opt;
@@ -463,6 +474,92 @@ sub parse_config_file {
 	return;
 
 } ## end of parse_config_file
+
+sub parse_inherited_files {
+
+	## Call parse_inherit_file on each item in $opt{inherit}
+
+	for my $file (@{$opt{$curr}{inherit}}) {
+		parse_inherit_file($file);
+	}
+
+} ## end of parse_inherited_files
+
+sub parse_inherit_file {
+
+	## Similar to parse_config_file, but much simpler
+	## Because we only allow a few items
+	## This is most useful for sharing INCLUDE and EXCLUDE across many config files
+
+	my $file = shift;
+
+	## Only allow certain characters.
+	if ($file !~ s{^\s*([a-zA-Z0-9_\.\/\-\=]+)\s*$}{$1}) {
+		die "Invalid inherit file ($file)\n";
+	}
+
+	## If not an absolute path, we'll check current directory and "tnm/"
+	my $filename = $file;
+	my $filefound = 0;
+	if (-e $file) {
+		$filefound = 1;
+	}
+	elsif ($file =~ /^\w/) {
+		$filename = "tnm/$file";
+		-e $filename and $filefound = 1;
+	}
+	if (!$filefound) {
+		die "Unable to open inherit file ($file)\n";
+	}
+
+	open my $fh, '<', $filename or die qq{Could not open file "$file": $!\n};
+	while (<$fh>) {
+		## Only a few things are allowed in here
+		if (/^FIND_LINE_NUMBER:\s*(\d+)/) {
+			## We adjust the global here and now
+			$find_line_number = $1;
+		}
+		## Which lines to exclude from the report
+		elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
+			push @{$opt{$curr}{exclude}}, $1;
+		}
+		## Which lines to include in the report
+		elsif (/^INCLUDE:\s*(.+)/) {
+			push @{$opt{$curr}{include}}, $1;
+		}
+		## Maximum file size
+		elsif (/^MAXSIZE:\s*(\d+)/) {
+			$opt{$curr}{maxsize} = $1;
+		}
+		## Exclude durations below this number
+		elsif (/^DURATION:\s*(\d+)/) {
+			## Command line still wins
+			if ($custom_duration < 0) {
+				$custom_duration = $1;
+			}
+		}
+		## The pg format to use
+		elsif (/^PGFORMAT:\s*(\d)\s*$/) {
+			## Change the global $pgformat as well
+			$pgformat = $1;
+			## Assign new regex, bail if they don't exist
+			$pgpidre = $pgpidres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
+			$pgpiddatere = $pgpiddateres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
+		}
+		## Who to send emails from
+		elsif (/^FROM:\s*(.+?)\s*$/) {
+			$opt{$curr}{from} = $1;
+		}
+		## Who to send emails to for this file
+		elsif (/^EMAIL:\s*(.+?)\s*$/) {
+			push @{$opt{$curr}{email}}, $1;
+		}
+	}
+	close $fh or warn qq{Could not close file "$file": $!\n};
+
+	return;
+
+} ## end of parse_inherited_file
 
 
 sub parse_file {
@@ -1015,8 +1112,11 @@ sub lines_of_interest {
 						$fab{$filename},
 						$find_line_number ? " (line $findline)" : '';
 				}
+				elsif ($find_line_number) {
+					print " (from line $findline)\n";
+				}
 				else {
-					($find_line_number) and print " (from line $findline)\n";
+					print "\n";
 				}
 				printf "%s\n", exists $f->{earliest} ? $f->{earliest}{string} : $f->{string};
 				next LIHN;
@@ -1119,10 +1219,11 @@ sub final_cleanup {
 			next if ! exists $opt{$curr}{$item};
 			next if $item eq 'duration' and $custom_duration < 0;
 			## Only rewrite if it came from this config file, not tailnmailrc or command line
-			next unless exists $opt{configfile}{$item};
+			next if ! exists $opt{configfile}{$item};
 			add_comments(uc $item);
 			if (ref $opt{$curr}{$item} eq 'ARRAY') {
 				for my $itemz (@{$opt{$curr}{$item}}) {
+					next if ! exists $opt{configfile}{"$item.$itemz"};
 					printf "%s: %s\n", uc $item, $itemz;
 				}
 			}
@@ -1130,8 +1231,9 @@ sub final_cleanup {
 				printf "%s: %s\n", uc $item, $opt{$curr}{$item};
 			}
 		}
-		printf "MAXSIZE: %d\n",
-			exists $opt{$curr}{maxsize} ? $opt{$curr}{maxsize} : $maxsize;
+		if ($opt{configfile}{maxsize}) {
+			print "MAXSIZE: $opt{$curr}{maxsize}\n";
+		}
 		if ($opt{$curr}{customsubject}) {
 			add_comments('MAILSUBJECT');
 			print "MAILSUBJECT: $opt{$curr}{mailsubject}\n";
@@ -1142,11 +1244,17 @@ sub final_cleanup {
 		print "FILE: $opt{$curr}{original_filename}\n";
 		print "LASTFILE: $opt{$curr}{filename}\n";
 		print "OFFSET: $newoffset\n";
+		for my $inherit (@{$opt{$curr}{inherit}}) {
+			add_comments("INHERIT: $inherit");
+			print "INHERIT: $inherit\n";
+		}
 		for my $include (@{$opt{$curr}{include}}) {
+			next if ! exists $opt{configfile}{"include.$include"};
 			add_comments("INCLUDE: $include");
 			print "INCLUDE: $include\n";
 		}
 		for my $exclude (@{$opt{$curr}{exclude}}) {
+			next if ! exists $opt{configfile}{"exclude.$exclude"};
 			add_comments("EXCLUDE: $exclude");
 			print "EXCLUDE: $exclude\n";
 		}

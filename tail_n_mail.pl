@@ -22,7 +22,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.8.0';
+our $VERSION = '1.8.1';
 
 ## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail';
@@ -37,7 +37,7 @@ my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST';
 my $custom_type = 'normal';
 
 ## Set defaults for all the options, then read them in from command line
-my ($verbose,$quiet,$debug,$dryrun,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0);
+my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
 
@@ -47,6 +47,7 @@ my $result = GetOptions
    'quiet'      => \$quiet,
    'debug'      => \$debug,
    'dryrun'     => \$dryrun,
+   'help'       => \$help,
    'nomail'     => \$nomail,
    'reset'      => \$reset,
    'limit=i'    => \$limit,
@@ -68,6 +69,14 @@ if ($version) {
 	print "$0 version $VERSION\n";
 	exit 0;
 }
+
+sub help {
+	print "Usage: $0 configfile [options]\n";
+	print "For full documentation, please visit:\n";
+	print "http://bucardo.org/wiki/Tail_n_mail\n";
+	exit 0;
+}
+$help and help();
 
 ## First option is always the config file, which must exist.
 my $configfile = shift or die qq{Usage: $0 configfile\n};
@@ -109,8 +118,25 @@ my $levelre = qr{(?:$levels)};
 ## We use a CURRENT key for future expansion
 my $curr = 'CURRENT';
 
-## Read in and parse the config file
+## Global option variables
 my (%opt, %itemcomment);
+
+## These options must come before the GetOptions call
+for my $arg (@ARGV) {
+	if ($arg eq '--no-tailnmailrc') {
+		$opt{'no-tailnmailrc'} = 1;
+	}
+	if ($arg =~ /--tailnmailrc=(.+)/) {
+		$opt{'tailnmailrc'} = $1;
+	}
+	if ($arg =~ /^-+\?$/) {
+		help();
+	}
+}
+
+## Read in any rc files
+parse_rc_files();
+## Read in and parse the config file
 parse_config_file();
 
 ## Keep track of changes to know if we need to rewrite the config file or not
@@ -170,7 +196,8 @@ sub pick_log_file {
 
 	## If a custom file, we always just return the main filename
 	## We also remove the lastfile, as it's not important anymore
-	if ($custom_file) {
+	## Same for a reset - we only want the latest file
+	if ($custom_file or $reset) {
 		delete $opt{$curr}{lastfile};
 		return $opt{$curr}{filename};
 	}
@@ -228,6 +255,40 @@ sub pick_log_file {
 } ## end of pick_log_file
 
 
+sub parse_rc_files {
+
+	## Read in global settings from rc files
+
+	my $file;
+	if (! $opt{'no-tailnmailrc'}) {
+		if ($opt{tailnmailrc}) {
+			-e $opt{tailnmailrc} or die qq{Could not find the file "$opt{tailnmailrc}"\n};
+			$file = $opt{tailnmailrc};
+		}
+		elsif (-e '.tailnmailrc') {
+			$file = '.tailnmailrc';
+		}
+		elsif (-e "$ENV{HOME}/.tailnmailrc") {
+			$file = "$ENV{HOME}/.tailnmailrc";
+		}
+		elsif (-e '/etc/tailnmailrc') {
+			$file = '/etc/tailnmailrc';
+		}
+	}
+	if (defined $file) {
+		open my $rc, '<', $file or die qq{Could not open "$file": $!\n};
+		while (<$rc>) {
+			next if /^\s*#/;
+			next unless /^\s*(\w+)\s*[=:]\s*(.+?)\s*$/o;
+			my ($name,$value) = ($1,$2); ## no critic (ProhibitCaptureWithoutTest)
+			$opt{$curr}{$name} = $value;
+		}
+		close $rc or die;
+	}
+
+} ## end of parse_rc_files
+
+
 sub parse_config_file {
 
 	## Read in a configuration file and populate the global %opt
@@ -237,6 +298,9 @@ sub parse_config_file {
 
 	## Temporarily store user comments until we know where to put them
 	my (@comment);
+
+	## Store locally so we can easily populate %opt at the end
+	my %localopt;
 
 	open my $c, '<', $configfile or die qq{Could not open "$configfile": $!\n};
 	$debug and warn qq{Opened config file "$configfile"\n};
@@ -273,7 +337,7 @@ sub parse_config_file {
 
 		## What file are we checking on?
 		if (/^FILE:\s*(.+?)\s*$/) {
-			my $filename = $opt{$curr}{original_filename} = $1;
+			my $filename = $localopt{original_filename} = $1;
 
 			if ($filename !~ /\w/) {
 				die "No FILE found in the config file! (tried: $filename)\n";
@@ -315,29 +379,29 @@ sub parse_config_file {
 			}
 
 			## Set some default values
-			$opt{$curr}{filename} = $filename;
-			$opt{$curr}{exclude} ||= [];
-			$opt{$curr}{include} ||= [];
-			$opt{$curr}{email}   ||= [];
+			$localopt{filename} = $filename;
+			$localopt{exclude} ||= [];
+			$localopt{include} ||= [];
+			$localopt{email}   ||= [];
 
 		} ## end of FILE:
 
 		## The last filename we used
 		elsif (/^LASTFILE:\s*(.+?)\s*$/) {
-			$opt{$curr}{lastfile} = $1;
+			$localopt{lastfile} = $1;
 		}
 		## Who to send emails to for this file
 		elsif (/^EMAIL:\s*(.+?)\s*$/) {
-			push @{$opt{$curr}{email}}, $1;
+			push @{$localopt{email}}, $1;
 		}
 		## Who to send emails from
 		elsif (/^FROM:\s*(.+?)\s*$/) {
-			$opt{$curr}{from} = $1;
+			$localopt{from} = $1;
 		}
 		## The pg format to use
 		elsif (/^PGFORMAT:\s*(\d)\s*$/) {
 			## Change the global $pgformat as well
-			$opt{$curr}{pgformat} = $pgformat = $1;
+			$localopt{pgformat} = $pgformat = $1;
 			## Assign new regex, bail if they don't exist
 			$pgpidre = $pgpidres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
 			$pgpiddatere = $pgpiddateres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
@@ -350,44 +414,51 @@ sub parse_config_file {
 		elsif (/^DURATION:\s*(\d+)/) {
 			## Command line still wins
 			if ($custom_duration < 0) {
-				$custom_duration = $opt{$curr}{duration} = $1;
+				$custom_duration = $localopt{duration} = $1;
 			}
 		}
 		## Force line number lookup on or off
 		elsif (/^FIND_LINE_NUMBER:\s*(\d+)/) {
-			$find_line_number = $opt{$curr}{find_line_number} = $1;
+			$find_line_number = $localopt{find_line_number} = $1;
 		}
 		## Which lines to exclude from the report
 		elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
-			push @{$opt{$curr}{exclude}}, $1;
+			push @{$localopt{exclude}}, $1;
 		}
 		## Which lines to include in the report
 		elsif (/^INCLUDE:\s*(.+)/) {
-			push @{$opt{$curr}{include}}, $1;
+			push @{$localopt{include}}, $1;
 		}
 		## The current offset into the file
 		elsif (/^OFFSET:\s*(\d+)/) {
-			$opt{$curr}{offset} = $1;
+			$localopt{offset} = $1;
 		}
 		## The custom maxsize for this file
 		elsif (/^MAXSIZE:\s*(\d+)/) {
-			$opt{$curr}{maxsize} = $1;
+			$localopt{maxsize} = $1;
 		}
 		## The subject line for this file
 		elsif (/^MAILSUBJECT:\s*(.+)/) { ## Trailing whitespace is significant here
-			$opt{$curr}{mailsubject} = $1;
-			$opt{$curr}{customsubject} = 1;
+			$localopt{mailsubject} = $1;
+			$localopt{customsubject} = 1;
 		}
 	}
 	close $c or die qq{Could not close "$configfile": $!\n};
+
+	## Set the maximum bytes to go back and scan
+	$maxsize = exists $localopt{maxsize} ? $localopt{maxsize} : $maxsize;
+
+	## Move the local vars into place, also record that we found them here
+	for my $k (keys %localopt) {
+		## Note it came from the config file so we rewrite it there
+		$opt{configfile}{$k} = 1;
+		$opt{$curr}{$k} = $localopt{$k};
+	}
 
 	if ($debug) {
 		local $Data::Dumper::Varname = 'opt';
 		warn Dumper \%opt;
 	}
-
-	## Set the maximum bytes to go back and scan
-	$maxsize = exists $opt{$curr}{maxsize} ? $opt{$curr}{maxsize} : $maxsize;
 
 	return;
 
@@ -455,7 +526,6 @@ sub parse_file {
 
 	## Store the original offset
 	my $original_offset = $offset;
-
 
 	## This can happen quite a bit on busy files!
 	if ($maxsize and ($size - $offset > $maxsize) and $custom_offset < 0) {
@@ -680,16 +750,16 @@ sub process_line {
 
 	## If in duration mode, and we have a minimum cutoff, discard faster ones
 	if ($custom_type eq 'duration' and $custom_duration >= 0) {
-		return 0 if ($string =~ / duration: (\d+)/ and $1 < $custom_duration);
+		return 0 if ($string =~ / duration: (\d+)/o and $1 < $custom_duration);
 	}
 
 	$debug and warn "MATCH at line $line of $filename\n";
 
 	## Compress all whitespace
-	$string =~ s/\s+/ /g;
+	$string =~ s/\s+/ /go;
 
 	## Strip leading whitespace
-	$string =~ s/^\s+//;
+	$string =~ s/^\s+//o;
 
 	## If not in Postgres mode, we avoid all the mangling below
 	if (!$pgmode) {
@@ -943,7 +1013,7 @@ sub lines_of_interest {
 				if ($matchfiles > 1) {
 					printf " From file %s%s\n",
 						$fab{$filename},
-						$find_line_number ?  " (line $findline)" : '';
+						$find_line_number ? " (line $findline)" : '';
 				}
 				else {
 					($find_line_number) and print " (from line $findline)\n";
@@ -964,11 +1034,17 @@ sub lines_of_interest {
 					if ($find_line_number) {
 						print " (between lines $findline and $latest->{line}, occurs $f->{count} times)";
 					}
+					else {
+						print " Count: $f->{count}";
+					}
 					print "\n";
 				}
 				else {
 					if ($find_line_number) {
 						print " (between lines $findline and $latest->{line}, occurs $f->{count} times)";
+					}
+					else {
+						print " Count: $f->{count}";
 					}
 					print "\n";
 				}
@@ -978,6 +1054,9 @@ sub lines_of_interest {
 				print " From files $A and $B";
 				if ($find_line_number) {
 					print " (between lines $findline of $A and $latest->{line} of $B, occurs $f->{count} times)";
+				}
+				else {
+					print " Count: $f->{count}";
 				}
 				print "\n";
 			}
@@ -994,7 +1073,7 @@ sub lines_of_interest {
 					$headstart,
 					$samefile ? '' : "[$fab{$latest->{filename}}] ",
 					$headend;
-				$estring =~ s/^\s+//;
+				$estring =~ s/^\s+//o;
 				print "$estring\n";
 			}
 			else {
@@ -1024,7 +1103,8 @@ sub final_cleanup {
 		$verbose and warn "  Setting offset to $newoffset\n";
 	}
 
-	if ($changes and !$dryrun) {
+	## Reset always rewrites the file, even in dryrun mode
+	if (($changes and !$dryrun) or $reset) {
 		$verbose and warn "Saving new config file (changes=$changes)\n";
 		open my $fh, '>', $configfile or die qq{Could not write "$configfile": $!\n};
 		my $oldselect = select $fh;
@@ -1038,6 +1118,8 @@ sub final_cleanup {
 		for my $item (qw/ email from pgformat type duration find_line_number /) {
 			next if ! exists $opt{$curr}{$item};
 			next if $item eq 'duration' and $custom_duration < 0;
+			## Only rewrite if it came from this config file, not tailnmailrc or command line
+			next unless exists $opt{configfile}{$item};
 			add_comments(uc $item);
 			if (ref $opt{$curr}{$item} eq 'ARRAY') {
 				for my $itemz (@{$opt{$curr}{$item}}) {

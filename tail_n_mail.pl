@@ -506,7 +506,20 @@ sub parse_inherit_file {
 	}
 	elsif ($file =~ /^\w/) {
 		$filename = "tnm/$file";
-		-e $filename and $filefound = 1;
+		if (-e $filename) {
+			$filefound = 1;
+		}
+		else {
+			my $basedir = dirname($0);
+			$filename = "$basedir/$file";
+			if (-e $filename) {
+				$filefound = 1;
+			}
+			else {
+				$filename = "$basedir/tnm/$file";
+				-e $filename and $filefound = 1;
+			}
+		}
 	}
 	if (!$filefound) {
 		die "Unable to open inherit file ($file)\n";

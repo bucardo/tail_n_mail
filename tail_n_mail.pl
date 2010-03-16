@@ -1164,7 +1164,7 @@ sub lines_of_interest {
 			}
 			else {
 				my ($A,$B) = ($fab{$earliest->{filename}}, $fab{$latest->{filename}});
-				print " From files $A and $B";
+				print " From files $A to $B";
 				if ($find_line_number) {
 					print " (between lines $findline of $A and $latest->{line} of $B, occurs $f->{count} times)";
 				}

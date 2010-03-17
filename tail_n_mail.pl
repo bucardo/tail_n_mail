@@ -208,13 +208,13 @@ sub pick_log_file {
 	## No lastfile makes it easy
 	exists $opt{$curr}{lastfile} or return $opt{$curr}{filename};
 
-	my $last = $opt{$curr}{lastfile};
+	my $lastfile = $opt{$curr}{lastfile};
 
 	## If we haven't processed the lastfile, do that one first
-	exists $find{$last} or return $last;
+	exists $find{$lastfile} or return $lastfile;
 
 	## If the last is the same as the current, return
-	$last eq $opt{$curr}{filename} and return $last;
+	$lastfile eq $opt{$curr}{filename} and return $lastfile;
 
 	## We've processed the last file, are there any files in between the two?
 	## For now, we only handle POSIX-based time travel
@@ -238,7 +238,7 @@ sub pick_log_file {
 
 			my @ltime = localtime(time - $timerewind);
 			my $newfile = POSIX::strftime($orig, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
-			last if $newfile eq $last;
+			last if $newfile eq $lastfile;
 			if (! exists $seenfile{$newfile}) {
 				$seenfile{$newfile} = 1;
 				push @{$opt{$curr}{middle_filenames}} => $newfile;
@@ -282,7 +282,7 @@ sub parse_rc_files {
 		open my $rc, '<', $file or die qq{Could not open "$file": $!\n};
 		while (<$rc>) {
 			next if /^\s*#/;
-			next unless /^\s*(\w+)\s*[=:]\s*(.+?)\s*$/o;
+			next if ! /^\s*(\w+)\s*[=:]\s*(.+?)\s*$/o;
 			my ($name,$value) = ($1,$2); ## no critic (ProhibitCaptureWithoutTest)
 			$opt{$curr}{$name} = $value;
 		}

@@ -735,7 +735,7 @@ sub parse_file {
 						## Trim the string up - no need to see the header info each time
 						s/^.+?$pgpidre\s*//;
 						## No need to see the user more than once for supplemental information
-						s/.+ (STATEMENT|DETAIL|HINT|CONTEXT):/$1:/;
+						s/.+\b(STATEMENT|DETAIL|HINT|CONTEXT):/$1:/;
 					}
 				}
 				$pidline{$pgpid}{string}{$pgnum} = $_;

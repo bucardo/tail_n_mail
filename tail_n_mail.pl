@@ -91,6 +91,7 @@ my $hostname = qx{hostname};
 chomp $hostname;
 
 ## Regexen for Postgres PIDs:
+## $1=PID $2=part1 $3=part2
 my %pgpidres = (
    1 => qr{.+?\[(\d+)\]: \[(\d+)\-(\d+)\]},
    2 => qr{.+?\d\d:\d\d:\d\d \w\w\w (\d+)},
@@ -947,7 +948,7 @@ sub process_line {
 		}
 	}
 	else {
-		$find{$filename}{$line} = $string;
+		$find{$filename}{$line} = { string => $string, count => 1 };
 	}
 
 	return 1;
@@ -1025,15 +1026,16 @@ sub process_report {
 		print {$fh} "Minimum duration: $custom_duration\n";
 	}
 
+	my $unique = 0;
+	for my $f (values %find) {
+		$unique += keys %$f;
+	}
+	print {$fh} "Unique items: $unique\n";
+
 	## If we parsed more than one file, label them now
 	if ($matchfiles > 1) {
 		my $letter = 0;
 		print {$fh} "Total matches: $opt{grand_total}\n";
-		my $unique = 0;
-		for my $f (values %find) {
-			$unique += keys %$f;
-		}
-		print {$fh} "Unique items: $unique\n";
 		for my $file (@files_parsed) {
 			next if ! $file->[1];
 			my $name = chr(65+$letter);
@@ -1119,6 +1121,7 @@ sub lines_of_interest {
 	  LIHN: for my $findline (sort sortsub keys %{$find{$current_filename}}) {
 			print "\n[$count]";
 			$count++;
+
 			my $f = $find{$current_filename}{$findline};
 
 			my $filename = exists $f->{earliest} ? $f->{earliest}{filename} : $f->{filename};

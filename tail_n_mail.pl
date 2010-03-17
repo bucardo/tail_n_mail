@@ -93,10 +93,10 @@ chomp $hostname;
 ## Regexen for Postgres PIDs:
 ## $1=PID $2=part1 $3=part2
 my %pgpidres = (
-   1 => qr{.+?\[(\d+)\]: \[(\d+)\-(\d+)\]},
-   2 => qr{.+?\d\d:\d\d:\d\d \w\w\w (\d+)},
-   3 => qr{.+?\d\d:\d\d:\d\d (\w\w\w)}, ## Fake a PID
-   4 => qr{.+?\[(\d+)\]},
+	1 => qr{.+?\[(\d+)\]: \[(\d+)\-(\d+)\]},
+	2 => qr{.+?\d\d:\d\d:\d\d \w\w\w (\d+)},
+	3 => qr{.+?\d\d:\d\d:\d\d (\w\w\w)}, ## Fake a PID
+	4 => qr{.+?\[(\d+)\]},
 );
 
 my $pgpidre = $pgpidres{$pgformat};
@@ -1115,10 +1115,10 @@ sub lines_of_interest {
 	## Default is per file parsed, then per line
 
 	my $count = 1;
-  FIHL: for my $file (@files_parsed) {
+	for my $file (@files_parsed) {
 		next if ! $file->[1];
 		$current_filename = $file->[0];
-	  LIHN: for my $findline (sort sortsub keys %{$find{$current_filename}}) {
+		for my $findline (sort sortsub keys %{$find{$current_filename}}) {
 			print "\n[$count]";
 			$count++;
 
@@ -1140,7 +1140,7 @@ sub lines_of_interest {
 					print "\n";
 				}
 				printf "%s\n", exists $f->{earliest} ? $f->{earliest}{string} : $f->{string};
-				next LIHN;
+				next;
 			}
 
 			## More than one entry means we have an earliest and latest to look at
@@ -1290,12 +1290,15 @@ sub final_cleanup {
 
 
 sub add_comments {
+
 	my $item = shift;
 	return if ! exists $itemcomment{$item};
 	for my $comline (@{$itemcomment{$item}}) {
 		print $comline;
 	}
+
 	return;
+
 } ## end of add_comments
 
 

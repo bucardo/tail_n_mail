@@ -1227,8 +1227,7 @@ sub final_cleanup {
 		open my $fh, '>', $configfile or die qq{Could not write "$configfile": $!\n};
 		my $oldselect = select $fh;
 		my $now = localtime;
-		print qq{
-## Config file for the tail_n_mail.pl program
+		print qq{## Config file for the tail_n_mail.pl program
 ## This file is automatically updated
 ## Last updated: $now
 };

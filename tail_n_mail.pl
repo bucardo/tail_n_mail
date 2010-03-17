@@ -718,7 +718,7 @@ sub parse_file {
 				if (exists $pidline{$pgpid}) {
 					## If this is a statement or detail or hint or context, append to the previous entry
 					## Do the same for a LOG: statement combo (e.g. following a duration)
-					if (/ (?:STATEMENT|DETAIL|HINT|CONTEXT):  /o
+					if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT):  /o
 							or (/ LOG:  statement: /o
 							and
 							$pidline{$pgpid}{string}{$current_pid_num{$pgpid}}

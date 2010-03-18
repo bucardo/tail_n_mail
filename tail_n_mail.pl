@@ -22,7 +22,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.8.1';
+our $VERSION = '1.8.2';
 
 ## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail';
@@ -40,6 +40,7 @@ my $custom_type = 'normal';
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
+my ($sortby) = ('count'); ## Can also be 'date'
 
 my $result = GetOptions
  (
@@ -62,6 +63,7 @@ my $result = GetOptions
    'pgformat=i' => \$pgformat,
    'maxsize=i'  => \$maxsize,
    'type=s'     => \$custom_type,
+   'sortby=s'   => \$sortby,
   );
 ++$verbose if $debug;
 
@@ -169,6 +171,9 @@ my $multifile = 0;
 ## Total matches across all files
 $opt{grand_total} = 0;
 
+## For help in sorting later on
+my (%fileorder, $filenum);
+
 ## Parse each file returned by pick_log_file until we start looping
 my $last_logfile = '';
 my @files_parsed;
@@ -178,6 +183,7 @@ my @files_parsed;
 	$debug and warn "Parsing file ($logfile)\n";
 	my $count = parse_file($logfile);
 	push @files_parsed => [$logfile, $count];
+	$fileorder{$logfile} = ++$filenum;
 	$last_logfile = $logfile;
 	redo;
 }
@@ -420,6 +426,10 @@ sub parse_config_file {
 				$custom_duration = $localopt{duration} = $1;
 			}
 		}
+		## How to sort the output
+		elsif (/^SORTBY:\s*(\w+)/) {
+			$localopt{sortby} = $1;
+		}
 		## Force line number lookup on or off
 		elsif (/^FIND_LINE_NUMBER:\s*(\d+)/) {
 			$find_line_number = $localopt{find_line_number} = $1;
@@ -532,6 +542,10 @@ sub parse_inherit_file {
 		if (/^FIND_LINE_NUMBER:\s*(\d+)/) {
 			## We adjust the global here and now
 			$find_line_number = $1;
+		}
+		## How to sort the output
+		elsif (/^SORTBY:\s*(\w+)/) {
+			$opt{$curr}{sortby} = $1;
 		}
 		## Which lines to exclude from the report
 		elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
@@ -945,6 +959,9 @@ sub process_line {
 			$similar{$body}{count} = 1;
 			## Store this away for eventual output
 			$find{$filename}{$line} = $similar{$body};
+			## Copy filename and line up a level for later sorting ease
+			$find{$filename}{$line}{filename} = $similar{$body}{earliest}{filename};
+			$find{$filename}{$line}{line} = $similar{$body}{earliest}{line};
 		}
 	}
 	else {
@@ -1094,116 +1111,130 @@ sub lines_of_interest {
 	my $oldselect = select $lfh;
 
 	our ($current_filename, %sorthelp);
+	undef %sorthelp;
 
 	sub sortsub {
+		my $sorttype = $opt{$curr}{sortby} || $sortby;
+
 		if ($custom_type eq 'duration') {
-			if (! exists $sorthelp{$current_filename}{$a}) {
-				$sorthelp{$current_filename}{$a} =
-					$find{$current_filename}{$a}{earliest}{string} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+			if (! exists $sorthelp{$a}) {
+				$sorthelp{$a} =
+					$a->{string} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
 			}
-			if (! exists $sorthelp{$current_filename}{$b}) {
-				$sorthelp{$current_filename}{$b} =
-					$find{$current_filename}{$b}{earliest}{string} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+			if (! exists $sorthelp{$b}) {
+				$sorthelp{$b} =
+					$b->{string} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
 			}
-			return ($sorthelp{$current_filename}{$b} <=> $sorthelp{$current_filename}{$a} or $a <=> $b);
+			return ($sorthelp{$b} <=> $sorthelp{$a})
+					|| ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
+					|| ($a->{line} <=> $b->{line});
+		}
+		elsif ($sorttype eq 'count') {
+			return ($b->{count} <=> $a->{count})
+					|| ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
+					|| ($a->{line} <=> $b->{line});
+		}
+		elsif ($sorttype eq 'date') {
+			return ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
+				|| ($a->{line} <=> $b->{line});
+
 		}
 
 		return $a <=> $b;
 	}
 
-	## Display all lines in some sort of order
-	## Default is per file parsed, then per line
+	## Flatten the items for ease of sorting
+	my @sorted;
+	for my $f (keys %find) {
+		for my $l (keys %{$find{$f}}) {
+			push @sorted => $find{$f}{$l};
+		}
+	}
 
 	my $count = 1;
-	for my $file (@files_parsed) {
-		next if ! $file->[1];
-		$current_filename = $file->[0];
-		for my $findline (sort sortsub keys %{$find{$current_filename}}) {
-			print "\n[$count]";
-			$count++;
+	for my $f (sort sortsub @sorted) {
+		print "\n[$count]";
+		$count++;
 
-			my $f = $find{$current_filename}{$findline};
+		my $filename = exists $f->{earliest} ? $f->{earliest}{filename} : $f->{filename};
 
-			my $filename = exists $f->{earliest} ? $f->{earliest}{filename} : $f->{filename};
-
-			## If only a single entry, simpler output
-			if ($f->{count} == 1) {
-				if ($matchfiles > 1) {
-					printf " From file %s%s\n",
-						$fab{$filename},
-						$find_line_number ? " (line $findline)" : '';
-				}
-				elsif ($find_line_number) {
-					print " (from line $findline)\n";
-				}
-				else {
-					print "\n";
-				}
-				printf "%s\n", exists $f->{earliest} ? $f->{earliest}{string} : $f->{string};
-				next;
+		## If only a single entry, simpler output
+		if ($f->{count} == 1) {
+			if ($matchfiles > 1) {
+				printf " From file %s%s\n",
+					$fab{$filename},
+					$find_line_number ? " (line $f->{line})" : '';
 			}
-
-			## More than one entry means we have an earliest and latest to look at
-			my $earliest = $f->{earliest};
-			my $latest = $f->{latest};
-
-			## Does it span multiple files?
-			my $samefile = $earliest->{filename} eq $latest->{filename} ? 1 : 0;
-			if ($samefile) {
-				if ($matchfiles > 1) {
-					print " From file $fab{$filename}";
-					if ($find_line_number) {
-						print " (between lines $findline and $latest->{line}, occurs $f->{count} times)";
-					}
-					else {
-						print " Count: $f->{count}";
-					}
-					print "\n";
-				}
-				else {
-					if ($find_line_number) {
-						print " (between lines $findline and $latest->{line}, occurs $f->{count} times)";
-					}
-					else {
-						print " Count: $f->{count}";
-					}
-					print "\n";
-				}
+			elsif ($find_line_number) {
+				print " (from line $f->{line})\n";
 			}
 			else {
-				my ($A,$B) = ($fab{$earliest->{filename}}, $fab{$latest->{filename}});
-				print " From files $A to $B";
+				print "\n";
+			}
+			printf "%s\n", exists $f->{earliest} ? $f->{earliest}{string} : $f->{string};
+			next;
+		}
+
+		## More than one entry means we have an earliest and latest to look at
+		my $earliest = $f->{earliest};
+		my $latest = $f->{latest};
+
+		## Does it span multiple files?
+		my $samefile = $earliest->{filename} eq $latest->{filename} ? 1 : 0;
+		if ($samefile) {
+			if ($matchfiles > 1) {
+				print " From file $fab{$filename}";
 				if ($find_line_number) {
-					print " (between lines $findline of $A and $latest->{line} of $B, occurs $f->{count} times)";
+					print " (between lines $f->{line} and $latest->{line}, occurs $f->{count} times)";
 				}
 				else {
 					print " Count: $f->{count}";
 				}
 				print "\n";
 			}
-
-			## If we can, show just the interesting part
-			my $estring = $earliest->{string};
-			my $lstring = $latest->{string};
-			if ($pgmode == 1 and $estring =~ s/$pgpiddatere(.+)/$2/) {
-				my $headstart = $1;
-				$lstring =~ /$pgpiddatere/ or die "Latest did not match?!\n";
-				my $headend = $1; ## no critic (ProhibitCaptureWithoutTest)
-				printf "First: %s%s\nLast:  %s%s\n",
-					$samefile ? '' : "[$fab{$earliest->{filename}}] ",
-					$headstart,
-					$samefile ? '' : "[$fab{$latest->{filename}}] ",
-					$headend;
-				$estring =~ s/^\s+//o;
-				print "$estring\n";
+			else {
+				if ($find_line_number) {
+					print " (between lines $f->{line} and $latest->{line}, occurs $f->{count} times)";
+				}
+				else {
+					print " Count: $f->{count}";
+				}
+				print "\n";
+			}
+		}
+		else {
+			my ($A,$B) = ($fab{$earliest->{filename}}, $fab{$latest->{filename}});
+			print " From files $A to $B";
+			if ($find_line_number) {
+				print " (between lines $f->{line} of $A and $latest->{line} of $B, occurs $f->{count} times)";
 			}
 			else {
-				print " Earliest and latest:\n";
-				print "$estring\n$lstring\n";
+				print " Count: $f->{count}";
 			}
+			print "\n";
+		}
 
-		} ## end each line
-	} ## end each file
+		## If we can, show just the interesting part
+		my $estring = $earliest->{string};
+		my $lstring = $latest->{string};
+		if ($pgmode == 1 and $estring =~ s/$pgpiddatere(.+)/$2/) {
+			my $headstart = $1;
+			$lstring =~ /$pgpiddatere/ or die "Latest did not match?!\n";
+			my $headend = $1; ## no critic (ProhibitCaptureWithoutTest)
+			printf "First: %s%s\nLast:  %s%s\n",
+				$samefile ? '' : "[$fab{$earliest->{filename}}] ",
+				$headstart,
+				$samefile ? '' : "[$fab{$latest->{filename}}] ",
+				$headend;
+			$estring =~ s/^\s+//o;
+			print "$estring\n";
+		}
+		else {
+			print " Earliest and latest:\n";
+			print "$estring\n$lstring\n";
+		}
+
+	} ## end each item
 
 	select $oldselect;
 
@@ -1235,7 +1266,7 @@ sub final_cleanup {
 ## Last updated: $now
 };
 
-		for my $item (qw/ email from pgformat type duration find_line_number /) {
+		for my $item (qw/ email from pgformat type duration find_line_number sortby /) {
 			next if ! exists $opt{$curr}{$item};
 			next if $item eq 'duration' and $custom_duration < 0;
 			## Only rewrite if it came from this config file, not tailnmailrc or command line

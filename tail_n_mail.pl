@@ -922,6 +922,7 @@ sub process_line {
 		$string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
 		$string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
 		$string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
+		$string =~ s{(DETAIL: Key \(\w+\))=\(.+?\)}{$1=(?)}go;
 	}
 
 	## Try to separate into header and body, then check for similar entries

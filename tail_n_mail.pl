@@ -22,7 +22,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.8.2';
+our $VERSION = '1.8.3';
 
 ## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail';

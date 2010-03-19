@@ -26,7 +26,6 @@ our $VERSION = '1.8.2';
 
 ## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail';
-
 ## We never go back more than this number of bytes. Can be overriden in the config file and command line.
 my $MAXSIZE = 80_000_000;
 
@@ -240,7 +239,7 @@ sub pick_log_file {
 		my $maxloops = 24*2 * 7; ## max of 1 week
 		my $bail = 0;
 		my %seenfile;
-	  BACKINTIME: {
+		BACKINTIME: {
 
 			my @ltime = localtime(time - $timerewind);
 			my $newfile = POSIX::strftime($orig, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
@@ -1257,7 +1256,7 @@ sub final_cleanup {
 
 	## Reset always rewrites the file, even in dryrun mode
 	if (($changes and !$dryrun) or $reset) {
-		$verbose and warn "Saving new config file (changes=$changes)\n";
+		$verbose and warn "  Saving new config file (changes=$changes)\n";
 		open my $fh, '>', $configfile or die qq{Could not write "$configfile": $!\n};
 		my $oldselect = select $fh;
 		my $now = localtime;

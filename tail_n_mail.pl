@@ -39,6 +39,7 @@ my $custom_type = 'normal';
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
+my ($showonly) = (0);
 my ($sortby) = ('count'); ## Can also be 'date'
 
 my $result = GetOptions
@@ -63,6 +64,7 @@ my $result = GetOptions
    'maxsize=i'  => \$maxsize,
    'type=s'     => \$custom_type,
    'sortby=s'   => \$sortby,
+   'showonly=i' => \$showonly,
   );
 ++$verbose if $debug;
 
@@ -1155,6 +1157,9 @@ sub lines_of_interest {
 
 	my $count = 1;
 	for my $f (sort sortsub @sorted) {
+
+		last if $showonly and $count>$showonly;
+
 		print "\n[$count]";
 		$count++;
 

@@ -1055,21 +1055,29 @@ sub process_report {
 	if ($matchfiles > 1) {
 		my $letter = 0;
 		print {$fh} "Total matches: $opt{grand_total}\n";
+		my $maxcount = 1;
+		my $maxletter = 1;
 		for my $file (@files_parsed) {
 			next if ! $file->[1];
+			$maxcount = length $file->[1] if length $file->[1] > $maxcount;
 			my $name = chr(65+$letter);
 			if ($letter >= 26) {
 				$name = sprintf '%s%s',
 					chr(64+($letter/26)), chr(65+($letter%26));
 			}
 			$letter++;
-
-			printf {$fh} "Matches from [%s]%s%s: %d\n",
-				$name,
-				(length $name > 1) ? ' ' : '  ',
-				$file->[0],
-				$file->[1];
 			$fab{$file->[0]} = $name;
+			$maxletter = length $name if length $name > $maxletter;
+		}
+		for my $file (@files_parsed) {
+			next if ! $file->[1];
+			my $name = $fab{$file->[0]};
+			printf {$fh} "Matches from %-*s %s: %*d\n",
+				$maxletter + 2,
+				"[$name]",
+				$file->[0],
+				$maxcount,
+				$file->[1];
 		}
 	}
 	else {

@@ -238,7 +238,7 @@ sub pick_log_file {
 		## We're going to walk backwards, 30 minutes at a time, and gather up
 		## all files between "now" and the "last"
 		my $timerewind = 60*30; ## 30 minutes
-		my $maxloops = 24*2 * 7; ## max of 1 week
+		my $maxloops = 24*2 * 7 * 30; ## max of 30 days
 		my $bail = 0;
 		my %seenfile;
 		BACKINTIME: {

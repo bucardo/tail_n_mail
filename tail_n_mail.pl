@@ -22,7 +22,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.8.3';
+our $VERSION = '1.8.5';
 
 ## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail';
@@ -1118,12 +1118,14 @@ sub lines_of_interest {
 
 		if ($custom_type eq 'duration') {
 			if (! exists $sorthelp{$a}) {
+				my $string = $a->{string} || $a->{earliest}{string};
 				$sorthelp{$a} =
-					$a->{string} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+					$string =~ /duration: (\d+\.\d+)/ ? $1 : 0;
 			}
 			if (! exists $sorthelp{$b}) {
+				my $string = $b->{string} || $b->{earliest}{string};				
 				$sorthelp{$b} =
-					$b->{string} =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+					$string =~ /duration: (\d+\.\d+)/ ? $1 : 0;
 			}
 			return ($sorthelp{$b} <=> $sorthelp{$a})
 					|| ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})

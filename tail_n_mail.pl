@@ -1355,10 +1355,9 @@ __DATA__
 ## Config file for the tail_n_mail.pl program
 ## This file is automatically updated
 EMAIL: someone@example.com
+MAILSUBJECT: Acme HOST Postgres errors (FILE)
 
 FILE: /var/log/postgresql-%Y-%m-%d.log
 INCLUDE: ERROR:  
 INCLUDE: FATAL:  
 INCLUDE: PANIC:  
-MAILSUBJECT: Acme HOST Postgres errors (FILE)
-

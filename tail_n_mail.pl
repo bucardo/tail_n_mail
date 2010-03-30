@@ -22,7 +22,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.8.6';
+our $VERSION = '1.8.7';
 
 ## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail';
@@ -925,6 +925,8 @@ sub process_line {
 		$string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
 		$string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
 		$string =~ s{(DETAIL: Key \(\w+\))=\(.+?\)}{$1=(?)}go;
+		$string =~ s{Failed on request of size \d+}{Failed on request of size ?}go;
+		$string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
 	}
 
 	## Try to separate into header and body, then check for similar entries

@@ -22,7 +22,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.8.7';
+our $VERSION = '1.8.8';
 
 ## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail';
@@ -65,7 +65,7 @@ my $result = GetOptions
    'type=s'     => \$custom_type,
    'sortby=s'   => \$sortby,
    'showonly=i' => \$showonly,
-  );
+  ) or help();
 ++$verbose if $debug;
 
 if ($version) {
@@ -656,7 +656,7 @@ sub parse_file {
 	## This can happen quite a bit on busy files!
 	if ($maxsize and ($size - $offset > $maxsize) and $custom_offset < 0) {
 		$quiet or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
-		$toolarge{$filename} = "File too large: only read last $maxsize bytes (size=$size, offset=$offset)";
+		$toolarge{$filename} = qq{File "$filename" too large:\n  only read last $maxsize bytes (size=$size, offset=$offset)};
 		$offset = $size - $maxsize;
 	}
 

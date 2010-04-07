@@ -22,7 +22,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.8.8';
+our $VERSION = '1.8.9';
 
 ## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail';
@@ -453,7 +453,11 @@ sub parse_config_file {
 		}
 		## The custom maxsize for this file
 		elsif (/^MAXSIZE:\s*(\d+)/) {
-			$localopt{maxsize} = $1;
+		    $localopt{maxsize} = $1;
+		    ## Command line still wins
+		    if (int $maxsize == int $MAXSIZE) {
+			$maxsize = $localopt{maxsize};
+		    }
 		}
 		## The subject line for this file
 		elsif (/^MAILSUBJECT:\s*(.+)/) { ## Trailing whitespace is significant here
@@ -462,9 +466,6 @@ sub parse_config_file {
 		}
 	}
 	close $c or die qq{Could not close "$configfile": $!\n};
-
-	## Set the maximum bytes to go back and scan
-	$maxsize = exists $localopt{maxsize} ? $localopt{maxsize} : $maxsize;
 
 	## Move the local vars into place, also record that we found them here
 	for my $k (keys %localopt) {
@@ -921,6 +922,7 @@ sub process_line {
 			}geix;
 		$string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
 		$string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
+		$string =~ s{(\bWHERE\s+\w+\s*=\s*)'[\d\w]+'}{$1'?')}gio;
 		$string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
 		$string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
 		$string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;

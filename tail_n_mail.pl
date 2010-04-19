@@ -907,19 +907,111 @@ sub process_line {
 	## Make some adjustments to attempt to compress similar entries
 	if ($flatten) {
 
-		## Flatten simple case of 'foo,bar' right away
-		$string =~ s/'[\w\d ]+\s*,\s*[\w\d ]+'/?/go;
-
 		$string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{
-			my $final = '';
-			my @final = split /\s*,\s*/ => $2;
-			for my $section (@final) {
-				next if $section =~ s/E?'.*'/?/go;
-				next if $section =~ s/^\d+$/?/o;
-				next if $section =~ s/true|false/?/go;
+			my ($word,$list) = ($1,$2);
+			my @word = split(//, $list);
+			my $numitems = 0;
+			my $status = 'start';
+			my @dollar;
+
+		  F: for (my $x = 0; $x <= $#word; $x++) {
+
+				if ($status eq 'start') {
+
+					## Ignore white space and commas
+					if ($word[$x] eq ' ' or $word[$x] eq '	' or $word[$x] eq ',') {
+						next F;
+					}
+
+					$numitems++;
+					## Is this a normal quoted string?
+					if ($word[$x] eq q{'}) {
+						$status = 'inquote';
+						next F;
+					}
+					## Perhaps E'' quoting?
+					if ($word[$x] eq 'E') {
+						if ($word[$x+1] ne q{'}) {
+							## So weird we'll just pass it through
+							$status = 'fail';
+							last F;
+						}
+						$x++;
+						$status = 'inquote';
+						next F;
+					}
+					## Dollar quoting
+					if ($word[$x] eq '$') {
+						undef @dollar;
+						{
+							push @dollar => $word[$x++];
+							## Give up if we don't find a matching dollar
+							if ($x > $#word) {
+								$status = 'fail';
+								last F;
+							}
+							if ($word[$x] eq '$') {
+								$status = 'dollar';
+								next F;
+							}
+							redo;
+						}
+					}
+					## Must be a literal
+					$status = 'literal';
+					next F;
+				} ## end status 'start'
+
+				if ($status eq 'literal') {
+					## Almost always numbers. Just go until a comma
+					if ($word[$x] eq ',') {
+						$status = 'start';
+					}
+					next F;
+				}
+
+				if ($status eq 'inquote') {
+					## The only way out is an unescaped single quote
+					if ($word[$x] eq q{'}) {
+                        next F if $word[$x-1] eq '\\';
+                        if ($word[$x+1] eq q{'}) {
+							$x++;
+							next F;
+						}
+						$status = 'start';
+					}
+					next F;
+				}
+
+				if ($status eq 'dollar') {
+					## Only way out is a matching dollar escape
+					if ($word[$x] eq '$') {
+						## Possibility
+						my $oldpos = $x++;
+						for (my $y=0; $y <= $#dollar; $y++, $x++) {
+							if ($dollar[$y] ne $word[$x]) {
+								## Tricked us - reset to next position
+								$x = $oldpos;
+								next F;
+							}
+						}
+						## Got a match!
+						$x++;
+						$status = 'start';
+						next F;
+					}
+				}
+
+			} ## end each letter
+			if ($status eq 'fail') {
+				"$word ($list)";
 			}
-			"$1 (" . (join ',' => @final) . ')'
-			}geix;
+			else {
+				my $qs = '?,' x $numitems;
+				chop $qs;
+				"$word ($qs)";
+			}
+		}geix;
 		$string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
 		$string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
 		$string =~ s{(\bWHERE\s+\w+\s*=\s*)'[\d\w]+'}{$1'?')}gio;

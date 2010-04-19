@@ -924,7 +924,7 @@ sub process_line {
 		$string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
 		$string =~ s{(\bWHERE\s+\w+\s*=\s*)'[\d\w]+'}{$1'?')}gio;
 		$string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
-		$string =~ s/(ERROR:  invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
+		$string =~ s/(invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
 		$string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
 		$string =~ s{(DETAIL: Key \(\w+\))=\(.+?\)}{$1=(?)}go;
 		$string =~ s{Failed on request of size \d+}{Failed on request of size ?}go;

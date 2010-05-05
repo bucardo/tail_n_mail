@@ -786,7 +786,7 @@ sub parse_file {
 	close $fh or die qq{Could not close "$filename": $!\n};
 
 	## Now add in any pids that have not been processed yet
-	for my $pid (keys %pidline) {
+	for my $pid (sort { $pidline{$a}{line} <=> $pidline{$b}{line} } keys %pidline) {
 		$count += process_line($pidline{$pid}, 0, $filename);
 	}
 

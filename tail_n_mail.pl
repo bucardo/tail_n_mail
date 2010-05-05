@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -*-mode:cperl; indent-tabs-mode: nil-*-
+#!/usr/bin/env perl -- -*-mode:cperl; indent-tabs-mode: nil-*-
 
 ## Tail one or more files, mail the new stuff to one or more emails
 ## Developed at End Point Corporation by:
@@ -1436,7 +1436,6 @@ sub add_comments {
     return;
 
 } ## end of add_comments
-
 
 __DATA__
 

@@ -931,7 +931,7 @@ sub process_line {
 					}
 					## Perhaps E'' quoting?
 					if ($word[$x] eq 'E') {
-						if ($word[$x+1] ne q{'}) {
+						if (defined $word[$x+1] and $word[$x+1] ne q{'}) {
 							## So weird we'll just pass it through
 							$status = 'fail';
 							last F;
@@ -974,7 +974,7 @@ sub process_line {
 					## The only way out is an unescaped single quote
 					if ($word[$x] eq q{'}) {
                         next F if $word[$x-1] eq '\\';
-                        if ($word[$x+1] eq q{'}) {
+                        if (defined $word[$x+1] and $word[$x+1] eq q{'}) {
 							$x++;
 							next F;
 						}

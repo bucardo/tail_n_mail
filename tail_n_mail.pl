@@ -175,6 +175,9 @@ $opt{grand_total} = 0;
 ## For help in sorting later on
 my (%fileorder, $filenum);
 
+## Generic globals
+my ($string);
+
 ## Parse each file returned by pick_log_file until we start looping
 my $last_logfile = '';
 my @files_parsed;
@@ -849,12 +852,12 @@ sub process_line {
     my ($arg,$line,$filename) = @_;
 
     ## The final string
-    my $string = '';
+    $string = '';
 
     if (ref $arg eq 'HASH') {
         for my $l (sort {$a<=>$b} keys %{$arg->{string}}) {
             ## Some Postgres/syslog combos produce ugly output
-            $arg->{string}{$l} =~ s/^(?:\s*#011\s*)+//;
+            $arg->{string}{$l} =~ s/^(?:\s*#011\s*)+//o;
             $string .= ' '.$arg->{string}{$l};
         }
         $line = $arg->{line};

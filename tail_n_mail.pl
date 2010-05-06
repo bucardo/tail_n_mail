@@ -318,6 +318,8 @@ sub parse_rc_files {
         close $rc or die;
     }
 
+	return;
+
 } ## end of parse_rc_files
 
 
@@ -518,6 +520,8 @@ sub parse_inherited_files {
     for my $file (@{$opt{$curr}{inherit}}) {
         parse_inherit_file($file);
     }
+
+	return;
 
 } ## end of parse_inherited_files
 
@@ -838,29 +842,29 @@ sub generate_regexes {
     }
 
     ## Build an exclusion regex
-    my $exclude = '';
+    my $lexclude = '';
     for my $ex (@{$opt{$curr}{exclude}}) {
         $debug and warn "  Adding exclusion: $ex\n";
         my $regex = qr{$ex};
-        $exclude .= "$regex|";
+        $lexclude .= "$regex|";
     }
-    $exclude =~ s/\|$//;
-    $verbose and $exclude and warn "  Exclusion: $exclude\n";
+    $lexclude =~ s/\|$//;
+    $verbose and $lexclude and warn "  Exclusion: $lexclude\n";
 
     ## Build an inclusion regex
-    my $include = '';
+    my $linclude = '';
     for my $in (@{$opt{$curr}{include}}) {
         $debug and warn "  Adding inclusion: $in\n";
         my $regex = qr{$in};
-        $include .= "$regex|";
+        $linclude .= "$regex|";
     }
-    $include =~ s/\|$//;
-    $verbose and $include and warn "  Inclusion: $include\n";
+    $linclude =~ s/\|$//;
+    $verbose and $linclude and warn "  Inclusion: $linclude\n";
 
-    $opt{globalexcluderegex} = $exclude;
-    $opt{globalincluderegex} = $include;
+    $opt{globalexcluderegex} = $lexclude;
+    $opt{globalincluderegex} = $linclude;
 
-    return $exclude, $include;
+    return $lexclude, $linclude;
 
 } ## end of generate_regexes
 
@@ -1163,7 +1167,7 @@ sub process_report {
 
     my $unique = 0;
     for my $f (values %find) {
-        $unique += keys %$f;
+        $unique += keys %{$f};
     }
     print {$fh} "Unique items: $unique\n";
 
@@ -1286,21 +1290,21 @@ sub send_smtp_email {
 
     ## Attempt to authenticate
     if (not $smtp->auth($mailuser, $mailpass)) {
-        die qq{Failed to authenticate to mail server: } . $smtp->message;
+        die 'Failed to authenticate to mail server: ' . $smtp->message;
     }
 
     ## Prepare to send the message
-    $smtp->mail($from_addr) or die 'Failed to send mail (from): ' . $smtp->message;;
-    $smtp->to($emails)      or die 'Failed to send mail (to): '   . $smtp->message;;
-    $smtp->data()           or die 'Failed to send mail (data): ' . $smtp->message;;
+    $smtp->mail($from_addr) or die 'Failed to send mail (from): ' . $smtp->message;
+    $smtp->to($emails)      or die 'Failed to send mail (to): '   . $smtp->message;
+    $smtp->data()           or die 'Failed to send mail (data): ' . $smtp->message;
     ## Grab the lines from the tempfile and pipe it on to the server
     open my $fh, '<', $tempfile or die qq{Could not open "$tempfile": $!\n};
     while (<$fh>) {
         $smtp->datasend($_);
     }
     close $fh or warn qq{Could not close "$tempfile": $!\n};
-    $smtp->dataend() or die 'Failed to send mail (dataend): ' . $smtp->message;;
-    $smtp->quit      or die 'Failed to send mail (quit): '    . $smtp->message;;
+    $smtp->dataend() or die 'Failed to send mail (dataend): ' . $smtp->message;
+    $smtp->quit      or die 'Failed to send mail (quit): '    . $smtp->message;
 
     return;
 
@@ -1323,14 +1327,14 @@ sub lines_of_interest {
 
         if ($custom_type eq 'duration') {
             if (! exists $sorthelp{$a}) {
-                my $string = $a->{string} || $a->{earliest}{string};
+                my $lstring = $a->{string} || $a->{earliest}{string};
                 $sorthelp{$a} =
-                    $string =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+                    $lstring =~ /duration: (\d+\.\d+)/ ? $1 : 0;
             }
             if (! exists $sorthelp{$b}) {
-                my $string = $b->{string} || $b->{earliest}{string};                
+                my $lstring = $b->{string} || $b->{earliest}{string};
                 $sorthelp{$b} =
-                    $string =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+                    $lstring =~ /duration: (\d+\.\d+)/ ? $1 : 0;
             }
             return ($sorthelp{$b} <=> $sorthelp{$a})
                     || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})

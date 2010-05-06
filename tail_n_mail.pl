@@ -22,10 +22,20 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.9.1';
+our $VERSION = '1.10.0';
 
+## Mail sending options.
+## Which mode to use?
+my $MAILMODE = 'sendmail'; ## change with --mailmode option
 ## Location of the sendmail program. Expects to be able to use a -f argument.
-my $MAILCOM = '/usr/sbin/sendmail';
+my $MAILCOM = '/usr/sbin/sendmail'; ## change with --mailcom option
+## Mail server if using SMTP mode
+my $MAILSERVER = 'example.com'; ## change with --mailserver option
+## Username and password if using authenticated smtp
+my $MAILUSER = 'example';       ## change with --mailuser option
+my $MAILPASS = 'example';       ## change with --mailpass option
+my $MAILPORT = 465;             ## change with --mailport option
+
 ## We never go back more than this number of bytes. Can be overriden in the config file and command line.
 my $MAXSIZE = 80_000_000;
 
@@ -39,32 +49,39 @@ my $custom_type = 'normal';
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
-my ($showonly) = (0);
+my ($showonly,$usesmtp) = (0,0);
 my ($sortby) = ('count'); ## Can also be 'date'
 
 my $result = GetOptions
  (
-   'verbose'    => \$verbose,
-   'quiet'      => \$quiet,
-   'debug'      => \$debug,
-   'dryrun'     => \$dryrun,
-   'help'       => \$help,
-   'nomail'     => \$nomail,
-   'reset'      => \$reset,
-   'limit=i'    => \$limit,
-   'rewind=i'   => \$rewind,
-   'version'    => \$version,
-   'offset=i'   => \$custom_offset,
-   'duration=i' => \$custom_duration,
-   'file=s'     => \$custom_file,
-   'flatten!'   => \$flatten,
-   'timewarp=i' => \$timewarp,
-   'pgmode=i'   => \$pgmode,
-   'pgformat=i' => \$pgformat,
-   'maxsize=i'  => \$maxsize,
-   'type=s'     => \$custom_type,
-   'sortby=s'   => \$sortby,
-   'showonly=i' => \$showonly,
+   'verbose'      => \$verbose,
+   'quiet'        => \$quiet,
+   'debug'        => \$debug,
+   'dryrun'       => \$dryrun,
+   'help'         => \$help,
+   'nomail'       => \$nomail,
+   'reset'        => \$reset,
+   'limit=i'      => \$limit,
+   'rewind=i'     => \$rewind,
+   'version'      => \$version,
+   'offset=i'     => \$custom_offset,
+   'duration=i'   => \$custom_duration,
+   'file=s'       => \$custom_file,
+   'flatten!'     => \$flatten,
+   'timewarp=i'   => \$timewarp,
+   'pgmode=i'     => \$pgmode,
+   'pgformat=i'   => \$pgformat,
+   'maxsize=i'    => \$maxsize,
+   'type=s'       => \$custom_type,
+   'sortby=s'     => \$sortby,
+   'showonly=i'   => \$showonly,
+   'mailmode=s'   => \$MAILMODE,
+   'mailcom=s'    => \$MAILCOM,
+   'mailserver=s' => \$MAILSERVER,
+   'mailuser=s'   => \$MAILUSER,
+   'mailpass=s'   => \$MAILPASS,
+   'mailport=s'   => \$MAILPORT,
+   'smtp'         => \$usesmtp,
   ) or help();
 ++$verbose if $debug;
 
@@ -80,6 +97,8 @@ sub help {
     exit 0;
 }
 $help and help();
+
+$usesmtp and $MAILMODE = 'smtp';
 
 ## First option is always the config file, which must exist.
 my $configfile = shift or die qq{Usage: $0 configfile\n};
@@ -491,6 +510,7 @@ sub parse_config_file {
 
 } ## end of parse_config_file
 
+
 sub parse_inherited_files {
 
     ## Call parse_inherit_file on each item in $opt{inherit}
@@ -500,6 +520,7 @@ sub parse_inherited_files {
     }
 
 } ## end of parse_inherited_files
+
 
 sub parse_inherit_file {
 
@@ -1119,11 +1140,13 @@ sub process_report {
         die "Cannot send email without knowing who to send to!\n";
     }
 
+	my $mailcom = $opt{$curr}{mailcom} || $MAILCOM;
+
     ## Custom From:
     my $from_addr = $opt{$curr}{from} || '';
     if ($from_addr ne '') {
         print {$fh} "From: $from_addr\n";
-        $MAILCOM .= " -f $from_addr";
+        $mailcom .= " -f $from_addr";
     }
     ## End header section
     print {$fh} "\n";
@@ -1191,18 +1214,97 @@ sub process_report {
 
     my $emails = join ' ' => @{$opt{$curr}{email}};
     $verbose and warn "  Sending mail to: $emails\n";
-    my $COM = qq{$MAILCOM $emails < $tempfile};
+    my $COM = qq{$mailcom $emails < $tempfile};
     if ($dryrun or $nomail) {
         $quiet or warn "  DRYRUN: $COM\n";
+		unlink $tempfile;
+		return;
+    }
+
+	my $mailmode = $opt{$curr}{mailmode} || $MAILMODE;
+    if ($MAILMODE eq 'sendmail') {
+        system $COM;
+    }
+    elsif ($MAILMODE eq 'smtp') {
+        send_smtp_email($from_addr, $emails, $subject, $tempfile);
     }
     else {
-        system $COM;
+        die "Unknown mailmode: $mailmode\n";
     }
     unlink $tempfile;
 
     return;
 
 } ## end of process_report
+
+
+sub send_smtp_email {
+
+    ## Send email via an authenticated SMTP connection
+
+    ## For Windows, you will need:
+    # perl 5.10
+    # http://cpan.uwinnipeg.ca/PPMPackages/10xx/
+    # ppm install Net_SSLeay.ppd
+    # ppm install IO-Socket-SSL.ppd
+    # ppm install Authen-SASL.ppd
+    # ppm install Net-SMTP-SSL.ppd
+
+	## For non-Windows:
+	# perl-Net-SMTP-SSL package
+    # perl-Authen-SASL
+
+    my ($from_addr,$emails,$subject,$tempfile) = @_;
+
+	require Net::SMTP::SSL;
+
+	## Absorb any values set by rc files, and sanity check things
+	my $mailserver = $opt{$curr}{mailserver} || $MAILSERVER;
+    if ($mailserver eq 'example.com') {
+        die qq{When using smtp mode, you must specify a mailserver!\n};
+    }
+	my $mailuser = $opt{$curr}{mailuser} || $MAILUSER;
+    if ($mailuser eq 'example') {
+        die qq{When using smtp mode, you must specify a mailuser!\n};
+    }
+	my $mailpass = $opt{$curr}{mailpass} || $MAILPASS;
+    if ($mailpass eq 'example') {
+        die qq{When using smtp mode, you must specify a mailpass!\n};
+    }
+	my $mailport = $opt{$curr}{mailport} || $MAILPORT;
+
+    ## Attempt to connect to the server
+    my $smtp;
+    if (not $smtp = Net::SMTP::SSL->new(
+        $mailserver,
+        Port    => $mailport,
+        Debug   => 0,
+        Timeout => 30,
+    )) {
+        die qq{Failed to connect to mail server: $!};
+    }
+
+    ## Attempt to authenticate
+    if (not $smtp->auth($mailuser, $mailpass)) {
+        die qq{Failed to authenticate to mail server: } . $smtp->message;
+    }
+
+    ## Prepare to send the message
+    $smtp->mail($from_addr) or die 'Failed to send mail (from): ' . $smtp->message;;
+    $smtp->to($emails)      or die 'Failed to send mail (to): '   . $smtp->message;;
+    $smtp->data()           or die 'Failed to send mail (data): ' . $smtp->message;;
+    ## Grab the lines from the tempfile and pipe it on to the server
+    open my $fh, '<', $tempfile or die qq{Could not open "$tempfile": $!\n};
+    while (<$fh>) {
+        $smtp->datasend($_);
+    }
+    close $fh or warn qq{Could not close "$tempfile": $!\n};
+    $smtp->dataend() or die 'Failed to send mail (dataend): ' . $smtp->message;;
+    $smtp->quit      or die 'Failed to send mail (quit): '    . $smtp->message;;
+
+    return;
+
+} ## end of send_smtp_email
 
 
 sub lines_of_interest {

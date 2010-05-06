@@ -1140,7 +1140,7 @@ sub process_report {
         die "Cannot send email without knowing who to send to!\n";
     }
 
-	my $mailcom = $opt{$curr}{mailcom} || $MAILCOM;
+    my $mailcom = $opt{$curr}{mailcom} || $MAILCOM;
 
     ## Custom From:
     my $from_addr = $opt{$curr}{from} || '';
@@ -1217,11 +1217,11 @@ sub process_report {
     my $COM = qq{$mailcom $emails < $tempfile};
     if ($dryrun or $nomail) {
         $quiet or warn "  DRYRUN: $COM\n";
-		unlink $tempfile;
-		return;
+        unlink $tempfile;
+        return;
     }
 
-	my $mailmode = $opt{$curr}{mailmode} || $MAILMODE;
+    my $mailmode = $opt{$curr}{mailmode} || $MAILMODE;
     if ($MAILMODE eq 'sendmail') {
         system $COM;
     }
@@ -1250,28 +1250,28 @@ sub send_smtp_email {
     # ppm install Authen-SASL.ppd
     # ppm install Net-SMTP-SSL.ppd
 
-	## For non-Windows:
-	# perl-Net-SMTP-SSL package
+    ## For non-Windows:
+    # perl-Net-SMTP-SSL package
     # perl-Authen-SASL
 
     my ($from_addr,$emails,$subject,$tempfile) = @_;
 
-	require Net::SMTP::SSL;
+    require Net::SMTP::SSL;
 
-	## Absorb any values set by rc files, and sanity check things
-	my $mailserver = $opt{$curr}{mailserver} || $MAILSERVER;
+    ## Absorb any values set by rc files, and sanity check things
+    my $mailserver = $opt{$curr}{mailserver} || $MAILSERVER;
     if ($mailserver eq 'example.com') {
         die qq{When using smtp mode, you must specify a mailserver!\n};
     }
-	my $mailuser = $opt{$curr}{mailuser} || $MAILUSER;
+    my $mailuser = $opt{$curr}{mailuser} || $MAILUSER;
     if ($mailuser eq 'example') {
         die qq{When using smtp mode, you must specify a mailuser!\n};
     }
-	my $mailpass = $opt{$curr}{mailpass} || $MAILPASS;
+    my $mailpass = $opt{$curr}{mailpass} || $MAILPASS;
     if ($mailpass eq 'example') {
         die qq{When using smtp mode, you must specify a mailpass!\n};
     }
-	my $mailport = $opt{$curr}{mailport} || $MAILPORT;
+    my $mailport = $opt{$curr}{mailport} || $MAILPORT;
 
     ## Attempt to connect to the server
     my $smtp;

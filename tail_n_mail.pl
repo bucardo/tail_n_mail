@@ -300,7 +300,7 @@ sub parse_rc_files {
         elsif (-e '.tailnmailrc') {
             $file = '.tailnmailrc';
         }
-        elsif (-e "$ENV{HOME}/.tailnmailrc") {
+        elsif (exists $ENV{HOME} and -e "$ENV{HOME}/.tailnmailrc") {
             $file = "$ENV{HOME}/.tailnmailrc";
         }
         elsif (-e '/etc/tailnmailrc') {

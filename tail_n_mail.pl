@@ -22,7 +22,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.10.0';
+our $VERSION = '1.10.1';
 
 ## Mail sending options.
 ## Which mode to use?

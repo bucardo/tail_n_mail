@@ -22,7 +22,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.10.1';
+our $VERSION = '1.10.2';
 
 ## Mail sending options.
 ## Which mode to use?
@@ -318,7 +318,7 @@ sub parse_rc_files {
         close $rc or die;
     }
 
-	return;
+    return;
 
 } ## end of parse_rc_files
 
@@ -392,11 +392,21 @@ sub parse_config_file {
 
             ## Transform the file name if they want the latest in a directory
             ## Note that this can be combined with the escapes above!
-            if ($filename =~ /LATEST/) {
-                $filename =~ s/LATEST/*/;
-                my $latest = qx{ls -rt1 $filename | tail -1};
-                chomp $latest;
-                $filename = $latest;
+            if ($filename =~ s{[/\\]*LATEST[/\\]*$}{}) {
+                my $dir = $filename;
+                -d $dir or die qq{Cannot open $dir: not a directory!\n};
+                opendir my $dh, $dir or die qq{Could not opendir "$dir": $!\n};
+                my $latest;
+                my $latestfile;
+                while (my $file = readdir($dh)) {
+                    my $modtime = -M "$dir/$file";
+                    next if defined $latest and $modtime > $latest;
+                    $latest = $modtime;
+                    $latestfile = "$dir/$file";
+                }
+                closedir $dh or warn qq{Could not closedir "$dir": $!\n};
+                defined $latestfile or die qq{Could not find the latest file in "$dir"\n};
+                $filename = $latestfile;
             }
 
             ## If a custom file was specified, use that instead
@@ -521,7 +531,7 @@ sub parse_inherited_files {
         parse_inherit_file($file);
     }
 
-	return;
+    return;
 
 } ## end of parse_inherited_files
 

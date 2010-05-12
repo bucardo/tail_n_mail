@@ -23,7 +23,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.10.2';
+our $VERSION = '1.10.3';
 
 ## Mail sending options.
 ## Which mode to use?
@@ -45,6 +45,9 @@ my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST';
 
 ## We can define custom types, e.g. "duration" that get printed differently
 my $custom_type = 'normal';
+
+## Do some really simple line wrapping for super-long lines
+my $WRAPLIMIT = 990;
 
 ## Set defaults for all the options, then read them in from command line
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
@@ -1396,7 +1399,8 @@ sub lines_of_interest {
             else {
                 print "\n";
             }
-            printf "%s\n", exists $f->{earliest} ? $f->{earliest}{string} : $f->{string};
+            my $string = wrapline(exists $f->{earliest} ? $f->{earliest}{string} : $f->{string});
+            printf "$string\n";
             next;
         }
 
@@ -1452,11 +1456,15 @@ sub lines_of_interest {
                 $samefile ? '' : "[$fab{$latest->{filename}}] ",
                 $headend;
             $estring =~ s/^\s+//o;
-            print "$estring\n";
+            print wrapline($estring);
+            print "\n";
         }
         else {
             print " Earliest and latest:\n";
-            print "$estring\n$lstring\n";
+            print wrapline($estring);
+            print "\n";
+            print wrapline($lstring);
+            print "\n";
         }
 
     } ## end each item
@@ -1466,6 +1474,21 @@ sub lines_of_interest {
     return;
 
 } ## end of lines_of_interest
+
+
+sub wrapline {
+
+    ## Quick and simple wrapper around very long lines to make SMTP servers happy
+
+    my $line = shift;
+
+    return $line if length $line < $WRAPLIMIT;
+
+    $line =~ s{(.{$WRAPLIMIT})}{$1\n}g;
+
+    return $line;
+
+} ## end of wrapline
 
 
 sub final_cleanup {

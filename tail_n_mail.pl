@@ -23,7 +23,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.10.3';
+our $VERSION = '1.10.4';
 
 ## Mail sending options.
 ## Which mode to use?
@@ -318,6 +318,10 @@ sub parse_rc_files {
             next if ! /^\s*(\w+)\s*[=:]\s*(.+?)\s*$/o;
             my ($name,$value) = ($1,$2); ## no critic (ProhibitCaptureWithoutTest)
             $opt{$curr}{$name} = $value;
+            ## If we are disabled, simply exit quietly
+            if ($name eq 'disable' and $value) {
+                exit 0;
+            }
         }
         close $rc or die;
     }

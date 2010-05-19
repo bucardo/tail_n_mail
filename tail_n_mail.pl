@@ -408,6 +408,7 @@ sub parse_config_file {
                 my $latestfile;
                 while (my $file = readdir($dh)) {
                     my $modtime = -M "$dir/$file";
+                    next if ! -f _;
                     next if defined $latest and $modtime > $latest;
                     $latest = $modtime;
                     $latestfile = "$dir/$file";

@@ -1470,7 +1470,7 @@ sub lines_of_interest {
                 print "\n";
             }
             my $string = wrapline(exists $f->{earliest} ? $f->{earliest}{string} : $f->{string});
-            printf "$string\n";
+            print "$string\n";
             next;
         }
 

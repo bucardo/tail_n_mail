@@ -215,7 +215,6 @@ my @files_parsed;
     $last_logfile = $logfile;
     redo;
 }
-exit; ## XXXX
 
 ## We're done parsing the message, send an email if needed
 process_report() if $opt{grand_total};

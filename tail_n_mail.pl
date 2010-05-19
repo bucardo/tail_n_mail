@@ -206,6 +206,7 @@ my $last_logfile = '';
 my @files_parsed;
 {
     my $logfile = pick_log_file();
+    last if ! defined $logfile;
     last if $last_logfile eq $logfile;
     $debug and warn "Parsing file ($logfile)\n";
     my $count = parse_file($logfile);
@@ -214,6 +215,7 @@ my @files_parsed;
     $last_logfile = $logfile;
     redo;
 }
+exit; ## XXXX
 
 ## We're done parsing the message, send an email if needed
 process_report() if $opt{grand_total};
@@ -238,10 +240,54 @@ sub pick_log_file {
         return $opt{$curr}{filename};
     }
 
+    my $lastfile = $opt{$curr}{lastfile};
+    my $orig = $opt{$curr}{original_filename};
+
+    ## Handle the LATEST case right away
+    if ($orig =~ s{[/\\]*LATEST[/\\]*$}{}o) {
+
+        ## At this point, the lastfile has already been handled
+        ## We need all files newer than that one, in order, until we run out
+
+        ## Already have the list? Pop off items until we are done
+        if (exists $opt{$curr}{middle_filenames}) {
+            ## Return the next file, or undef when we run out
+            return pop @{$opt{$curr}{middle_filenames}};
+        }
+
+        my $dir = $orig;
+        -d $dir or die qq{Cannot open $dir: not a directory!\n};
+        opendir my $dh, $dir or die qq{Could not opendir "$dir": $!\n};
+
+        ## We need the modification time of the lastfile
+        my $lastfiletime = defined $lastfile ? -M $lastfile : 0;
+
+        my %fileq;
+        while (my $file = readdir($dh)) {
+            my $fname = "$dir/$file";
+            my $modtime = -M $fname;
+            ## Skip if not a normal file
+            next if ! -f _;
+            ## Skip if it's older than the lastfile
+            next if $lastfiletime and $modtime > $lastfiletime;
+            $fileq{$modtime}{$fname} = 1;
+        }
+        closedir $dh or warn qq{Could not closedir "$dir": $!\n};
+      TF: for my $time (sort { $a <=> $b } keys %fileq) {
+            for my $file (sort keys %{$fileq{$time}}) {
+                push @{$opt{$curr}{middle_filenames}} => $file;
+                ## If we don't have a lastfile, we simply use the most recent file
+                ## and throw away the rest
+                last TF if ! $lastfiletime;
+            }
+        }
+
+        return pop @{$opt{$curr}{middle_filenames}};
+
+    } ## end of LATEST time travel
+
     ## No lastfile makes it easy
     exists $opt{$curr}{lastfile} or return $opt{$curr}{filename};
-
-    my $lastfile = $opt{$curr}{lastfile};
 
     ## If we haven't processed the lastfile, do that one first
     exists $find{$lastfile} or return $lastfile;
@@ -250,8 +296,7 @@ sub pick_log_file {
     $lastfile eq $opt{$curr}{filename} and return $lastfile;
 
     ## We've processed the last file, are there any files in between the two?
-    ## For now, we only handle POSIX-based time travel
-    my $orig = $opt{$curr}{original_filename};
+    ## POSIX-based time travel
     if ($orig =~ /%/) {
 
         ## Already have the list? Pop off items until we are done
@@ -396,26 +441,6 @@ sub parse_config_file {
                 ## Allow moving back in time with the timewarp argument (defaults to 0)
                 my @ltime = localtime(time + $timewarp);
                 $filename = POSIX::strftime($filename, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
-            }
-
-            ## Transform the file name if they want the latest in a directory
-            ## Note that this can be combined with the escapes above!
-            if ($filename =~ s{[/\\]*LATEST[/\\]*$}{}) {
-                my $dir = $filename;
-                -d $dir or die qq{Cannot open $dir: not a directory!\n};
-                opendir my $dh, $dir or die qq{Could not opendir "$dir": $!\n};
-                my $latest;
-                my $latestfile;
-                while (my $file = readdir($dh)) {
-                    my $modtime = -M "$dir/$file";
-                    next if ! -f _;
-                    next if defined $latest and $modtime > $latest;
-                    $latest = $modtime;
-                    $latestfile = "$dir/$file";
-                }
-                closedir $dh or warn qq{Could not closedir "$dir": $!\n};
-                defined $latestfile or die qq{Could not find the latest file in "$dir"\n};
-                $filename = $latestfile;
             }
 
             ## If a custom file was specified, use that instead

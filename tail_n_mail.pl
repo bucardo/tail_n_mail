@@ -73,7 +73,7 @@ my $result = GetOptions
    'file=s'       => \$custom_file,
    'flatten!'     => \$flatten,
    'timewarp=i'   => \$timewarp,
-   'pgmode=i'     => \$pgmode,
+   'pgmode=s'     => \$pgmode,
    'pgformat=i'   => \$pgformat,
    'maxsize=i'    => \$maxsize,
    'type=s'       => \$custom_type,
@@ -764,66 +764,98 @@ sub parse_file {
     ## Keep track of matches for this file
     my $count = 0;
 
-    ## Postgres-specific multi-line grabbing stuff:
-    my ($pgpid, $pgnum, $pgsub, %pidline, %current_pid_num, $lastpid);
+    ## Needed to track postgres PIDs
+    my %pidline;
 
-    my $lastline = '';
-    while (<$fh>) {
-        ## Easiest to just remove the newline here and now
-        chomp;
-        if ($pgmode) {
-            if ($_ =~ $pgpidre) {
-                ($pgpid, $pgsub, $pgnum) = ($1,$2||1,$3||1);
-                $lastpid = $pgpid;
-                ## We've found something that looks like: postgres[12345] [1-1]
-                ## Have we seen this PID before?
-                if (exists $pidline{$pgpid}) {
-                    ## If this is a statement or detail or hint or context, append to the previous entry
-                    ## Do the same for a LOG: statement combo (e.g. following a duration)
-                    if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT):  /o
-                            or (/ LOG:  statement: /o
-                            and
-                            $pidline{$pgpid}{string}{$current_pid_num{$pgpid}}
-                            or (/ LOG:  statement: /o and $lastline !~ /  statement: |FATAL|PANIC/))) {
-                        $pgnum = $current_pid_num{$pgpid} + 1;
-                    }
-                    ## Is this a new entry for this PID? If so, process the old.
-                    if ($pgnum <= 1) {
-                        $count += process_line($pidline{$pgpid}, 0, $filename);
-                        ## Delete it so it gets recreated afresh below
-                        delete $pidline{$pgpid};
-                    }
-                    else {
-                        ## Trim the string up - no need to see the header info each time
-                        s/^.+?$pgpidre\s*//;
-                        ## No need to see the user more than once for supplemental information
-                        s/.+\b(STATEMENT|DETAIL|HINT|CONTEXT):/$1:/;
-                    }
+    if (lc $pgmode eq 'csv') {
+        ## Move this somewhere else
+        my $csv;
+            eval {
+                require Text::CSV;
+            };
+        if (!$@) {
+            $csv = Text::CSV->new({ binary => 1, eol => $/ });
+        }
+        else {
+            ## Assume it failed because it doesn't exist, so try another version
+            eval {
+                require Text::CSV_XS;
+            };
+            if ($@) {
+                    die qq{Cannot parse CSV logs unless Text::CSV or Text::CSV_XS is available\n};
                 }
-                $pidline{$pgpid}{string}{$pgnum} = $_;
-                $current_pid_num{$pgpid} = $pgnum;
-
-                ## Store the line number if we don't have one yet for this PID
-                $pidline{$pgpid}{line} ||= ($. + $newlines);
-
-                $lastline = $_;
-            }
-            elsif ($lastpid) {
-                ## Append this to the previous entry
-                $pgnum = $current_pid_num{$lastpid} + 1;
-                s{^\t}{ };
-                $pidline{$lastpid}{string}{$pgnum} = $_;
-                $current_pid_num{$lastpid} = $pgnum;
-            }
-
-            ## No need to do anything more right now
-            next;
+            $csv = Text::CSV_XS->new({ binary => 1, eol => $/ });
+        }
+        while (my $line = $csv->getline($fh)) {
+            my @cols = @$line;
+            $count += process_line("$line->[0] $line->[1]\@$line->[2] $line->[11]:  $line->[13] STATEMENT:  $line->[19]", $., $filename);
         }
 
-        ## Just a bare entry, so process it right away
-        $count += process_line($_, $. + $newlines, $filename);
+    } ## end of PG CSV mode
+    else {
+        ## Postgres-specific multi-line grabbing stuff:
+        my ($pgpid, $pgnum, $pgsub, %current_pid_num, $lastpid);
+        my $lastline = '';
 
-    } ## end of each line in the file
+        while (<$fh>) {
+            ## Easiest to just remove the newline here and now
+            chomp;
+
+            if ($pgmode) {
+                if ($_ =~ $pgpidre) {
+                    ($pgpid, $pgsub, $pgnum) = ($1,$2||1,$3||1);
+                    $lastpid = $pgpid;
+                    ## We've found something that looks like: postgres[12345] [1-1]
+                    ## Have we seen this PID before?
+                    if (exists $pidline{$pgpid}) {
+                        ## If this is a statement or detail or hint or context, append to the previous entry
+                        ## Do the same for a LOG: statement combo (e.g. following a duration)
+                        if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT):  /o
+                                or (/ LOG:  statement: /o
+                                and
+                                $pidline{$pgpid}{string}{$current_pid_num{$pgpid}}
+                                or (/ LOG:  statement: /o and $lastline !~ /  statement: |FATAL|PANIC/))) {
+                            $pgnum = $current_pid_num{$pgpid} + 1;
+                        }
+                        ## Is this a new entry for this PID? If so, process the old.
+                        if ($pgnum <= 1) {
+                            $count += process_line($pidline{$pgpid}, 0, $filename);
+                            ## Delete it so it gets recreated afresh below
+                            delete $pidline{$pgpid};
+                        }
+                        else {
+                            ## Trim the string up - no need to see the header info each time
+                            s/^.+?$pgpidre\s*//;
+                            ## No need to see the user more than once for supplemental information
+                            s/.+\b(STATEMENT|DETAIL|HINT|CONTEXT):/$1:/;
+                        }
+                    }
+                    $pidline{$pgpid}{string}{$pgnum} = $_;
+                    $current_pid_num{$pgpid} = $pgnum;
+
+                    ## Store the line number if we don't have one yet for this PID
+                    $pidline{$pgpid}{line} ||= ($. + $newlines);
+
+                    $lastline = $_;
+                }
+                elsif ($lastpid) {
+                    ## Append this to the previous entry
+                    $pgnum = $current_pid_num{$lastpid} + 1;
+                    s{^\t}{ };
+                    $pidline{$lastpid}{string}{$pgnum} = $_;
+                    $current_pid_num{$lastpid} = $pgnum;
+                }
+
+                ## No need to do anything more right now
+                next;
+            } ## end of normal pgmode
+
+            ## Just a bare entry, so process it right away
+            $count += process_line($_, $. + $newlines, $filename);
+
+        } ## end of each line in the file
+
+    } ## end of non-CSV mode
 
     ## Get the new offset and store it
     seek $fh, 0, 1;
@@ -921,6 +953,9 @@ sub process_line {
     }
 
     $debug and warn "MATCH at line $line of $filename\n";
+
+    ## Force newlines to a single line
+    $string =~ s/\n/\\n/go;
 
     ## Compress all whitespace
     $string =~ s/\s+/ /go;
@@ -1064,7 +1099,7 @@ sub process_line {
     }
 
     ## Try to separate into header and body, then check for similar entries
-    if ($string =~ /(.+?)($levelre:.+)$/o) {
+    if ($string =~ /(.+?)($levelre:.+)/o) {
         my ($head,$body) = ($1,$2);
 
         ## Seen this body before?
@@ -1103,7 +1138,13 @@ sub process_line {
         }
     }
     else {
-        $find{$filename}{$line} = { string => $string, count => 1 };
+        $find{$filename}{$line} = {
+            string   => $string,
+            count    => 1,
+            line     => $line,
+            filename => $filename,
+            nonflat  => $nonflat,
+        };
     }
 
     return 1;
@@ -1450,7 +1491,7 @@ sub lines_of_interest {
         ## If we can, show just the interesting part
         my $estring = $earliest->{string};
         my $lstring = $latest->{string};
-        if ($pgmode == 1 and $estring =~ s/$pgpiddatere(.+)/$2/) {
+        if ($pgmode and $pgmode ne 'csv' and $estring =~ s/$pgpiddatere(.+)/$2/) {
             my $headstart = $1;
             $lstring =~ /$pgpiddatere/ or die "Latest did not match?!\n";
             my $headend = $1; ## no critic (ProhibitCaptureWithoutTest)

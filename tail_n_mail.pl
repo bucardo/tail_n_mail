@@ -40,7 +40,7 @@ my $MAILPORT = 465;             ## change with --mailport option
 ## We never go back more than this number of bytes. Can be overriden in the config file and command line.
 my $MAXSIZE = 80_000_000;
 
-## Default message subject if not set elsewhere. Keywords replaced: FILE HOST
+## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST';
 
 ## We can define custom types, e.g. "duration" that get printed differently
@@ -1196,6 +1196,11 @@ sub process_report {
     my $total_matches = 0;
     ## How many files actually had things?
     my $matchfiles = 0;
+    ## How many unique items?
+    my $unique_matches = 0;
+    for my $f (values %find) {
+        $unique_matches += keys %{$f};
+    }
     ## Which was the latest to contain something?
     my $last_file_parsed;
     for my $file (@files_parsed) {
@@ -1211,6 +1216,8 @@ sub process_report {
     my $subject = $opt{$curr}{mailsubject} || $DEFAULT_SUBJECT;
     $subject =~ s/FILE/$last_file_parsed/g;
     $subject =~ s/HOST/$hostname/g;
+    $subject =~ s/NUMBER/$total_matches/g;
+    $subject =~ s/UNIQUE/$unique_matches/g;
     print {$fh} "Subject: $subject\n";
 
     ## Discourage vacation programs from replying
@@ -1249,11 +1256,7 @@ sub process_report {
         print {$fh} "Minimum duration: $custom_duration\n";
     }
 
-    my $unique = 0;
-    for my $f (values %find) {
-        $unique += keys %{$f};
-    }
-    print {$fh} "Unique items: $unique\n";
+    print {$fh} "Unique items: $unique_matches\n";
 
     ## If we parsed more than one file, label them now
     if ($matchfiles > 1) {

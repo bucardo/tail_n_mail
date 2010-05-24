@@ -536,7 +536,7 @@ sub parse_config_file {
             $localopt{customsubject} = 1;
         }
         ## Force mail to be sent - overrides any other setting
-        elsif (/^MAILZERO:\s*(.+)/) { ## Trailing whitespace is significant here
+        elsif (/^MAILZERO:\s*(.+)/) {
             $localopt{mailzero} = $1;
         }
     }
@@ -663,6 +663,11 @@ sub parse_inherit_file {
         elsif (/^EMAIL:\s*(.+?)\s*$/) {
             push @{$opt{$curr}{email}}, $1;
         }
+        ## Force mail to be sent - overrides any other setting
+        elsif (/^MAILZERO:\s*(.+)/) {
+            $opt{$curr}{mailzero} = $1;
+        }
+
     }
     close $fh or warn qq{Could not close file "$file": $!\n};
 
@@ -719,7 +724,9 @@ sub parse_file {
         }
     }
 
-    $verbose and warn "  File: $filename Offset: $offset Size: $size Maxsize: $maxsize\n";
+    my $psize = pretty_number($size);
+    my $pmaxs = pretty_number($maxsize);
+    $verbose and warn "  File: $filename Offset: $offset Size: $psize Maxsize: $pmaxs\n";
 
     ## The file may have shrunk due to a logrotate
     if ($offset > $size) {
@@ -1274,6 +1281,7 @@ sub process_report {
         my $maxletter = 1;
         for my $file (@files_parsed) {
             next if ! $file->[1];
+            $file->[1] = pretty_number($file->[1]);
             $maxcount = length $file->[1] if length $file->[1] > $maxcount;
             my $name = chr(65+$letter);
             if ($letter >= 26) {
@@ -1292,7 +1300,7 @@ sub process_report {
                 "[$name]",
                 $file->[0],
                 $maxcount,
-                pretty_number($file->[1]);
+                $file->[1];
         }
     }
     else {

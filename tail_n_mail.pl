@@ -55,6 +55,8 @@ my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
 my ($showonly,$usesmtp) = (0,0);
 my ($sortby) = ('count'); ## Can also be 'date'
+## The thousands separator for formatting numbers
+my $tsep;
 
 my $result = GetOptions
  (
@@ -86,6 +88,7 @@ my $result = GetOptions
    'mailpass=s'   => \$MAILPASS,
    'mailport=s'   => \$MAILPORT,
    'smtp'         => \$usesmtp,
+   'tsep=s'       => \$tsep,
   ) or help();
 ++$verbose if $debug;
 
@@ -1192,8 +1195,6 @@ sub process_report {
         exit 1;
     }
 
-    ## Total matches across all files
-    my $total_matches = 0;
     ## How many files actually had things?
     my $matchfiles = 0;
     ## How many unique items?
@@ -1201,14 +1202,16 @@ sub process_report {
     for my $f (values %find) {
         $unique_matches += keys %{$f};
     }
+    $unique_matches = pretty_number($unique_matches);
     ## Which was the latest to contain something?
     my $last_file_parsed;
     for my $file (@files_parsed) {
         next if ! $file->[1];
-        $total_matches += $file->[1];
         $matchfiles++;
         $last_file_parsed = $file->[0];
     }
+    my $grand_total = pretty_number($opt{grand_total});
+
     ## If not files matched, output the last one processed
     $last_file_parsed = $files_parsed[-1]->[0] if ! defined $last_file_parsed;
 
@@ -1216,7 +1219,7 @@ sub process_report {
     my $subject = $opt{$curr}{mailsubject} || $DEFAULT_SUBJECT;
     $subject =~ s/FILE/$last_file_parsed/g;
     $subject =~ s/HOST/$hostname/g;
-    $subject =~ s/NUMBER/$total_matches/g;
+    $subject =~ s/NUMBER/$grand_total/g;
     $subject =~ s/UNIQUE/$unique_matches/g;
     print {$fh} "Subject: $subject\n";
 
@@ -1253,7 +1256,7 @@ sub process_report {
         print {$fh} "Timewarp: $timewarp\n";
     }
     if ($custom_duration >= 0) {
-        print {$fh} "Minimum duration: $custom_duration\n";
+        print {$fh} "Minimum duration: $custom_duration ms\n";
     }
 
     print {$fh} "Unique items: $unique_matches\n";
@@ -1261,7 +1264,7 @@ sub process_report {
     ## If we parsed more than one file, label them now
     if ($matchfiles > 1) {
         my $letter = 0;
-        print {$fh} "Total matches: $opt{grand_total}\n";
+        print {$fh} "Total matches: $grand_total\n";
         my $maxcount = 1;
         my $maxletter = 1;
         for my $file (@files_parsed) {
@@ -1279,16 +1282,16 @@ sub process_report {
         for my $file (@files_parsed) {
             next if ! $file->[1];
             my $name = $fab{$file->[0]};
-            printf {$fh} "Matches from %-*s %s: %*d\n",
+            printf {$fh} "Matches from %-*s %s: %*s\n",
                 $maxletter + 2,
                 "[$name]",
                 $file->[0],
                 $maxcount,
-                $file->[1];
+                pretty_number($file->[1]);
         }
     }
     else {
-        print {$fh} "Matches from $last_file_parsed: $total_matches\n";
+        print {$fh} "Matches from $last_file_parsed: $grand_total\n";
     }
 
     for my $file (@files_parsed) {
@@ -1480,6 +1483,7 @@ sub lines_of_interest {
         ## More than one entry means we have an earliest and latest to look at
         my $earliest = $f->{earliest};
         my $latest = $f->{latest};
+        my $pcount = pretty_number($f->{count});
 
         ## Does it span multiple files?
         my $samefile = $earliest->{filename} eq $latest->{filename} ? 1 : 0;
@@ -1487,7 +1491,7 @@ sub lines_of_interest {
             if ($matchfiles > 1) {
                 print " From file $fab{$filename}";
                 if ($find_line_number) {
-                    print " (between lines $f->{line} and $latest->{line}, occurs $f->{count} times)";
+                    print " (between lines $f->{line} and $latest->{line}, occurs $pcount times)";
                 }
                 else {
                     print " Count: $f->{count}";
@@ -1496,10 +1500,10 @@ sub lines_of_interest {
             }
             else {
                 if ($find_line_number) {
-                    print " (between lines $f->{line} and $latest->{line}, occurs $f->{count} times)";
+                    print " (between lines $f->{line} and $latest->{line}, occurs $pcount times)";
                 }
                 else {
-                    print " Count: $f->{count}";
+                    print " Count: $pcount";
                 }
                 print "\n";
             }
@@ -1508,10 +1512,10 @@ sub lines_of_interest {
             my ($A,$B) = ($fab{$earliest->{filename}}, $fab{$latest->{filename}});
             print " From files $A to $B";
             if ($find_line_number) {
-                print " (between lines $f->{line} of $A and $latest->{line} of $B, occurs $f->{count} times)";
+                printf " (between lines $f->{line} of $A and $latest->{line} of $B, occurs $pcount times)",;
             }
             else {
-                print " Count: $f->{count}";
+                print " Count: $pcount";
             }
             print "\n";
         }
@@ -1652,6 +1656,42 @@ sub add_comments {
     return;
 
 } ## end of add_comments
+
+
+sub pretty_number {
+
+    ## Format a raw number in a more readable style
+
+    my $number = shift;
+
+    return $number if $number !~ /^\d+$/ or $number < 1000;
+
+    ## If this is our first time here, find the correct separator
+    if (! defined $tsep) {
+        if (exists $opt{$curr}{tsep}) {
+            $tsep = $opt{$curr}{tsep};
+            return pretty_number($number);
+        }
+        eval {
+            require POSIX;
+        };
+        if ($@) {
+            ## Default to no separator
+            $tsep = '';
+            return $number;
+        }
+        my $lconv = POSIX::localeconv();
+        $tsep = $lconv->{thousands_sep} || ',';
+    }
+
+    ## No formatting at all
+    return $number if '' eq $tsep or ! $tsep;
+
+    (my $reverse = reverse $number) =~ s/(...)(?=\d)/$1$tsep/g;
+    $number = reverse $reverse;
+    return $number;
+
+} ## end of pretty_number
 
 __DATA__
 

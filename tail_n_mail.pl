@@ -53,7 +53,7 @@ my $WRAPLIMIT = 990;
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
-my ($showonly,$usesmtp) = (0,0);
+my ($showonly,$usesmtp,$mailzero) = (0,0,0);
 my ($sortby) = ('count'); ## Can also be 'date'
 ## The thousands separator for formatting numbers
 my $tsep;
@@ -87,6 +87,7 @@ my $result = GetOptions
    'mailuser=s'   => \$MAILUSER,
    'mailpass=s'   => \$MAILPASS,
    'mailport=s'   => \$MAILPORT,
+   'mailzero'     => \$mailzero,
    'smtp'         => \$usesmtp,
    'tsep=s'       => \$tsep,
   ) or help();
@@ -220,7 +221,7 @@ my @files_parsed;
 }
 
 ## We're done parsing the message, send an email if needed
-process_report() if $opt{grand_total};
+process_report() if $opt{grand_total} or $mailzero or $opt{$curr}{mailzero};
 final_cleanup();
 
 exit 0;
@@ -533,6 +534,10 @@ sub parse_config_file {
         elsif (/^MAILSUBJECT:\s*(.+)/) { ## Trailing whitespace is significant here
             $localopt{mailsubject} = $1;
             $localopt{customsubject} = 1;
+        }
+        ## Force mail to be sent - overrides any other setting
+        elsif (/^MAILZERO:\s*(.+)/) { ## Trailing whitespace is significant here
+            $localopt{mailzero} = $1;
         }
     }
     close $c or die qq{Could not close "$configfile": $!\n};

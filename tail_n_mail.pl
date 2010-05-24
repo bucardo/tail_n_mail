@@ -23,7 +23,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.12.0';
+our $VERSION = '1.12.1';
 
 ## Mail sending options.
 ## Which mode to use?
@@ -247,7 +247,9 @@ sub pick_log_file {
     my $orig = $opt{$curr}{original_filename};
 
     ## Handle the LATEST case right away
-    if ($orig =~ s{[/\\]*LATEST[/\\]*$}{}o) {
+    if ($orig =~ s{([^/\\]*)LATEST([^/\\]*)$}{}o) {
+
+        my ($prefix,$postfix) = ($1,$2);
 
         ## At this point, the lastfile has already been handled
         ## We need all files newer than that one, in order, until we run out
@@ -259,6 +261,7 @@ sub pick_log_file {
         }
 
         my $dir = $orig;
+        $dir =~ s{/\z}{};
         -d $dir or die qq{Cannot open $dir: not a directory!\n};
         opendir my $dh, $dir or die qq{Could not opendir "$dir": $!\n};
 
@@ -271,6 +274,9 @@ sub pick_log_file {
             my $modtime = -M $fname;
             ## Skip if not a normal file
             next if ! -f _;
+            if (length $prefix or length $postfix) {
+                next if $file !~ /\A\Q$prefix\E.*\Q$postfix\E\z/o;
+            }
             ## Skip if it's older than the lastfile
             next if $lastfiletime and $modtime > $lastfiletime;
             $fileq{$modtime}{$fname} = 1;

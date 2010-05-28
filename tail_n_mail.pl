@@ -23,7 +23,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.12.1';
+our $VERSION = '1.12.2';
 
 ## Mail sending options.
 ## Which mode to use?
@@ -214,6 +214,7 @@ my @files_parsed;
     last if $last_logfile eq $logfile;
     $debug and warn "Parsing file ($logfile)\n";
     my $count = parse_file($logfile);
+    $opt{$curr}{filename} = $logfile;
     push @files_parsed => [$logfile, $count];
     $fileorder{$logfile} = ++$filenum;
     $last_logfile = $logfile;

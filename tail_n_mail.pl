@@ -371,7 +371,7 @@ sub parse_rc_files {
         while (<$rc>) {
             next if /^\s*#/;
             next if ! /^\s*(\w+)\s*[=:]\s*(.+?)\s*$/o;
-            my ($name,$value) = ($1,$2); ## no critic (ProhibitCaptureWithoutTest)
+            my ($name,$value) = (lc $1,$2); ## no critic (ProhibitCaptureWithoutTest)
             $opt{$curr}{$name} = $value;
             ## If we are disabled, simply exit quietly
             if ($name eq 'disable' and $value) {

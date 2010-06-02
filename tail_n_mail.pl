@@ -23,7 +23,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.12.2';
+our $VERSION = '1.12.3';
 
 ## Mail sending options.
 ## Which mode to use?
@@ -55,8 +55,8 @@ my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
 my ($showonly,$usesmtp,$mailzero) = (0,0,0);
 my ($sortby) = ('count'); ## Can also be 'date'
-## The thousands separator for formatting numbers
-my $tsep;
+## The thousands separator for formatting numbers. Whether to turn off in subject lines
+my ($tsep, $tsepnosub);
 
 my $result = GetOptions
  (
@@ -90,6 +90,7 @@ my $result = GetOptions
    'mailzero'     => \$mailzero,
    'smtp'         => \$usesmtp,
    'tsep=s'       => \$tsep,
+   'tsepnosub'    => \$tsepnosub,
   ) or help();
 ++$verbose if $debug;
 
@@ -1221,7 +1222,7 @@ sub process_report {
     for my $f (values %find) {
         $unique_matches += keys %{$f};
     }
-    $unique_matches = pretty_number($unique_matches);
+    my $pretty_unique_matches = pretty_number($unique_matches);
     ## Which was the latest to contain something?
     my $last_file_parsed;
     for my $file (@files_parsed) {
@@ -1229,7 +1230,10 @@ sub process_report {
         $matchfiles++;
         $last_file_parsed = $file->[0];
     }
-    my $grand_total = pretty_number($opt{grand_total});
+$opt{grand_total} = 12345;
+
+    my $grand_total = $opt{grand_total};
+    my $pretty_grand_total = pretty_number($grand_total);
 
     ## If not files matched, output the last one processed
     $last_file_parsed = $files_parsed[-1]->[0] if ! defined $last_file_parsed;
@@ -1238,8 +1242,14 @@ sub process_report {
     my $subject = $opt{$curr}{mailsubject} || $DEFAULT_SUBJECT;
     $subject =~ s/FILE/$last_file_parsed/g;
     $subject =~ s/HOST/$hostname/g;
-    $subject =~ s/NUMBER/$grand_total/g;
-    $subject =~ s/UNIQUE/$unique_matches/g;
+    if ($tsepnosub or $opt{$curr}{tsepnosub}) {
+        $subject =~ s/NUMBER/$grand_total/g;
+        $subject =~ s/UNIQUE/$unique_matches/g;
+    }
+    else {
+        $subject =~ s/NUMBER/$pretty_grand_total/g;
+        $subject =~ s/UNIQUE/$pretty_unique_matches/g;
+    }
     print {$fh} "Subject: $subject\n";
 
     ## Discourage vacation programs from replying
@@ -1278,12 +1288,12 @@ sub process_report {
         print {$fh} "Minimum duration: $custom_duration ms\n";
     }
 
-    print {$fh} "Unique items: $unique_matches\n";
+    print {$fh} "Unique items: $pretty_unique_matches\n";
 
     ## If we parsed more than one file, label them now
     if ($matchfiles > 1) {
         my $letter = 0;
-        print {$fh} "Total matches: $grand_total\n";
+        print {$fh} "Total matches: $pretty_grand_total\n";
         my $maxcount = 1;
         my $maxletter = 1;
         for my $file (@files_parsed) {
@@ -1311,7 +1321,7 @@ sub process_report {
         }
     }
     else {
-        print {$fh} "Matches from $last_file_parsed: $grand_total\n";
+        print {$fh} "Matches from $last_file_parsed: $pretty_grand_total\n";
     }
 
     for my $file (@files_parsed) {

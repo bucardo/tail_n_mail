@@ -1230,7 +1230,6 @@ sub process_report {
         $matchfiles++;
         $last_file_parsed = $file->[0];
     }
-$opt{grand_total} = 12345;
 
     my $grand_total = $opt{grand_total};
     my $pretty_grand_total = pretty_number($grand_total);

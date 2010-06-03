@@ -23,7 +23,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.12.3';
+our $VERSION = '1.12.4';
 
 ## Mail sending options.
 ## Which mode to use?
@@ -210,17 +210,25 @@ my ($string);
 my $last_logfile = '';
 my @files_parsed;
 {
+    ## Generate the next log file to parse
     my $logfile = pick_log_file();
+
+    ## If undefined, simply exit the loop
     last if ! defined $logfile;
+
+    ## If it's the same as the last one we did, we are done
     last if $last_logfile eq $logfile;
+
     $debug and warn "Parsing file ($logfile)\n";
     my $count = parse_file($logfile);
-    $opt{$curr}{filename} = $logfile;
     push @files_parsed => [$logfile, $count];
     $fileorder{$logfile} = ++$filenum;
     $last_logfile = $logfile;
     redo;
 }
+
+
+$opt{$curr}{filename} = $last_logfile;
 
 ## We're done parsing the message, send an email if needed
 process_report() if $opt{grand_total} or $mailzero or $opt{$curr}{mailzero};

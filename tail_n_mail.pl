@@ -23,10 +23,10 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.12.4';
+our $VERSION = '1.12.5';
 
 ## Mail sending options.
-## Which mode to use?
+# Which mode to use?
 my $MAILMODE = 'sendmail'; ## change with --mailmode option
 ## Location of the sendmail program. Expects to be able to use a -f argument.
 my $MAILCOM = '/usr/sbin/sendmail'; ## change with --mailcom option
@@ -856,7 +856,6 @@ sub parse_file {
         while (<$fh>) {
             ## Easiest to just remove the newline here and now
             chomp;
-
             if ($pgmode) {
                 if ($_ =~ $pgpidre) {
                     ($pgpid, $pgsub, $pgnum) = ($1,$2||1,$3||1);
@@ -1038,6 +1037,8 @@ sub process_line {
     ## Make some adjustments to attempt to compress similar entries
     if ($flatten) {
 
+        my $thisletter;
+
         $string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{
             my ($word,$list) = ($1,$2);
             my @word = split(//, $list);
@@ -1047,21 +1048,22 @@ sub process_line {
 
           F: for (my $x = 0; $x <= $#word; $x++) {
 
+                $thisletter = $word[$x];
                 if ($status eq 'start') {
 
                     ## Ignore white space and commas
-                    if ($word[$x] eq ' ' or $word[$x] eq '    ' or $word[$x] eq ',') {
+                    if ($thisletter eq ' ' or $thisletter eq '    ' or $thisletter eq ',') {
                         next F;
                     }
 
                     $numitems++;
                     ## Is this a normal quoted string?
-                    if ($word[$x] eq q{'}) {
+                    if ($thisletter eq q{'}) {
                         $status = 'inquote';
                         next F;
                     }
                     ## Perhaps E'' quoting?
-                    if ($word[$x] eq 'E') {
+                    if ($thisletter eq 'E') {
                         if (defined $word[$x+1] and $word[$x+1] ne q{'}) {
                             ## So weird we'll just pass it through
                             $status = 'fail';
@@ -1072,7 +1074,7 @@ sub process_line {
                         next F;
                     }
                     ## Dollar quoting
-                    if ($word[$x] eq '$') {
+                    if ($thisletter eq '$') {
                         undef @dollar;
                         {
                             push @dollar => $word[$x++];
@@ -1081,7 +1083,7 @@ sub process_line {
                                 $status = 'fail';
                                 last F;
                             }
-                            if ($word[$x] eq '$') {
+                            if ($thisletter eq '$') {
                                 $status = 'dollar';
                                 next F;
                             }
@@ -1094,8 +1096,29 @@ sub process_line {
                 } ## end status 'start'
 
                 if ($status eq 'literal') {
+
+                    ## May be the end of the whole section
+                    if ($thisletter eq ';') {
+                        ## Replace what we have, then move on
+                        #my $qs = '?,' x $numitems;
+                        #chop $qs;
+                        $word .= "(?);";
+                        $numitems = 0;
+
+                        ## Grab everything forward from this point
+                        my $newlist = substr($list,$x+1);
+
+                        if ($newlist =~ m{(.+?(?:VALUES|REPLACE))\s*\(}io) {
+                            $word .= $1;
+                            $x += length $1;
+                        }
+
+                        $status = 'start';
+                        next F;
+                    }
+
                     ## Almost always numbers. Just go until a comma
-                    if ($word[$x] eq ',') {
+                    if ($thisletter eq ',') {
                         $status = 'start';
                     }
                     next F;
@@ -1103,7 +1126,7 @@ sub process_line {
 
                 if ($status eq 'inquote') {
                     ## The only way out is an unescaped single quote
-                    if ($word[$x] eq q{'}) {
+                    if ($thisletter eq q{'}) {
                         next F if $word[$x-1] eq '\\';
                         if (defined $word[$x+1] and $word[$x+1] eq q{'}) {
                             $x++;
@@ -1116,11 +1139,11 @@ sub process_line {
 
                 if ($status eq 'dollar') {
                     ## Only way out is a matching dollar escape
-                    if ($word[$x] eq '$') {
+                    if ($thisletter eq '$') {
                         ## Possibility
                         my $oldpos = $x++;
                         for (my $y=0; $y <= $#dollar; $y++, $x++) {
-                            if ($dollar[$y] ne $word[$x]) {
+                            if ($dollar[$y] ne $thisletter) {
                                 ## Tricked us - reset to next position
                                 $x = $oldpos;
                                 next F;
@@ -1133,14 +1156,15 @@ sub process_line {
                     }
                 }
 
-            } ## end each letter
+            } ## end each letter (F)
+
             if ($status eq 'fail') {
                 "$word ($list)";
             }
             else {
-                my $qs = '?,' x $numitems;
-                chop $qs;
-                "$word ($qs)";
+                #my $qs = '?,' x $numitems;
+                #chop $qs;
+                "$word (?)";
             }
         }geix;
         $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;

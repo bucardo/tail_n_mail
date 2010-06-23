@@ -23,7 +23,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.12.5';
+our $VERSION = '1.12.6';
 
 ## Mail sending options.
 # Which mode to use?
@@ -124,10 +124,10 @@ chomp $hostname;
 ## Regexen for Postgres PIDs:
 ## $1=PID $2=part1 $3=part2
 my %pgpidres = (
-    1 => qr{.+?\[(\d+)\]: \[(\d+)\-(\d+)\]},
-    2 => qr{.+?\d\d:\d\d:\d\d \w\w\w (\d+)},
-    3 => qr{.+?\d\d:\d\d:\d\d (\w\w\w)}, ## Fake a PID
-    4 => qr{.+?\[(\d+)\]},
+    1 => qr{\[(\d+)\]: \[(\d+)\-(\d+)\]},
+    2 => qr{\d\d:\d\d:\d\d \w\w\w (\d+)},
+    3 => qr{\d\d:\d\d:\d\d (\w\w\w)}, ## Fake a PID
+    4 => qr{\[(\d+)\]},
 );
 
 my $pgpidre = $pgpidres{$pgformat};
@@ -355,6 +355,16 @@ sub pick_log_file {
 } ## end of pick_log_file
 
 
+sub assign_pgformat {
+    my $value = shift;
+    $pgformat = $value;
+    ## Assign new regex, bail if they don't exist
+    $pgpidre = $pgpidres{$pgformat} or die "Invalid pgformat: $value\n";
+    $pgpiddatere = $pgpiddateres{$pgformat} or die "Invalid pgformat: $value\n";
+    return;
+}
+
+
 sub parse_rc_files {
 
     ## Read in global settings from rc files
@@ -385,6 +395,12 @@ sub parse_rc_files {
             ## If we are disabled, simply exit quietly
             if ($name eq 'disable' and $value) {
                 exit 0;
+            }
+            if ($name eq 'pgformat') {
+                assign_pgformat($value);
+            }
+            if ($name eq 'maxsize') {
+                $maxsize = $value;
             }
         }
         close $rc or die;
@@ -497,11 +513,8 @@ sub parse_config_file {
         }
         ## The pg format to use
         elsif (/^PGFORMAT:\s*(\d)\s*$/) {
-            ## Change the global $pgformat as well
-            $localopt{pgformat} = $pgformat = $1;
-            ## Assign new regex, bail if they don't exist
-            $pgpidre = $pgpidres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
-            $pgpiddatere = $pgpiddateres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
+            $localopt{pgformat} = $1;
+            assign_pgformat($1);
         }
         ## What type of report this is
         elsif (/^TYPE:\s*(.+?)\s*$/) {
@@ -543,7 +556,7 @@ sub parse_config_file {
             $localopt{maxsize} = $1;
             ## Command line still wins
             if (int $maxsize == int $MAXSIZE) {
-            $maxsize = $localopt{maxsize};
+                $maxsize = $localopt{maxsize};
             }
         }
         ## The subject line for this file
@@ -665,11 +678,7 @@ sub parse_inherit_file {
         }
         ## The pg format to use
         elsif (/^PGFORMAT:\s*(\d)\s*$/) {
-            ## Change the global $pgformat as well
-            $pgformat = $1;
-            ## Assign new regex, bail if they don't exist
-            $pgpidre = $pgpidres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
-            $pgpiddatere = $pgpiddateres{$pgformat} or die "Invalid PGFORMAT line: $pgformat\n";
+            assign_pgformat($1);
         }
         ## Who to send emails from
         elsif (/^FROM:\s*(.+?)\s*$/) {
@@ -722,7 +731,7 @@ sub parse_file {
     if (!exists $opt{$curr}{lastfile} or ($opt{$curr}{lastfile} eq $filename)) {
         ## Allow the offset to equal the size via --reset
         if ($reset) {
-            $offset = $size;
+            $offset = $opt{$curr}{newoffset} = $size;
             $verbose and warn "  Resetting offset to $offset\n";
         }
         ## Allow the offset to be changed on the command line

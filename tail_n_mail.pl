@@ -23,7 +23,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.12.6';
+our $VERSION = '1.13.0';
 
 ## Mail sending options.
 # Which mode to use?
@@ -53,7 +53,7 @@ my $WRAPLIMIT = 990;
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
-my ($showonly,$usesmtp,$mailzero) = (0,0,0);
+my ($showonly,$usesmtp,$mailzero,$pretty_query) = (0,0,0,1);
 my ($sortby) = ('count'); ## Can also be 'date'
 ## The thousands separator for formatting numbers. Whether to turn off in subject lines
 my ($tsep, $tsepnosub);
@@ -91,6 +91,7 @@ my $result = GetOptions
    'smtp'         => \$usesmtp,
    'tsep=s'       => \$tsep,
    'tsepnosub'    => \$tsepnosub,
+   'pretty_query' => \$pretty_query,
   ) or help();
 ++$verbose if $debug;
 
@@ -1187,8 +1188,16 @@ sub process_line {
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
     }
 
+    ## Format the final string a little bit
+    if ($pretty_query and $pgmode and $pgmode ne 'csv') {
+        for my $word (qw/DETAIL HINT QUERY CONTEXT STATEMENT/) {
+            $string =~ s/$word: /\n$word: /;
+        }
+        $string =~ s/($levelre): /\n$1: /;
+    }
+
     ## Try to separate into header and body, then check for similar entries
-    if ($string =~ /(.+?)($levelre:.+)/o) {
+    if ($string =~ /(.+?)(\n?$levelre:.+)/o) {
         my ($head,$body) = ($1,$2);
 
         ## Seen this body before?

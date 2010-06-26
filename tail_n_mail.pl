@@ -534,7 +534,7 @@ sub parse_config_file {
             }
         }
         ## Limit how many duration matches we show
-        elsif (/^DURATION-LIMIT:\s*(\d+)/) {
+        elsif (/^DURATION_LIMIT:\s*(\d+)/) {
             ## Command line still wins
             if (!$duration_limit) {
                 $duration_limit = $localopt{duration_limit} = $1;

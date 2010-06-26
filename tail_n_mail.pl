@@ -1695,9 +1695,10 @@ sub final_cleanup {
 ## Last updated: $now
 };
 
-        for my $item (qw/ email from pgformat type duration find_line_number sortby /) {
+        for my $item (qw/ email from pgformat type duration find_line_number sortby duration_limit/) {
             next if ! exists $opt{$curr}{$item};
             next if $item eq 'duration' and $custom_duration < 0;
+            next if $item eq 'duration_limit' and ! $duration_limit;
             ## Only rewrite if it came from this config file, not tailnmailrc or command line
             next if ! exists $opt{configfile}{$item};
             add_comments(uc $item);

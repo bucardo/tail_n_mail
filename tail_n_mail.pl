@@ -1195,6 +1195,9 @@ sub process_line {
             $string =~ s/$word: /\n$word: /;
         }
         $string =~ s/($levelre): /\n$1: /;
+        if ($custom_type eq 'duration') {
+            $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
+        }
     }
 
     ## Try to separate into header and body, then check for similar entries

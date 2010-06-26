@@ -336,6 +336,7 @@ sub pick_log_file {
 
             my @ltime = localtime(time - $timerewind);
             my $newfile = POSIX::strftime($orig, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
+            $debug and warn "Checking for file $newfile (last was $lastfile)\n";
             last if $newfile eq $lastfile;
             if (! exists $seenfile{$newfile}) {
                 $seenfile{$newfile} = 1;

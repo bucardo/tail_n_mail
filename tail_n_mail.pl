@@ -53,45 +53,46 @@ my $WRAPLIMIT = 990;
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
-my ($showonly,$usesmtp,$mailzero,$pretty_query) = (0,0,0,1);
+my ($showonly,$usesmtp,$mailzero,$pretty_query,$duration_limit) = (0,0,0,1,0);
 my ($sortby) = ('count'); ## Can also be 'date'
 ## The thousands separator for formatting numbers. Whether to turn off in subject lines
 my ($tsep, $tsepnosub);
 
 my $result = GetOptions
  (
-   'verbose'      => \$verbose,
-   'quiet'        => \$quiet,
-   'debug'        => \$debug,
-   'dryrun'       => \$dryrun,
-   'help'         => \$help,
-   'nomail'       => \$nomail,
-   'reset'        => \$reset,
-   'limit=i'      => \$limit,
-   'rewind=i'     => \$rewind,
-   'version'      => \$version,
-   'offset=i'     => \$custom_offset,
-   'duration=i'   => \$custom_duration,
-   'file=s'       => \$custom_file,
-   'flatten!'     => \$flatten,
-   'timewarp=i'   => \$timewarp,
-   'pgmode=s'     => \$pgmode,
-   'pgformat=i'   => \$pgformat,
-   'maxsize=i'    => \$maxsize,
-   'type=s'       => \$custom_type,
-   'sortby=s'     => \$sortby,
-   'showonly=i'   => \$showonly,
-   'mailmode=s'   => \$MAILMODE,
-   'mailcom=s'    => \$MAILCOM,
-   'mailserver=s' => \$MAILSERVER,
-   'mailuser=s'   => \$MAILUSER,
-   'mailpass=s'   => \$MAILPASS,
-   'mailport=s'   => \$MAILPORT,
-   'mailzero'     => \$mailzero,
-   'smtp'         => \$usesmtp,
-   'tsep=s'       => \$tsep,
-   'tsepnosub'    => \$tsepnosub,
-   'pretty_query' => \$pretty_query,
+   'verbose'          => \$verbose,
+   'quiet'            => \$quiet,
+   'debug'            => \$debug,
+   'dryrun'           => \$dryrun,
+   'help'             => \$help,
+   'nomail'           => \$nomail,
+   'reset'            => \$reset,
+   'limit=i'          => \$limit,
+   'rewind=i'         => \$rewind,
+   'version'          => \$version,
+   'offset=i'         => \$custom_offset,
+   'duration=i'       => \$custom_duration,
+   'file=s'           => \$custom_file,
+   'flatten!'         => \$flatten,
+   'timewarp=i'       => \$timewarp,
+   'pgmode=s'         => \$pgmode,
+   'pgformat=i'       => \$pgformat,
+   'maxsize=i'        => \$maxsize,
+   'type=s'           => \$custom_type,
+   'sortby=s'         => \$sortby,
+   'showonly=i'       => \$showonly,
+   'mailmode=s'       => \$MAILMODE,
+   'mailcom=s'        => \$MAILCOM,
+   'mailserver=s'     => \$MAILSERVER,
+   'mailuser=s'       => \$MAILUSER,
+   'mailpass=s'       => \$MAILPASS,
+   'mailport=s'       => \$MAILPORT,
+   'mailzero'         => \$mailzero,
+   'smtp'             => \$usesmtp,
+   'tsep=s'           => \$tsep,
+   'tsepnosub'        => \$tsepnosub,
+   'pretty_query'     => \$pretty_query,
+   'duration_limit=i' => \$duration_limit,
   ) or help();
 ++$verbose if $debug;
 
@@ -1383,6 +1384,10 @@ sub process_report {
         }
     }
 
+    if ($custom_type eq 'duration' and $duration_limit and $grand_total > $duration_limit) {
+        print {$fh} "Not showing all lines: duration limit is $duration_limit\n";
+    }
+
     ## The meat of the message
     lines_of_interest($fh, $matchfiles);
 
@@ -1538,7 +1543,13 @@ sub lines_of_interest {
     my $count = 1;
     for my $f (sort sortsub @sorted) {
 
-        last if $showonly and $count>$showonly;
+        last if $showonly and $count > $showonly;
+
+        ## Sometimes we don't want to show all the durations
+        if ($custom_type eq 'duration' and $duration_limit) {
+            last if $count > $duration_limit;
+            ## XXX Print something?
+        }
 
         print "\n[$count]";
         $count++;

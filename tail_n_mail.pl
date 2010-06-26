@@ -405,6 +405,9 @@ sub parse_rc_files {
             if ($name eq 'maxsize') {
                 $maxsize = $value;
             }
+            if ($name eq 'duration_limit') {
+                $duration_limit = $value;
+            }
         }
         close $rc or die;
     }
@@ -528,6 +531,13 @@ sub parse_config_file {
             ## Command line still wins
             if ($custom_duration < 0) {
                 $custom_duration = $localopt{duration} = $1;
+            }
+        }
+        ## Limit how many duration matches we show
+        elsif (/^DURATION-LIMIT:\s*(\d+)/) {
+            ## Command line still wins
+            if (!$duration_limit) {
+                $duration_limit = $localopt{duration_limit} = $1;
             }
         }
         ## How to sort the output

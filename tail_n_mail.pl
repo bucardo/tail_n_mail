@@ -41,7 +41,7 @@ my $MAILPORT = 465;             ## change with --mailport option
 my $MAXSIZE = 80_000_000;
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
-my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST';
+my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE:NUMBER';
 
 ## We can define custom types, e.g. "duration" that get printed differently
 my $custom_type = 'normal';

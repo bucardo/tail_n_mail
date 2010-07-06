@@ -1,0 +1,23 @@
+This file describes the changes made in each version of the tail_n_mail program.
+
+Please see http://bucardo.org/tail_n_mail for full documentation.
+
+[ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
+
+Version 1.14.0 of tail_n_mail
+
+* Change the name from tail_n_mail.pl to simply tail_n_mail
+
+* Add new pgformat to support microsecond logging.
+
+* Add statement_size option (defaults to 1000 characters)
+
+* Change the default subject line to have UNIQUE : NUMBER
+
+* Make all numbers "pretty"
+
+Version 1.13.0 of tail_n_mail, released June 26, 2010
+
+
+
+

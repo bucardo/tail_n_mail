@@ -132,6 +132,8 @@ my %pgpidres = (
     2 => qr{\d\d:\d\d:\d\d \w\w\w (\d+)},
     3 => qr{\d\d:\d\d:\d\d (\w\w\w)}, ## Fake a PID
     4 => qr{\[(\d+)\]},
+    ## Ex: 2010-07-01 17:27:49.128 UTC backup us1 216.211.116.219(48668) 11185 FATAL
+    5 => qr{\(\d+\) (\d+)},
 );
 
 my $pgpidre = $pgpidres{$pgformat};
@@ -142,6 +144,7 @@ my %pgpiddateres = (
     2 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
     3 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
     4 => qr{(.+? \w\w\w)},
+    5 => qr{(.+?\d\d:\d\d:\d\d.\d\d\d \w\w\w)},
 );
 my $pgpiddatere = $pgpiddateres{$pgformat};
 

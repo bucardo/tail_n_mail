@@ -23,7 +23,7 @@ use File::Temp     qw( tempfile   );
 use File::Basename qw( dirname    );
 use 5.008003;
 
-our $VERSION = '1.13.0';
+our $VERSION = '1.14.0';
 
 ## Mail sending options.
 # Which mode to use?
@@ -54,6 +54,7 @@ my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
 my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
 my ($showonly,$usesmtp,$mailzero,$pretty_query,$duration_limit) = (0,0,0,1,0);
+my ($statement_size) = (1000);
 my ($sortby) = ('count'); ## Can also be 'date'
 ## The thousands separator for formatting numbers. Whether to turn off in subject lines
 my ($tsep, $tsepnosub);
@@ -93,6 +94,7 @@ my $result = GetOptions
    'tsepnosub'        => \$tsepnosub,
    'pretty_query'     => \$pretty_query,
    'duration_limit=i' => \$duration_limit,
+   'statement_size=i' => \$statement_size,
   ) or help();
 ++$verbose if $debug;
 
@@ -1558,7 +1560,6 @@ sub lines_of_interest {
         ## Sometimes we don't want to show all the durations
         if ($custom_type eq 'duration' and $duration_limit) {
             last if $count > $duration_limit;
-            ## XXX Print something?
         }
 
         print "\n[$count]";
@@ -1659,13 +1660,27 @@ sub lines_of_interest {
 
 sub wrapline {
 
-    ## Quick and simple wrapper around very long lines to make SMTP servers happy
+    ## Truncate lines that are too long
+    ## Wrap long lines to make SMTP servers happy
 
     my $line = shift;
 
-    return $line if length $line < $WRAPLIMIT;
+    my $len = length $line;
+    my $olen = $len;
+    my $waschopped = 0;
+    if ($len > $statement_size and $statement_size) {
+        $line = substr($line,0,$statement_size);
+        $waschopped = 1;
+        $len = $statement_size;
+    }
 
-    $line =~ s{(.{$WRAPLIMIT})}{$1\n}g;
+    if ($len >= $WRAPLIMIT) {
+        $line =~ s{(.{$WRAPLIMIT})}{$1\n}g;
+    }
+
+    if ($waschopped) {
+        $line .= "\n[LINE TRUNCATED, original was $olen characters long]";
+    }
 
     return $line;
 

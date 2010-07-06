@@ -41,7 +41,7 @@ my $MAILPORT = 465;             ## change with --mailport option
 my $MAXSIZE = 80_000_000;
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
-my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE:NUMBER';
+my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
 
 ## We can define custom types, e.g. "duration" that get printed differently
 my $custom_type = 'normal';
@@ -1558,6 +1558,10 @@ sub lines_of_interest {
     my $count = 1;
     for my $f (sort sortsub @sorted) {
 
+        if ($find_line_number) {
+            $f->{line} = pretty_number($f->{line});
+        }
+
         last if $showonly and $count > $showonly;
 
         ## Sometimes we don't want to show all the durations
@@ -1592,6 +1596,10 @@ sub lines_of_interest {
         my $earliest = $f->{earliest};
         my $latest = $f->{latest};
         my $pcount = pretty_number($f->{count});
+
+        if ($find_line_number) {
+            $latest->{line} = pretty_number($latest->{line});
+        }
 
         ## Does it span multiple files?
         my $samefile = $earliest->{filename} eq $latest->{filename} ? 1 : 0;
@@ -1682,6 +1690,7 @@ sub wrapline {
     }
 
     if ($waschopped) {
+        $olen = pretty_number($olen);
         $line .= "\n[LINE TRUNCATED, original was $olen characters long]";
     }
 
@@ -1823,7 +1832,7 @@ __DATA__
 ## Config file for the tail_n_mail.pl program
 ## This file is automatically updated
 EMAIL: someone@example.com
-MAILSUBJECT: Acme HOST Postgres errors (FILE)
+MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
 
 FILE: /var/log/postgresql-%Y-%m-%d.log
 INCLUDE: ERROR:  

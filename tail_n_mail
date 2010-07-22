@@ -1045,7 +1045,6 @@ sub process_line {
         $find{$filename}{$line} =
                 {
                  string   => $string,
-                 nonflat  => $string,
                  line     => $line,
                  filename => $filename,
                  count    => 1,
@@ -1053,8 +1052,8 @@ sub process_line {
         return 1;
     }
 
-    ## Save the pre-flattened version
-    my $nonflat = $string;
+    ## Save the raw version
+    my $rawstring = $string;
 
     ## Make some adjustments to attempt to compress similar entries
     if ($flatten and $custom_type ne 'duration') {
@@ -1200,14 +1199,16 @@ sub process_line {
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
     }
 
-    ## Format the final string a little bit
+    ## Format the final string (and rawstring) a little bit
     if ($pretty_query and $pgmode and $pgmode ne 'csv') {
         for my $word (qw/DETAIL HINT QUERY CONTEXT STATEMENT/) {
             $string =~ s/$word: /\n$word: /;
+            $rawstring =~ s/$word: /\n$word: /;
         }
         $string =~ s/($levelre): /\n$1: /;
         if ($custom_type eq 'duration') {
             $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
+            $rawstring =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
         }
     }
 
@@ -1224,7 +1225,6 @@ sub process_line {
             $similar{$body}{latest} =
                 {
                  string   => $string,
-                 nonflat  => $nonflat,
                  line     => $line,
                  filename => $filename,
                  };
@@ -1237,14 +1237,16 @@ sub process_line {
             $similar{$body}{earliest} = $similar{$body}{latest} =
                 {
                  string   => $string,
-                 nonflat  => $nonflat,
                  line     => $line,
                  filename => $filename,
                  };
             ## Start counting these items
             $similar{$body}{count} = 1;
+
             ## Store this away for eventual output
             $find{$filename}{$line} = $similar{$body};
+            $find{$filename}{$line}{rawstring} = $rawstring;
+
             ## Copy filename and line up a level for later sorting ease
             $find{$filename}{$line}{filename} = $similar{$body}{earliest}{filename};
             $find{$filename}{$line}{line} = $similar{$body}{earliest}{line};
@@ -1256,7 +1258,6 @@ sub process_line {
             count    => 1,
             line     => $line,
             filename => $filename,
-            nonflat  => $nonflat,
         };
     }
 
@@ -1585,6 +1586,14 @@ sub lines_of_interest {
             }
             my $string = wrapline(exists $f->{earliest} ? $f->{earliest}{string} : $f->{string});
             print "$string\n";
+
+            ## Show the first actual error if we've flattened things out
+            if ($f->{string} ne $f->{rawstring}) {
+                print "-\n";
+                print wrapline($f->{rawstring});
+                print "\n";
+            }
+
             next;
         }
 
@@ -1653,6 +1662,13 @@ sub lines_of_interest {
             print wrapline($estring);
             print "\n";
             print wrapline($lstring);
+            print "\n";
+        }
+
+        ## Show the first actual error if we've flattened things out
+        if ($f->{string} ne $f->{rawstring}) {
+            print "-\n";
+            print wrapline($f->{rawstring});
             print "\n";
         }
 
@@ -1800,6 +1816,7 @@ sub pretty_number {
             $tsep = $opt{$curr}{tsep};
             return pretty_number($number);
         }
+        my $lconv = localeconv();
         $tsep = $lconv->{thousands_sep} || ',';
     }
 

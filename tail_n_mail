@@ -53,7 +53,7 @@ my $WRAPLIMIT = 990;
 ## Set defaults for all the options, then read them in from command line
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
-my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
+my ($timewarp,$pgmode,$find_line_number,$pgformat,$pgdateformat,$maxsize) = (0,1,1,1,1,$MAXSIZE);
 my ($showonly,$usesmtp,$mailzero,$pretty_query,$duration_limit) = (0,0,0,1,0);
 my ($statement_size) = (1000);
 my ($sortby) = ('count'); ## Can also be 'date'
@@ -79,6 +79,7 @@ my $result = GetOptions
    'timewarp=i'       => \$timewarp,
    'pgmode=s'         => \$pgmode,
    'pgformat=s'       => \$pgformat,
+   'pgdateformat=s'   => \$pgdateformat,
    'maxsize=i'        => \$maxsize,
    'type=s'           => \$custom_type,
    'sortby=s'         => \$sortby,
@@ -126,34 +127,25 @@ if ($configfile =~ /duration/i) {
 my $hostname = qx{hostname};
 chomp $hostname;
 
-## Regexen for Postgres PIDs:
-## $1=PID $2=part1 $3=part2
-my %pgpidres = (
-    1 => qr{\[(\d+)\]: \[(\d+)\-(\d+)\]},
-    2 => qr{\d\d:\d\d:\d\d \w\w\w (\d+)},
-    3 => qr{\d\d:\d\d:\d\d (\w\w\w)}, ## Fake a PID
-    4 => qr{\[(\d+)\]},
-    ## Ex: 2010-07-01 17:27:49.128 UTC backup us1 216.211.116.219(48668) 11185 FATAL
-    5 => qr{\(\d+\) (\d+)},
-);
+my $syslog = $pgformat =~ s/syslog/1/ ? 2 : 0;
 
-my $pgpidre = $pgpidres{$pgformat};
+## TODO: Read this in from a config file
+my $llp = '%t [%p]: [%l-1] user=%u,db=%d ';
 
-## Regexes to extract the date part from a line:
-my %pgpiddateres = (
-    1 => qr{(.+?\[\d+\]): \[\d+\-\d+\]},
-    2 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
-    3 => qr{(.+?\d\d:\d\d:\d\d \w\w\w)},
-    4 => qr{(.+? \w\w\w)},
-    5 => qr{(.+?\d\d:\d\d:\d\d.\d\d\d \w\w\w)},
-);
-my $pgpiddatere = $pgpiddateres{$pgformat};
+## Process the log_line_prefix and change it into a regex
+my $newregex = '';
+my $reg = $llp;
+my ($havetime,$havepid) = (0,0);
+$reg =~ s/([\-\[\]])/\\$1/g;
+$reg =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w)/ and $havetime=1;
+$reg =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w)/ and $havetime=1;
+$reg =~ s/%p/(\\d+)/ and $havepid = 1;
+$reg =~ s/%l/\\d+/;
+$reg =~ s/%u/\\w+/;
+$reg =~ s/%d/\\w+/;
+$reg =~ s/%r/.+?\\(\\d+\\)/;
 
-## The possible types of levels in Postgres logs
-my %level = map { $_ => 1 } qw{PANIC FATAL ERROR WARNING NOTICE LOG INFO};
-for (1..5) { $level{"DEBUG$_"} = 1; }
-my $levels = join '|' => keys %level;
-my $levelre = qr{(?:$levels)};
+my $pgpidre = qr{($reg)(.+)};
 
 ## We use a CURRENT key for future expansion
 my $curr = 'CURRENT';
@@ -212,7 +204,7 @@ $opt{grand_total} = 0;
 my (%fileorder, $filenum);
 
 ## Generic globals
-my ($string);
+my ($string,$time);
 
 ## Parse each file returned by pick_log_file until we start looping
 my $last_logfile = '';
@@ -363,17 +355,6 @@ sub pick_log_file {
 
 } ## end of pick_log_file
 
-
-sub assign_pgformat {
-    my $value = shift;
-    $pgformat = $value;
-    ## Assign new regex, bail if they don't exist
-    $pgpidre = $pgpidres{$pgformat} or die "Invalid pgformat: $value\n";
-    $pgpiddatere = $pgpiddateres{$pgformat} or die "Invalid pgformat: $value\n";
-    return;
-}
-
-
 sub parse_rc_files {
 
     ## Read in global settings from rc files
@@ -404,9 +385,6 @@ sub parse_rc_files {
             ## If we are disabled, simply exit quietly
             if ($name eq 'disable' and $value) {
                 exit 0;
-            }
-            if ($name eq 'pgformat') {
-                assign_pgformat($value);
             }
             if ($name eq 'maxsize') {
                 $maxsize = $value;
@@ -516,11 +494,6 @@ sub parse_config_file {
         ## Who to send emails from
         elsif (/^FROM:\s*(.+?)\s*$/) {
             $localopt{from} = $1;
-        }
-        ## The pg format to use
-        elsif (/^PGFORMAT:\s*(\d)\s*$/) {
-            $localopt{pgformat} = $1;
-            assign_pgformat($1);
         }
         ## What type of report this is
         elsif (/^TYPE:\s*(.+?)\s*$/) {
@@ -688,10 +661,6 @@ sub parse_inherit_file {
             if ($custom_duration < 0) {
                 $custom_duration = $1;
             }
-        }
-        ## The pg format to use
-        elsif (/^PGFORMAT:\s*(\d)\s*$/) {
-            assign_pgformat($1);
         }
         ## Who to send emails from
         elsif (/^FROM:\s*(.+?)\s*$/) {
@@ -872,59 +841,85 @@ sub parse_file {
     } ## end of PG CSV mode
     else {
         ## Postgres-specific multi-line grabbing stuff:
-        my ($pgpid, $pgnum, $pgsub, %current_pid_num, $lastpid);
+        my ($pgts, $pgpid, %current_pid_num, $lastpid, $pgprefix);
+        my $pgnum = 1;
         my $lastline = '';
-
-        while (<$fh>) {
+      LOGLINE: while (<$fh>) {
             ## Easiest to just remove the newline here and now
             chomp;
             if ($pgmode) {
-                if ($_ =~ $pgpidre) {
-                    ($pgpid, $pgsub, $pgnum) = ($1,$2||1,$3||1);
+                ## 1=prefix 2=timestamp 3=PID 4=rest
+                if ($_ =~ s/$pgpidre/$4/) {
+                    $pgprefix = $1;
+                    ## We want the timestamp and the pid, even if we have to fake it
+                    if ($havetime and $havepid) {
+                        ($pgts,$pgpid) = ($2,$3);
+                    }
+                    elsif ($havetime) {
+                        ($pgts,$pgpid) = ($1,1);
+                    }
+                    elsif ($havepid) {
+                        ($pgts,$pgpid) = ('',$1);
+                    }
+                    else {
+                        ($pgts,$pgpid) = ('',1);
+                    }
+                    $pgnum = 1;
                     $lastpid = $pgpid;
-                    ## We've found something that looks like: postgres[12345] [1-1]
                     ## Have we seen this PID before?
                     if (exists $pidline{$pgpid}) {
-                        ## If this is a statement or detail or hint or context, append to the previous entry
-                        ## Do the same for a LOG: statement combo (e.g. following a duration)
-                        if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT):  /o
-                                or (/ LOG:  statement: /o
-                                and
-                                $pidline{$pgpid}{string}{$current_pid_num{$pgpid}}
-                                or (/ LOG:  statement: /o and $lastline !~ /  statement: |FATAL|PANIC/))) {
+                        ## TODO: handle syslog again. The first number after the PID should change
+                        die "syslog not working now!\n" if $syslog;
+
+                        ## If this is a statement or detail or hint or context
+                        ## append to the string for this PID
+                        if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT):  /o) {
+                            ## Increment the pgnum by one
                             $pgnum = $current_pid_num{$pgpid} + 1;
                         }
-                        ## Is this a new entry for this PID? If so, process the old.
-                        if ($pgnum <= 1) {
-                            $count += process_line($pidline{$pgpid}, 0, $filename);
-                            ## Delete it so it gets recreated afresh below
-                            delete $pidline{$pgpid};
-                        }
                         else {
-                            ## Trim the string up - no need to see the header info each time
-                            s/^.+?$pgpidre\s*//;
-                            ## No need to see the user more than once for supplemental information
-                            s/.+\b(STATEMENT|DETAIL|HINT|CONTEXT):/$1:/;
+                            ## Process the old one
+                            ## Delete it so it gets recreated afresh below
+                            $count += process_line(delete $pidline{$pgpid}, 0, $filename);
                         }
                     }
+
+                    ## Assign this string to the current pgnum slot
                     $pidline{$pgpid}{string}{$pgnum} = $_;
                     $current_pid_num{$pgpid} = $pgnum;
 
-                    ## Store the line number if we don't have one yet for this PID
-                    $pidline{$pgpid}{line} ||= ($. + $newlines);
+                    ## If we don't yet have a line, store it, plus the prefix and timestamp
+                    if (! $pidline{$pgpid}{line}) {
+                        $pidline{$pgpid}{line} = ($. + $newlines);
+                        $pidline{$pgpid}{pgprefix} = $pgprefix;
+                        $pidline{$pgpid}{pgtime} = $pgts;
+                    }
 
+                    ## Remember this line
                     $lastline = $_;
-                }
-                elsif ($lastpid) {
-                    ## Append this to the previous entry
-                    $pgnum = $current_pid_num{$lastpid} + 1;
-                    s{^\t}{ };
-                    $pidline{$lastpid}{string}{$pgnum} = $_;
-                    $current_pid_num{$lastpid} = $pgnum;
+
+                    ## We are done: go the next line
+                    next LOGLINE;
                 }
 
-                ## No need to do anything more right now
-                next;
+                ## We did not match the log_line_prefix
+
+                ## If we do not have a PID yet, skip this line
+                next LOGLINE if ! $lastpid;
+
+                ## Replace leading tab with a space
+                s{^\t}{ };
+
+                ## Increment the pgnum
+                $pgnum = $current_pid_num{$lastpid} + 1;
+                $current_pid_num{$lastpid} = $pgnum;
+
+                ## Store this string
+                $pidline{$lastpid}{string}{$pgnum} = $_;
+
+                ## No need to do anything more right now if in pgmode
+                next LOGLINE;
+
             } ## end of normal pgmode
 
             ## Just a bare entry, so process it right away
@@ -1005,8 +1000,14 @@ sub process_line {
 
     ## The final string
     $string = '';
+    ## The prefix
+    my $pgprefix = '';
+    ## The timestamp
+    $time = '';
 
     if (ref $arg eq 'HASH') {
+        $pgprefix = $arg->{pgprefix} if exists $arg->{pgprefix};
+        $time = $arg->{pgtime} if exists $arg->{pgtime};
         for my $l (sort {$a<=>$b} keys %{$arg->{string}}) {
             ## Some Postgres/syslog combos produce ugly output
             $arg->{string}{$l} =~ s/^(?:\s*#011\s*)+//o;
@@ -1031,6 +1032,7 @@ sub process_line {
 
     $debug and warn "MATCH at line $line of $filename\n";
 
+
     ## Force newlines to a single line
     $string =~ s/\n/\\n/go;
 
@@ -1049,6 +1051,7 @@ sub process_line {
                  filename => $filename,
                  count    => 1,
                  };
+
         return 1;
     }
 
@@ -1199,7 +1202,8 @@ sub process_line {
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
         $string =~ s{(syntax error at or near) "\w+" at character \d+}{$1 "?" at character ?}o;
         $string =~ s{(syntax error at or near ".+" at character) \d+}{$1 ?}o;
-    }
+
+    } ## end of flatten
 
     ## Format the final string (and rawstring) a little bit
     if ($pretty_query and $pgmode and $pgmode ne 'csv') {
@@ -1207,51 +1211,52 @@ sub process_line {
             $string =~ s/$word: /\n$word: /;
             $rawstring =~ s/$word: /\n$word: /;
         }
-        $string =~ s/($levelre): /\n$1: /;
         if ($custom_type eq 'duration') {
             $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
             $rawstring =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
         }
     }
 
-    ## Try to separate into header and body, then check for similar entries
-    if ($string =~ /(.+?)(\n?$levelre:.+)/o) {
-        my ($head,$body) = ($1,$2);
+    ## If we have a prefix, check for similar entries
+    if (length $pgprefix) {
 
-        ## Seen this body before?
+        ## Seen this string before?
         my $seenit = 0;
 
-        if (exists $similar{$body}) {
+        if (exists $similar{$string}) {
             $seenit = 1;
             ## This becomes the new latest one
-            $similar{$body}{latest} =
+            $similar{$string}{latest} =
                 {
-                 string   => $string,
-                 line     => $line,
                  filename => $filename,
+                 line     => $line,
+                 pgprefix => $pgprefix,
+                 time     => $time,
                  };
             ## Increment the count
-            $similar{$body}{count}++;
+            $similar{$string}{count}++;
         }
 
         if (!$seenit) {
             ## Store as the earliest and latest version we've seen
-            $similar{$body}{earliest} = $similar{$body}{latest} =
+            $similar{$string}{earliest} = $similar{$string}{latest} =
                 {
-                 string   => $string,
-                 line     => $line,
                  filename => $filename,
+                 line     => $line,
+                 pgprefix => $pgprefix,
+                 time     => $time,
                  };
             ## Start counting these items
-            $similar{$body}{count} = 1;
+            $similar{$string}{count} = 1;
 
             ## Store this away for eventual output
-            $find{$filename}{$line} = $similar{$body};
+            $find{$filename}{$line} = $similar{$string};
+            $find{$filename}{$line}{string} = $string;
             $find{$filename}{$line}{rawstring} = $rawstring;
 
             ## Copy filename and line up a level for later sorting ease
-            $find{$filename}{$line}{filename} = $similar{$body}{earliest}{filename};
-            $find{$filename}{$line}{line} = $similar{$body}{earliest}{line};
+            $find{$filename}{$line}{filename} = $similar{$string}{earliest}{filename};
+            $find{$filename}{$line}{line} = $similar{$string}{earliest}{line};
         }
     }
     else {
@@ -1586,7 +1591,7 @@ sub lines_of_interest {
             else {
                 print "\n";
             }
-            my $string = wrapline(exists $f->{earliest} ? $f->{earliest}{string} : $f->{string});
+            my $string = wrapline($f->{string});
             print "$string\n";
 
             ## Show the first actual error if we've flattened things out
@@ -1643,18 +1648,14 @@ sub lines_of_interest {
             print "\n";
         }
 
-        ## If we can, show just the interesting part
-        my $estring = $earliest->{string};
-        my $lstring = $latest->{string};
-        if ($pgmode and $pgmode ne 'csv' and $estring =~ s/$pgpiddatere(.+)/$2/) {
-            my $headstart = $1;
-            $lstring =~ /$pgpiddatere/ or die "Latest did not match?!\n";
-            my $headend = $1; ## no critic (ProhibitCaptureWithoutTest)
+        ## If we have prefixes available, show those
+        my $estring = $f->{string};
+        if (exists $earliest->{pgprefix}) {
             printf "First: %s%s\nLast:  %s%s\n",
                 $samefile ? '' : "[$fab{$earliest->{filename}}] ",
-                $headstart,
+                $earliest->{pgprefix},
                 $samefile ? '' : "[$fab{$latest->{filename}}] ",
-                $headend;
+                $latest->{pgprefix};
             $estring =~ s/^\s+//o;
             print wrapline($estring);
             print "\n";
@@ -1663,12 +1664,12 @@ sub lines_of_interest {
             print " Earliest and latest:\n";
             print wrapline($estring);
             print "\n";
-            print wrapline($lstring);
+            print wrapline($latest->{string});
             print "\n";
         }
 
         ## Show the first actual error if we've flattened things out
-        if ($f->{string} ne $f->{rawstring}) {
+        if ($estring ne $f->{rawstring}) {
             print "-\n";
             print wrapline($f->{rawstring});
             print "\n";

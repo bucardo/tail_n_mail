@@ -60,6 +60,9 @@ my ($sortby) = ('count'); ## Can also be 'date'
 ## The thousands separator for formatting numbers. Whether to turn off in subject lines
 my ($tsep, $tsepnosub);
 
+## New unified options system
+my %option;
+
 my $result = GetOptions
  (
    'verbose'          => \$verbose,
@@ -127,26 +130,6 @@ if ($configfile =~ /duration/i) {
 my $hostname = qx{hostname};
 chomp $hostname;
 
-my $syslog = $pgformat =~ s/syslog/1/ ? 2 : 0;
-
-## TODO: Read this in from a config file
-my $llp = '%t [%p]: [%l-1] user=%u,db=%d ';
-
-## Process the log_line_prefix and change it into a regex
-my $newregex = '';
-my $reg = $llp;
-my ($havetime,$havepid) = (0,0);
-$reg =~ s/([\-\[\]])/\\$1/g;
-$reg =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w)/ and $havetime=1;
-$reg =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w)/ and $havetime=1;
-$reg =~ s/%p/(\\d+)/ and $havepid = 1;
-$reg =~ s/%l/\\d+/;
-$reg =~ s/%u/\\w+/;
-$reg =~ s/%d/\\w+/;
-$reg =~ s/%r/.+?\\(\\d+\\)/;
-
-my $pgpidre = qr{($reg)(.+)};
-
 ## We use a CURRENT key for future expansion
 my $curr = 'CURRENT';
 
@@ -172,6 +155,28 @@ parse_rc_files();
 parse_config_file();
 ## Read in any inherited config files and merge their information in
 parse_inherited_files();
+
+## Todo: syslog stuff
+my $syslog = 0;
+
+## Figure out the log_line_prefix, then create a regex for it
+my $default_llp = '%t [%p]';
+
+my $llp = $option{log_line_prefix} || $default_llp;
+## Remove any quotes around it
+$llp =~ s{^'(.+)'$}{$1};
+
+## Process the log_line_prefix and change it into a regex
+my ($havetime,$havepid) = (0,0);
+$llp =~ s/([\-\[\]])/\\$1/g;
+$llp =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w)/ and $havetime=1;
+$llp =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w)/ and $havetime=1;
+$llp =~ s/%p/(\\d+)/ and $havepid = 1;
+$llp =~ s/%l/\\d+/;
+$llp =~ s/%u/\\w+/;
+$llp =~ s/%d/\\w+/;
+$llp =~ s/%r/.+?\\(\\d+\\)/;
+my $pgpidre = qr{($llp)(.+)};
 
 ## Keep track of changes to know if we need to rewrite the config file or not
 my $changes = 0;
@@ -382,6 +387,7 @@ sub parse_rc_files {
             next if ! /^\s*(\w+)\s*[=:]\s*(.+?)\s*$/o;
             my ($name,$value) = (lc $1,$2); ## no critic (ProhibitCaptureWithoutTest)
             $opt{$curr}{$name} = $value;
+            $option{$name} = $value;
             ## If we are disabled, simply exit quietly
             if ($name eq 'disable' and $value) {
                 exit 0;
@@ -868,8 +874,8 @@ sub parse_file {
                     $lastpid = $pgpid;
                     ## Have we seen this PID before?
                     if (exists $pidline{$pgpid}) {
-                        ## TODO: handle syslog again. The first number after the PID should change
-                        die "syslog not working now!\n" if $syslog;
+                        ## syslog is easy: the pgnum will not be 1 for a continuation
+                        if ($syslog) {}
 
                         ## If this is a statement or detail or hint or context
                         ## append to the string for this PID
@@ -1591,15 +1597,15 @@ sub lines_of_interest {
             else {
                 print "\n";
             }
-            my $string = wrapline($f->{string});
-            print "$string\n";
 
-            ## Show the first actual error if we've flattened things out
-            if ($f->{string} ne $f->{rawstring}) {
-                print "-\n";
-                print wrapline($f->{rawstring});
-                print "\n";
+            ## If we are using prefixes, show it here
+            if (exists $f->{earliest}{pgprefix}) {
+                print "$f->{earliest}{pgprefix}\n";
             }
+
+            ## Show the actual string, not the flattened version
+            my $string = wrapline($f->{rawstring} || $f->{string});
+            print "$string\n";
 
             next;
         }

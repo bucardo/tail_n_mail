@@ -17,11 +17,11 @@
 
 use strict;
 use warnings;
-use Data::Dumper   qw( Dumper     );
-use Getopt::Long   qw( GetOptions );
-use File::Temp     qw( tempfile   );
-use File::Basename qw( dirname    );
-use POSIX          qw( strftime   );
+use Data::Dumper   qw( Dumper              );
+use Getopt::Long   qw( GetOptions          );
+use File::Temp     qw( tempfile            );
+use File::Basename qw( dirname             );
+use POSIX          qw( strftime localeconv );
 use 5.008003;
 
 our $VERSION = '1.14.0';
@@ -342,7 +342,7 @@ sub pick_log_file {
         BACKINTIME: {
 
             my @ltime = localtime(time - $timerewind);
-            my $newfile = POSIX::strftime($orig, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
+            my $newfile = strftime($orig, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
             $debug and warn "Checking for file $newfile (last was $lastfile)\n";
             last if $newfile eq $lastfile;
             if (! exists $seenfile{$newfile}) {
@@ -479,15 +479,9 @@ sub parse_config_file {
 
             ## Transform the file name if it contains escapes
             if ($filename =~ /%/) {
-                eval { ## no critic (RequireCheckingReturnValueOfEval)
-                    require POSIX;
-                };
-
-                $@ and die qq{Cannot use strftime formatting without the Perl POSIX module!\n};
-
                 ## Allow moving back in time with the timewarp argument (defaults to 0)
                 my @ltime = localtime(time + $timewarp);
-                $filename = POSIX::strftime($filename, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
+                $filename = strftime($filename, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
             }
 
             ## If a custom file was specified, use that instead
@@ -1806,15 +1800,6 @@ sub pretty_number {
             $tsep = $opt{$curr}{tsep};
             return pretty_number($number);
         }
-        eval {
-            require POSIX;
-        };
-        if ($@) {
-            ## Default to no separator
-            $tsep = '';
-            return $number;
-        }
-        my $lconv = POSIX::localeconv();
         $tsep = $lconv->{thousands_sep} || ',';
     }
 

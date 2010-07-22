@@ -53,7 +53,7 @@ my $WRAPLIMIT = 990;
 ## Set defaults for all the options, then read them in from command line
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
-my ($timewarp,$pgmode,$find_line_number,$pgformat,$pgdateformat,$maxsize) = (0,1,1,1,1,$MAXSIZE);
+my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
 my ($showonly,$usesmtp,$mailzero,$pretty_query,$duration_limit) = (0,0,0,1,0);
 my ($statement_size) = (1000);
 my ($sortby) = ('count'); ## Can also be 'date'
@@ -82,7 +82,6 @@ my $result = GetOptions
    'timewarp=i'       => \$timewarp,
    'pgmode=s'         => \$pgmode,
    'pgformat=s'       => \$pgformat,
-   'pgdateformat=s'   => \$pgdateformat,
    'maxsize=i'        => \$maxsize,
    'type=s'           => \$custom_type,
    'sortby=s'         => \$sortby,

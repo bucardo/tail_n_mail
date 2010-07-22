@@ -1197,6 +1197,8 @@ sub process_line {
         $string =~ s{(DETAIL: Key \(\w+\))=\(.+?\)}{$1=(?)}go;
         $string =~ s{Failed on request of size \d+}{Failed on request of size ?}go;
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
+        $string =~ s{(syntax error at or near) "\w+" at character \d+}{$1 "?" at character ?}o;
+        $string =~ s{(syntax error at or near ".+" at character) \d+}{$1 ?}o;
     }
 
     ## Format the final string (and rawstring) a little bit

@@ -53,7 +53,7 @@ my $WRAPLIMIT = 990;
 ## Set defaults for all the options, then read them in from command line
 my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
 my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
-my ($timewarp,$pgmode,$find_line_number,$pgformat,$maxsize) = (0,1,1,1,$MAXSIZE);
+my ($timewarp,$find_line_number,$maxsize) = (0,1,$MAXSIZE);
 my ($showonly,$usesmtp,$mailzero,$pretty_query,$duration_limit) = (0,0,0,1,0);
 my ($statement_size) = (1000);
 my ($sortby) = ('count'); ## Can also be 'date'
@@ -61,7 +61,10 @@ my ($sortby) = ('count'); ## Can also be 'date'
 my ($tsep, $tsepnosub);
 
 ## New unified options system
-my %option;
+my %option = (
+              syslog => 0,
+              pgmode => 1,
+);
 
 my $result = GetOptions
  (
@@ -80,8 +83,7 @@ my $result = GetOptions
    'file=s'           => \$custom_file,
    'flatten!'         => \$flatten,
    'timewarp=i'       => \$timewarp,
-   'pgmode=s'         => \$pgmode,
-   'pgformat=s'       => \$pgformat,
+   'pgmode=s'         => \$option{pgmode},
    'maxsize=i'        => \$maxsize,
    'type=s'           => \$custom_type,
    'sortby=s'         => \$sortby,
@@ -155,9 +157,6 @@ parse_config_file();
 ## Read in any inherited config files and merge their information in
 parse_inherited_files();
 
-## Todo: syslog stuff
-my $syslog = 0;
-
 ## Figure out the log_line_prefix, then create a regex for it
 my $default_llp = '%t [%p]';
 
@@ -176,6 +175,16 @@ $llp =~ s/%u/\\w+/;
 $llp =~ s/%d/\\w+/;
 $llp =~ s/%r/.+?\\(\\d+\\)/;
 my $pgpidre = qr{($llp)(.+)};
+
+## Todo: syslog stuff
+my $syslog = $option{pgmode} =~ /syslog/i ? 1 : 0;
+if ($syslog) {
+    ## Timestamp host program[PID]: [number-sub]
+    ## Regex 1=prefix 2=ts 3=pid+number 4=statement
+    $pgpidre = qr{((\S+).+?\[(\d+\]: \[\d+)\-\d+\] )(.+)};
+    $havetime = 1;
+    $havepid = 1;
+}
 
 ## Keep track of changes to know if we need to rewrite the config file or not
 my $changes = 0;
@@ -821,7 +830,7 @@ sub parse_file {
     ## Needed to track postgres PIDs
     my %pidline;
 
-    if (lc $pgmode eq 'csv') {
+    if (lc $option{pgmode} eq 'csv') {
         ## Move this somewhere else
         my $csv;
             eval {
@@ -851,10 +860,11 @@ sub parse_file {
         my ($pgts, $pgpid, %current_pid_num, $lastpid, $pgprefix);
         my $pgnum = 1;
         my $lastline = '';
+        my $syslognum = 0; ## used by syslog only
       LOGLINE: while (<$fh>) {
             ## Easiest to just remove the newline here and now
             chomp;
-            if ($pgmode) {
+            if ($option{pgmode}) {
                 ## 1=prefix 2=timestamp 3=PID 4=rest
                 if ($_ =~ s/$pgpidre/$4/) {
                     $pgprefix = $1;
@@ -871,24 +881,43 @@ sub parse_file {
                     else {
                         ($pgts,$pgpid) = ('',1);
                     }
-                    $pgnum = 1;
+                    if ($syslog) {
+                        $pgpid =~ s/(\d+)\D+(\d+)$/$1/;
+                        $pgnum = $2;
+                    }
+                    else {
+                        $pgnum = 1;
+                    }
+
                     $lastpid = $pgpid;
                     ## Have we seen this PID before?
                     if (exists $pidline{$pgpid}) {
-                        ## syslog is easy: the pgnum will not be 1 for a continuation
-                        if ($syslog) {}
 
-                        ## If this is a statement or detail or hint or context
-                        ## append to the string for this PID
-                        if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT):  /o) {
-                            ## Increment the pgnum by one
-                            $pgnum = $current_pid_num{$pgpid} + 1;
+                        if ($syslog) {
+                            if ($syslognum and $syslognum != $pgnum) {
+                                ## Got a new statement, so process the old
+                                $count += process_line(delete $pidline{$pgpid}, 0, $filename);
+                            }
                         }
                         else {
-                            ## Process the old one
-                            ## Delete it so it gets recreated afresh below
-                            $count += process_line(delete $pidline{$pgpid}, 0, $filename);
+                            ## Append to the string for this PID
+                            if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT):  /o) {
+                                ## Increment the pgnum by one
+                                $pgnum = $current_pid_num{$pgpid} + 1;
+                            }
+                            else {
+                                ## Process the old one
+                                ## Delete it so it gets recreated afresh below
+                                $count += process_line(delete $pidline{$pgpid}, 0, $filename);
+                            }
                         }
+                    }
+
+                    if ($syslog) {
+                        $syslognum = $pgnum;
+                        ## Increment our arbitrary internal number
+                        $current_pid_num{$pgpid} ||= 0;
+                        $pgnum = $current_pid_num{$pgpid} + 1;
                     }
 
                     ## Assign this string to the current pgnum slot
@@ -1050,7 +1079,7 @@ sub process_line {
     $string =~ s/^\s+//o;
 
     ## If not in Postgres mode, we avoid all the mangling below
-    if (!$pgmode) {
+    if (! $option{pgmode}) {
         $find{$filename}{$line} =
                 {
                  string   => $string,
@@ -1213,7 +1242,7 @@ sub process_line {
     } ## end of flatten
 
     ## Format the final string (and rawstring) a little bit
-    if ($pretty_query and $pgmode and $pgmode ne 'csv') {
+    if ($pretty_query and $option{pgmode} and $option{pgmode} ne 'csv') {
         for my $word (qw/DETAIL HINT QUERY CONTEXT STATEMENT/) {
             $string =~ s/$word: /\n$word: /;
             $rawstring =~ s/$word: /\n$word: /;
@@ -1744,7 +1773,7 @@ sub final_cleanup {
 ## Last updated: $now
 };
 
-        for my $item (qw/ email from pgformat type duration find_line_number sortby duration_limit/) {
+        for my $item (qw/ email from type duration find_line_number sortby duration_limit/) {
             next if ! exists $opt{$curr}{$item};
             next if $item eq 'duration' and $custom_duration < 0;
             next if $item eq 'duration_limit' and ! $duration_limit;

@@ -78,7 +78,7 @@ my $result = GetOptions
    'flatten!'         => \$flatten,
    'timewarp=i'       => \$timewarp,
    'pgmode=s'         => \$pgmode,
-   'pgformat=i'       => \$pgformat,
+   'pgformat=s'       => \$pgformat,
    'maxsize=i'        => \$maxsize,
    'type=s'           => \$custom_type,
    'sortby=s'         => \$sortby,

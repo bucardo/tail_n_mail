@@ -1057,7 +1057,7 @@ sub process_line {
     my $nonflat = $string;
 
     ## Make some adjustments to attempt to compress similar entries
-    if ($flatten) {
+    if ($flatten and $custom_type ne 'duration') {
 
         my $thisletter;
 

@@ -716,7 +716,9 @@ sub parse_file {
     ## Is the offset significant?
     ## Usually only is if the stored offset matches the current file
 
-    if (!exists $opt{$curr}{lastfile} or ($opt{$curr}{lastfile} eq $filename)) {
+    if (!$custom_file
+        and (!exists $opt{$curr}{lastfile} or ($opt{$curr}{lastfile} eq $filename))
+        ) {
         ## Allow the offset to equal the size via --reset
         if ($reset) {
             $offset = $opt{$curr}{newoffset} = $size;

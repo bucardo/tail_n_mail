@@ -10,9 +10,9 @@
 
 ##
 ## Quick usage:
-## Run: tail tail_n_mail.pl > tail_n_mail.config
+## Run: tail tail_n_mail > tail_n_mail.config
 ## Edit tail_n_mail.config in your favorite editor
-## Run: perl tail_n_mail.pl tail_n_mail.config
+## Run: perl tail_n_mail tail_n_mail.config
 ## Once working, put the above into a cron job
 
 use strict;
@@ -1768,7 +1768,7 @@ sub final_cleanup {
         open my $fh, '>', $configfile or die qq{Could not write "$configfile": $!\n};
         my $oldselect = select $fh;
         my $now = localtime;
-        print qq{## Config file for the tail_n_mail.pl program
+        print qq{## Config file for the tail_n_mail program
 ## This file is automatically updated
 ## Last updated: $now
 };
@@ -1872,7 +1872,7 @@ __DATA__
 
 ## Example config file:
 
-## Config file for the tail_n_mail.pl program
+## Config file for the tail_n_mail program
 ## This file is automatically updated
 EMAIL: someone@example.com
 MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER

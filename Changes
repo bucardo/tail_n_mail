@@ -4,9 +4,23 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
+Version 1.15.0
+
+* Remove the old pgformat system, parse a log_line_prefix variable instead. [GSM]
+
+* Major rewrite of the regex code. Display the prefix better. [GSM]
+
+* Show an example query when outputting flattened examples. [GSM]
+
+* Always show non-flattened version when a single item. [GSM]
+
 * Make POSIX a requirement [GSM]
 
+* Never flatten in duration mode. [GSM]
+
 * Show the timezone in the Date output [GSM]
+
+* Never offset when using a custom file [GSM]
 
 Version 1.14.0 of tail_n_mail
 

@@ -4,7 +4,11 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
-Version 1.15.0
+Version 1.15.1 of tail_n_mail
+
+* Handle %c and %h in log_line_prefix
+
+Version 1.15.0 of tail_n_mail, released July 23, 2010
 
 * Remove the old pgformat system, parse a log_line_prefix variable instead. [GSM]
 
@@ -22,7 +26,7 @@ Version 1.15.0
 
 * Never offset when using a custom file [GSM]
 
-Version 1.14.0 of tail_n_mail
+Version 1.14.0 of tail_n_mail, not officially released
 
 * Change the name from tail_n_mail.pl to simply tail_n_mail [GSM]
 
@@ -35,7 +39,4 @@ Version 1.14.0 of tail_n_mail
 * Make all numbers "pretty" [GSM]
 
 Version 1.13.0 of tail_n_mail, released June 26, 2010
-
-
-
 

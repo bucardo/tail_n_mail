@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.15.0';
+our $VERSION = '1.15.1';
 
 ## Mail sending options.
 # Which mode to use?

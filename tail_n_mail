@@ -171,8 +171,8 @@ $llp =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w)/ and 
 $llp =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w)/ and $havetime=1;
 $llp =~ s/%p/(\\d+)/ and $havepid = 1;
 $llp =~ s/%l/\\d+/;
-$llp =~ s/%u/\\w+/;
-$llp =~ s/%d/\\w+/;
+$llp =~ s/%u/\\w*/;
+$llp =~ s/%d/\\w*/;
 $llp =~ s/%r/.+?\\(\\d+\\)/;
 $llp =~ s/%c/\\S+/;
 $llp =~ s/%h/\\S+/;

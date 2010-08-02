@@ -24,87 +24,123 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.15.2';
-
-## Mail sending options.
-# Which mode to use?
-my $MAILMODE = 'sendmail'; ## change with --mailmode option
-## Location of the sendmail program. Expects to be able to use a -f argument.
-my $MAILCOM = '/usr/sbin/sendmail'; ## change with --mailcom option
-## Mail server if using SMTP mode
-my $MAILSERVER = 'example.com'; ## change with --mailserver option
-## Username and password if using authenticated smtp
-my $MAILUSER = 'example';       ## change with --mailuser option
-my $MAILPASS = 'example';       ## change with --mailpass option
-my $MAILPORT = 465;             ## change with --mailport option
-
-## We never go back more than this number of bytes. Can be overriden in the config file and command line.
-my $MAXSIZE = 80_000_000;
+our $VERSION = '1.16.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
-
-## We can define custom types, e.g. "duration" that get printed differently
-my $custom_type = 'normal';
 
 ## Do some really simple line wrapping for super-long lines
 my $WRAPLIMIT = 990;
 
 ## Set defaults for all the options, then read them in from command line
-my ($verbose,$quiet,$debug,$dryrun,$help,$reset,$limit,$rewind,$version) = (0,0,0,0,0,0,0,0,0);
-my ($custom_offset,$custom_duration,$custom_file,$nomail,$flatten) = (-1,-1,'',0,1);
-my ($timewarp,$find_line_number,$maxsize) = (0,1,$MAXSIZE);
-my ($showonly,$usesmtp,$mailzero,$pretty_query,$duration_limit) = (0,0,0,1,0);
-my ($sortby) = ('count'); ## Can also be 'date'
-## The thousands separator for formatting numbers. Whether to turn off in subject lines
-my ($tsep, $tsepnosub);
-
-## New unified options system
-my %option = (
-              syslog         => 0,
-              pgmode         => 1,
-              statement_size => 1000,
+my %arg = (
+## Show a help screen
+              help             => 0,
+## Show version and exit
+              version          => 0,
+## Do everything except send mail and update files
+              dryrun           => 0,
+## Verbose mode
+              verbose          => 0,
+## Be as quiet as possible
+              quiet            => 0,
+## Heavy debugging output
+              debug            => 0,
+## Reset the marker of the log file to the current position
+              reset            => 0,
+## Rewind to a certain position inside the log file
+              rewind           => 0,
+## Which mail mode to use: can be sendmail or smtp
+              mailmode         => 'sendmail',
+## Use SMTP mode (sets mailmode to smtp)
+              smtp             => 0,
+## Location of the sendmail program. Expects to be able to use a -f argument.
+              mailcom          => '/usr/sbin/sendmail',
+## Mail options when using SMTP mode:
+              mailserver       => 'example.com',
+              mailuser         => 'example',
+              mailpass         => 'example',
+              mailport         => 465,
+## Are we parsing Postgres logs?
+              pgmode           => 1,
+## What type of Postgres log we are parsing. Can be log, csv, or syslog
+              pglog            => 'pg',
+## Maximum size of a statment before we truncate it.
+              statement_size   => 1000,
+## How to sort the output. Options are 'count' and 'date'
+              sortby           => 'count',
+## What type of file is this? Options are 'normal' and 'duration'
+              type             => 'normal',
+## Allow the offset to be changed on the fly
+              offset           => -1,
+## Set the minimum duration
+              duration         => -1,
+## Allow override of the log file to check
+              file             => '',
+## Do not send email
+              nomail           => 0,
+## Flatten similar queries into a canonical form
+              flatten          => 1,
+## Move around in time for debugging
+              timewarp         => 0,
+## Show which line number problems are found on. Should be disabled for large/frequent reports
+              find_line_number => 1,
+## The maximum bytes we will go back and check per file
+              maxsize          => 80_000_000,
+## Only show X number of matches
+              showonly         => 0,
+## Send an email even if 0 matches were found
+              mailzero         => 0,
+## Perform some final prettification of queries
+              pretty_query     => 1,
+## Set the minimum duration that we care about
+              duration_limit   => 0,
+## The thousands separator for formatting numbers.
+              tsep             => undef,
+## Whether to turn off thousands separator in subject lines (mailman bug workaround)
+              tsepnosub        => 0,
 );
 
 my $result = GetOptions
  (
-   'verbose'          => \$verbose,
-   'quiet'            => \$quiet,
-   'debug'            => \$debug,
-   'dryrun'           => \$dryrun,
-   'help'             => \$help,
-   'nomail'           => \$nomail,
-   'reset'            => \$reset,
-   'limit=i'          => \$limit,
-   'rewind=i'         => \$rewind,
-   'version'          => \$version,
-   'offset=i'         => \$custom_offset,
-   'duration=i'       => \$custom_duration,
-   'file=s'           => \$custom_file,
-   'flatten!'         => \$flatten,
-   'timewarp=i'       => \$timewarp,
-   'pgmode=s'         => \$option{pgmode},
-   'maxsize=i'        => \$maxsize,
-   'type=s'           => \$custom_type,
-   'sortby=s'         => \$sortby,
-   'showonly=i'       => \$showonly,
-   'mailmode=s'       => \$MAILMODE,
-   'mailcom=s'        => \$MAILCOM,
-   'mailserver=s'     => \$MAILSERVER,
-   'mailuser=s'       => \$MAILUSER,
-   'mailpass=s'       => \$MAILPASS,
-   'mailport=s'       => \$MAILPORT,
-   'mailzero'         => \$mailzero,
-   'smtp'             => \$usesmtp,
-   'tsep=s'           => \$tsep,
-   'tsepnosub'        => \$tsepnosub,
-   'pretty_query'     => \$pretty_query,
-   'duration_limit=i' => \$duration_limit,
-   'statement_size=i' => \$option{statement_size},
+     \%arg,
+   'verbose',
+   'quiet',
+   'debug',
+   'dryrun',
+   'help',
+   'nomail',
+   'reset',
+   'rewind=i',
+   'version',
+   'offset=i',
+   'duration=i',
+   'file=s',
+   'type=s',
+   'flatten!',
+   'timewarp=i',
+   'pgmode=s',
+   'pglog=s',
+   'maxsize=i',
+   'sortby=s',
+   'showonly=i',
+   'mailmode=s',
+   'mailcom=s',
+   'mailserver=s',
+   'mailuser=s',
+   'mailpass=s',
+   'mailport=s',
+   'mailzero',
+   'smtp',
+   'tsep=s',
+   'tsepnosub',
+   'pretty_query',
+   'duration_limit=i',
+   'statement_size=i',
   ) or help();
-++$verbose if $debug;
+++$arg{verbose} if $arg{debug};
 
-if ($version) {
+if ($arg{version}) {
     print "$0 version $VERSION\n";
     exit 0;
 }
@@ -115,16 +151,16 @@ sub help {
     print "http://bucardo.org/wiki/Tail_n_mail\n";
     exit 0;
 }
-$help and help();
+$arg{help} and help();
 
-$usesmtp and $MAILMODE = 'smtp';
+$arg{smtp} and $arg{mailmode} = 'smtp';
 
 ## First option is always the config file, which must exist.
 my $configfile = shift or die qq{Usage: $0 configfile\n};
 
 ## If the file has the name 'duration' in it, switch to that type as the default
 if ($configfile =~ /duration/i) {
-    $custom_type = 'duration';
+    $arg{type} = 'duration';
 }
 
 ## Save away our hostname
@@ -138,14 +174,14 @@ my $curr = 'CURRENT';
 my (%opt, %itemcomment);
 
 ## These options must come before the GetOptions call
-for my $arg (@ARGV) {
-    if ($arg eq '--no-tailnmailrc') {
+for my $item (@ARGV) {
+    if ($item eq '--no-tailnmailrc') {
         $opt{'no-tailnmailrc'} = 1;
     }
-    if ($arg =~ /--tailnmailrc=(.+)/) {
+    if ($item =~ /--tailnmailrc=(.+)/) {
         $opt{'tailnmailrc'} = $1;
     }
-    if ($arg =~ /^-+\?$/) {
+    if ($item =~ /^-+\?$/) {
         help();
     }
 }
@@ -160,7 +196,7 @@ parse_inherited_files();
 ## Figure out the log_line_prefix, then create a regex for it
 my $default_llp = '%t [%p]';
 
-my $llp = $option{log_line_prefix} || $default_llp;
+my $llp = $arg{log_line_prefix} || $default_llp;
 ## Remove any quotes around it
 $llp =~ s{^'(.+)'$}{$1};
 
@@ -178,9 +214,7 @@ $llp =~ s/%c/\\S+/;
 $llp =~ s/%h/\\S+/;
 my $pgpidre = qr{($llp)(.+)};
 
-## Todo: syslog stuff
-my $syslog = $option{pgmode} =~ /syslog/i ? 1 : 0;
-if ($syslog) {
+if ($arg{logmode} eq 'syslog') {
     ## Timestamp host program[PID]: [number-sub]
     ## Regex 1=prefix 2=ts 3=pid+number 4=statement
     $pgpidre = qr{((\S+).+?\[(\d+\]: \[\d+)\-\d+\] )(.+)};
@@ -234,7 +268,7 @@ my @files_parsed;
     ## If it's the same as the last one we did, we are done
     last if $last_logfile eq $logfile;
 
-    $debug and warn "Parsing file ($logfile)\n";
+    $arg{debug} and warn "Parsing file ($logfile)\n";
     my $count = parse_file($logfile);
     push @files_parsed => [$logfile, $count];
     $fileorder{$logfile} = ++$filenum;
@@ -246,7 +280,7 @@ my @files_parsed;
 $opt{$curr}{filename} = $last_logfile;
 
 ## We're done parsing the message, send an email if needed
-process_report() if $opt{grand_total} or $mailzero or $opt{$curr}{mailzero};
+process_report() if $opt{grand_total} or $arg{mailzero} or $opt{$curr}{mailzero};
 final_cleanup();
 
 exit 0;
@@ -263,7 +297,7 @@ sub pick_log_file {
     ## If a custom file, we always just return the main filename
     ## We also remove the lastfile, as it's not important anymore
     ## Same for a reset - we only want the latest file
-    if ($custom_file or $reset) {
+    if ($arg{file} or $arg{reset}) {
         delete $opt{$curr}{lastfile};
         return $opt{$curr}{filename};
     }
@@ -350,7 +384,7 @@ sub pick_log_file {
 
             my @ltime = localtime(time - $timerewind);
             my $newfile = strftime($orig, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
-            $debug and warn "Checking for file $newfile (last was $lastfile)\n";
+            $arg{debug} and warn "Checking for file $newfile (last was $lastfile)\n";
             last if $newfile eq $lastfile;
             if (! exists $seenfile{$newfile}) {
                 $seenfile{$newfile} = 1;
@@ -397,16 +431,16 @@ sub parse_rc_files {
             next if ! /^\s*(\w+)\s*[=:]\s*(.+?)\s*$/o;
             my ($name,$value) = (lc $1,$2); ## no critic (ProhibitCaptureWithoutTest)
             $opt{$curr}{$name} = $value;
-            $option{$name} = $value;
+            $arg{$name} = $value;
             ## If we are disabled, simply exit quietly
             if ($name eq 'disable' and $value) {
                 exit 0;
             }
             if ($name eq 'maxsize') {
-                $maxsize = $value;
+                $arg{maxsize} = $value;
             }
             if ($name eq 'duration_limit') {
-                $duration_limit = $value;
+                $arg{duration_limit} = $value;
             }
         }
         close $rc or die;
@@ -431,7 +465,7 @@ sub parse_config_file {
     my %localopt;
 
     open my $c, '<', $configfile or die qq{Could not open "$configfile": $!\n};
-    $debug and warn qq{Opened config file "$configfile"\n};
+    $arg{debug} and warn qq{Opened config file "$configfile"\n};
     while (<$c>) {
 
         ## If we are at the top of the file, don't store standard comments
@@ -474,20 +508,20 @@ sub parse_config_file {
             ## Transform the file name if it contains escapes
             if ($filename =~ /%/) {
                 ## Allow moving back in time with the timewarp argument (defaults to 0)
-                my @ltime = localtime(time + $timewarp);
+                my @ltime = localtime(time + $arg{timewarp});
                 $filename = strftime($filename, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
             }
 
             ## If a custom file was specified, use that instead
-            if ($custom_file) {
+            if ($arg{file}) {
                 ## If it contains a path, use it directly
-                if ($custom_file =~ m{/}) {
-                    $filename = $custom_file;
+                if ($arg{file} =~ m{/}) {
+                    $filename = $arg{file};
                 }
                 ## Otherwise, replace the current file name but keep the directory
                 else {
                     my $dir = dirname($filename);
-                    $filename = "$dir/$custom_file";
+                    $filename = "$dir/$arg{file}";
                 }
             }
 
@@ -513,20 +547,20 @@ sub parse_config_file {
         }
         ## What type of report this is
         elsif (/^TYPE:\s*(.+?)\s*$/) {
-            $custom_type = $1;
+            $arg{type} = $1;
         }
         ## Exclude durations below this number
         elsif (/^DURATION:\s*(\d+)/) {
             ## Command line still wins
-            if ($custom_duration < 0) {
-                $custom_duration = $localopt{duration} = $1;
+            if ($arg{duration} < 0) {
+                $arg{duration} = $localopt{duration} = $1;
             }
         }
         ## Limit how many duration matches we show
         elsif (/^DURATION_LIMIT:\s*(\d+)/) {
             ## Command line still wins
-            if (!$duration_limit) {
-                $duration_limit = $localopt{duration_limit} = $1;
+            if (!$arg{duration_limit}) {
+                $arg{duration_limit} = $localopt{duration_limit} = $1;
             }
         }
         ## How to sort the output
@@ -535,7 +569,7 @@ sub parse_config_file {
         }
         ## Force line number lookup on or off
         elsif (/^FIND_LINE_NUMBER:\s*(\d+)/) {
-            $find_line_number = $localopt{find_line_number} = $1;
+            $arg{find_line_number} = $localopt{find_line_number} = $1;
         }
         ## Any inheritance files to look at
         elsif (/^INHERIT:\s*(.+)/) {
@@ -556,10 +590,6 @@ sub parse_config_file {
         ## The custom maxsize for this file
         elsif (/^MAXSIZE:\s*(\d+)/) {
             $localopt{maxsize} = $1;
-            ## Command line still wins
-            if (int $maxsize == int $MAXSIZE) {
-                $maxsize = $localopt{maxsize};
-            }
         }
         ## The subject line for this file
         elsif (/^MAILSUBJECT:\s*(.+)/) { ## Trailing whitespace is significant here
@@ -585,7 +615,7 @@ sub parse_config_file {
         }
         $opt{$curr}{$k} = $localopt{$k};
     }
-    if ($debug) {
+    if ($arg{debug}) {
         local $Data::Dumper::Varname = 'opt';
         warn Dumper \%opt;
     }
@@ -653,7 +683,7 @@ sub parse_inherit_file {
         ## Only a few things are allowed in here
         if (/^FIND_LINE_NUMBER:\s*(\d+)/) {
             ## We adjust the global here and now
-            $find_line_number = $1;
+            $arg{find_line_number} = $1;
         }
         ## How to sort the output
         elsif (/^SORTBY:\s*(\w+)/) {
@@ -674,8 +704,8 @@ sub parse_inherit_file {
         ## Exclude durations below this number
         elsif (/^DURATION:\s*(\d+)/) {
             ## Command line still wins
-            if ($custom_duration < 0) {
-                $custom_duration = $1;
+            if ($arg{duration} < 0) {
+                $arg{duration} = $1;
             }
         }
         ## Who to send emails from
@@ -711,11 +741,11 @@ sub parse_file {
 
     ## Make sure the file exists and is readable
     if (! -e $filename) {
-        $quiet or warn qq{WARNING! Skipping non-existent file "$filename"\n};
+        $arg{quiet} or warn qq{WARNING! Skipping non-existent file "$filename"\n};
         return 0;
     }
     if (! -f $filename) {
-        $quiet or warn qq{WARNING! Skipping non-file "$filename"\n};
+        $arg{quiet} or warn qq{WARNING! Skipping non-file "$filename"\n};
         return 0;
     }
 
@@ -726,21 +756,21 @@ sub parse_file {
     ## Is the offset significant?
     ## Usually only is if the stored offset matches the current file
 
-    if (!$custom_file
+    if (!$arg{file}
         and (!exists $opt{$curr}{lastfile} or ($opt{$curr}{lastfile} eq $filename))
         ) {
         ## Allow the offset to equal the size via --reset
-        if ($reset) {
+        if ($arg{reset}) {
             $offset = $opt{$curr}{newoffset} = $size;
-            $verbose and warn "  Resetting offset to $offset\n";
+            $arg{verbose} and warn "  Resetting offset to $offset\n";
         }
         ## Allow the offset to be changed on the command line
-        elsif ($custom_offset != -1) {
-            if ($custom_offset >= 0) {
-                $offset = $custom_offset;
+        elsif ($arg{offset} != -1) {
+            if ($arg{offset} >= 0) {
+                $offset = $arg{offset};
             }
-            elsif ($custom_offset < -1) {
-                $offset = $size + $custom_offset;
+            elsif ($arg{offset} < -1) {
+                $offset = $size + $arg{offset};
                 $offset = 0 if $offset < 0;
             }
         }
@@ -750,13 +780,13 @@ sub parse_file {
     }
 
     my $psize = pretty_number($size);
-    my $pmaxs = pretty_number($maxsize);
+    my $pmaxs = pretty_number($arg{maxsize});
     my $poffset = pretty_number($offset);
-    $verbose and warn "  File: $filename Offset: $poffset Size: $psize Maxsize: $pmaxs\n";
+    $arg{verbose} and warn "  File: $filename Offset: $poffset Size: $psize Maxsize: $pmaxs\n";
 
     ## The file may have shrunk due to a logrotate
     if ($offset > $size) {
-        $verbose and warn "  File has shrunk - resetting offset to 0\n";
+        $arg{verbose} and warn "  File has shrunk - resetting offset to 0\n";
         $offset = 0;
     }
 
@@ -767,10 +797,10 @@ sub parse_file {
     my $original_offset = $offset;
 
     ## This can happen quite a bit on busy files!
-    if ($maxsize and ($size - $offset > $maxsize) and $custom_offset < 0) {
-        $quiet or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
-        $toolarge{$filename} = qq{File "$filename" too large:\n  only read last $maxsize bytes (size=$size, offset=$offset)};
-        $offset = $size - $maxsize;
+    if ($arg{maxsize} and ($size - $offset > $arg{maxsize}) and $arg{offset} < 0) {
+        $arg{quiet} or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $arg{maxsize} bytes\n";
+        $toolarge{$filename} = qq{File "$filename" too large:\n  only read last $arg{maxsize} bytes (size=$size, offset=$offset)};
+        $offset = $size - $arg{maxsize};
     }
 
     open my $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
@@ -785,14 +815,14 @@ sub parse_file {
         seek $fh, $offset-10, 0;
 
         ## If a manual rewind request has been given, process it (inverse)
-        if ($rewind) {
-            seek $fh, -$rewind, 1;
+        if ($arg{rewind}) {
+            seek $fh, -$arg{rewind}, 1;
         }
     }
 
     ## Optionally figure out what approximate line we are on
     my $newlines = 0;
-    if ($find_line_number) {
+    if ($arg{find_line_number}) {
         my $pos = tell $fh;
 
         ## No sense in counting if we're at the start of the file!
@@ -833,7 +863,7 @@ sub parse_file {
     ## Needed to track postgres PIDs
     my %pidline;
 
-    if (lc $option{pgmode} eq 'csv') {
+    if (lc $arg{pglog} eq 'csv') {
         ## Move this somewhere else
         my $csv;
             eval {
@@ -867,7 +897,7 @@ sub parse_file {
       LOGLINE: while (<$fh>) {
             ## Easiest to just remove the newline here and now
             chomp;
-            if ($option{pgmode}) {
+            if ($arg{pgmode}) {
                 ## 1=prefix 2=timestamp 3=PID 4=rest
                 if ($_ =~ s/$pgpidre/$4/) {
                     $pgprefix = $1;
@@ -884,7 +914,7 @@ sub parse_file {
                     else {
                         ($pgts,$pgpid) = ('',1);
                     }
-                    if ($syslog) {
+                    if ($arg{pglog} eq 'syslog') {
                         $pgpid =~ s/(\d+)\D+(\d+)$/$1/;
                         $pgnum = $2;
                     }
@@ -896,7 +926,7 @@ sub parse_file {
                     ## Have we seen this PID before?
                     if (exists $pidline{$pgpid}) {
 
-                        if ($syslog) {
+                        if ($arg{pglog} eq 'syslog') {
                             if ($syslognum and $syslognum != $pgnum) {
                                 ## Got a new statement, so process the old
                                 $count += process_line(delete $pidline{$pgpid}, 0, $filename);
@@ -916,7 +946,7 @@ sub parse_file {
                         }
                     }
 
-                    if ($syslog) {
+                    if ($arg{pglog} eq 'syslog') {
                         $syslognum = $pgnum;
                         ## Increment our arbitrary internal number
                         $current_pid_num{$pgpid} ||= 0;
@@ -980,10 +1010,10 @@ sub parse_file {
     }
 
     if (!$count) {
-        $verbose and warn "  No new lines found in file $filename\n";
+        $arg{verbose} and warn "  No new lines found in file $filename\n";
     }
     else {
-        $verbose and warn "  Lines found in $filename: $count\n";
+        $arg{verbose} and warn "  Lines found in $filename: $count\n";
     }
 
     $opt{grand_total} += $count;
@@ -1005,22 +1035,22 @@ sub generate_regexes {
     ## Build an exclusion regex
     my $lexclude = '';
     for my $ex (@{$opt{$curr}{exclude}}) {
-        $debug and warn "  Adding exclusion: $ex\n";
+        $arg{debug} and warn "  Adding exclusion: $ex\n";
         my $regex = qr{$ex};
         $lexclude .= "$regex|";
     }
     $lexclude =~ s/\|$//;
-    $verbose and $lexclude and warn "  Exclusion: $lexclude\n";
+    $arg{verbose} and $lexclude and warn "  Exclusion: $lexclude\n";
 
     ## Build an inclusion regex
     my $linclude = '';
     for my $in (@{$opt{$curr}{include}}) {
-        $debug and warn "  Adding inclusion: $in\n";
+        $arg{debug} and warn "  Adding inclusion: $in\n";
         my $regex = qr{$in};
         $linclude .= "$regex|";
     }
     $linclude =~ s/\|$//;
-    $verbose and $linclude and warn "  Inclusion: $linclude\n";
+    $arg{verbose} and $linclude and warn "  Inclusion: $linclude\n";
 
     $opt{globalexcluderegex} = $lexclude;
     $opt{globalincluderegex} = $linclude;
@@ -1035,7 +1065,7 @@ sub process_line {
     ## We've got a complete statement, so do something with it!
     ## If it matches, we'll either put into %find directly, or store in %similar
 
-    my ($arg,$line,$filename) = @_;
+    my ($info,$line,$filename) = @_;
 
     ## The final string
     $string = '';
@@ -1044,18 +1074,18 @@ sub process_line {
     ## The timestamp
     $time = '';
 
-    if (ref $arg eq 'HASH') {
-        $pgprefix = $arg->{pgprefix} if exists $arg->{pgprefix};
-        $time = $arg->{pgtime} if exists $arg->{pgtime};
-        for my $l (sort {$a<=>$b} keys %{$arg->{string}}) {
+    if (ref $info eq 'HASH') {
+        $pgprefix = $info->{pgprefix} if exists $info->{pgprefix};
+        $time = $info->{pgtime} if exists $info->{pgtime};
+        for my $l (sort {$a<=>$b} keys %{$info->{string}}) {
             ## Some Postgres/syslog combos produce ugly output
-            $arg->{string}{$l} =~ s/^(?:\s*#011\s*)+//o;
-            $string .= ' '.$arg->{string}{$l};
+            $info->{string}{$l} =~ s/^(?:\s*#011\s*)+//o;
+            $string .= ' '.$info->{string}{$l};
         }
-        $line = $arg->{line};
+        $line = $info->{line};
     }
     else {
-        $string = $arg;
+        $string = $info;
     }
 
     ## Bail if it does not match the inclusion regex
@@ -1065,11 +1095,11 @@ sub process_line {
     return 0 if $exclude and $string =~ $exclude;
 
     ## If in duration mode, and we have a minimum cutoff, discard faster ones
-    if ($custom_type eq 'duration' and $custom_duration >= 0) {
-        return 0 if ($string =~ / duration: (\d+)/o and $1 < $custom_duration);
+    if ($arg{type} eq 'duration' and $arg{duration} >= 0) {
+        return 0 if ($string =~ / duration: (\d+)/o and $1 < $arg{duration});
     }
 
-    $debug and warn "MATCH at line $line of $filename\n";
+    $arg{debug} and warn "MATCH at line $line of $filename\n";
 
 
     ## Force newlines to a single line
@@ -1082,7 +1112,7 @@ sub process_line {
     $string =~ s/^\s+//o;
 
     ## If not in Postgres mode, we avoid all the mangling below
-    if (! $option{pgmode}) {
+    if (! $arg{pgmode}) {
         $find{$filename}{$line} =
                 {
                  string   => $string,
@@ -1098,7 +1128,7 @@ sub process_line {
     my $rawstring = $string;
 
     ## Make some adjustments to attempt to compress similar entries
-    if ($flatten and $custom_type ne 'duration') {
+    if ($arg{flatten} and $arg{type} ne 'duration') {
 
         my $thisletter;
 
@@ -1240,12 +1270,12 @@ sub process_line {
     } ## end of flatten
 
     ## Format the final string (and rawstring) a little bit
-    if ($pretty_query and $option{pgmode} and $option{pgmode} ne 'csv') {
+    if ($arg{pretty_query} and $arg{pgmode} and $arg{pgmode} ne 'csv') {
         for my $word (qw/DETAIL HINT QUERY CONTEXT STATEMENT/) {
             $string =~ s/$word: /\n$word: /;
             $rawstring =~ s/$word: /\n$word: /;
         }
-        if ($custom_type eq 'duration') {
+        if ($arg{type} eq 'duration') {
             $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
             $rawstring =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
         }
@@ -1312,13 +1342,13 @@ sub process_report {
     ## Create the mail message
     my ($fh, $tempfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm');
 
-    if ($dryrun) {
+    if ($arg{dryrun}) {
         close $fh or warn 'Could not close filehandle';
         $fh = \*STDOUT;
     }
 
     if (! @files_parsed) {
-        $quiet or warn qq{No files were read in, exiting\n};
+        $arg{quiet} or warn qq{No files were read in, exiting\n};
         exit 1;
     }
 
@@ -1348,7 +1378,7 @@ sub process_report {
     my $subject = $opt{$curr}{mailsubject} || $DEFAULT_SUBJECT;
     $subject =~ s/FILE/$last_file_parsed/g;
     $subject =~ s/HOST/$hostname/g;
-    if ($tsepnosub or $opt{$curr}{tsepnosub}) {
+    if ($arg{tsepnosub} or $opt{$curr}{tsepnosub}) {
         $subject =~ s/NUMBER/$grand_total/g;
         $subject =~ s/UNIQUE/$unique_matches/g;
     }
@@ -1373,7 +1403,7 @@ sub process_report {
         die "Cannot send email without knowing who to send to!\n";
     }
 
-    my $mailcom = $opt{$curr}{mailcom} || $MAILCOM;
+    my $mailcom = $opt{$curr}{mailcom} || $arg{mailcom};
 
     ## Custom From:
     my $from_addr = $opt{$curr}{from} || '';
@@ -1388,14 +1418,14 @@ sub process_report {
     my $now = scalar localtime;
     print {$fh} "Date: $now $tz\n";
     print {$fh} "Host: $hostname\n";
-    if ($timewarp) {
-        print {$fh} "Timewarp: $timewarp\n";
+    if ($arg{timewarp}) {
+        print {$fh} "Timewarp: $arg{timewarp}\n";
     }
-    if ($custom_duration >= 0) {
-        print {$fh} "Minimum duration: $custom_duration ms\n";
+    if ($arg{duration} >= 0) {
+        print {$fh} "Minimum duration: $arg{duration} ms\n";
     }
 
-    if ($custom_type ne 'duration') {
+    if ($arg{type} ne 'duration') {
         print {$fh} "Unique items: $pretty_unique_matches\n";
     }
 
@@ -1439,8 +1469,8 @@ sub process_report {
         }
     }
 
-    if ($custom_type eq 'duration' and $duration_limit and $grand_total > $duration_limit) {
-        print {$fh} "Not showing all lines: duration limit is $duration_limit\n";
+    if ($arg{type} eq 'duration' and $arg{duration_limit} and $grand_total > $arg{duration_limit}) {
+        print {$fh} "Not showing all lines: duration limit is $arg{duration_limit}\n";
     }
 
     ## The meat of the message
@@ -1450,19 +1480,19 @@ sub process_report {
     close $fh or die qq{Could not close "$tempfile": $!\n};
 
     my $emails = join ' ' => @{$opt{$curr}{email}};
-    $verbose and warn "  Sending mail to: $emails\n";
+    $arg{verbose} and warn "  Sending mail to: $emails\n";
     my $COM = qq{$mailcom $emails < $tempfile};
-    if ($dryrun or $nomail) {
-        $quiet or warn "  DRYRUN: $COM\n";
+    if ($arg{dryrun} or $arg{nomail}) {
+        $arg{quiet} or warn "  DRYRUN: $COM\n";
         unlink $tempfile;
         return;
     }
 
-    my $mailmode = $opt{$curr}{mailmode} || $MAILMODE;
-    if ($MAILMODE eq 'sendmail') {
+    my $mailmode = $opt{$curr}{mailmode} || $arg{mailmode};
+    if ($arg{mailmode} eq 'sendmail') {
         system $COM;
     }
-    elsif ($MAILMODE eq 'smtp') {
+    elsif ($arg{mailmode} eq 'smtp') {
         send_smtp_email($from_addr, $emails, $subject, $tempfile);
     }
     else {
@@ -1496,19 +1526,19 @@ sub send_smtp_email {
     require Net::SMTP::SSL;
 
     ## Absorb any values set by rc files, and sanity check things
-    my $mailserver = $opt{$curr}{mailserver} || $MAILSERVER;
+    my $mailserver = $opt{$curr}{mailserver} || $arg{mailserver};
     if ($mailserver eq 'example.com') {
         die qq{When using smtp mode, you must specify a mailserver!\n};
     }
-    my $mailuser = $opt{$curr}{mailuser} || $MAILUSER;
+    my $mailuser = $opt{$curr}{mailuser} || $arg{mailuser};
     if ($mailuser eq 'example') {
         die qq{When using smtp mode, you must specify a mailuser!\n};
     }
-    my $mailpass = $opt{$curr}{mailpass} || $MAILPASS;
+    my $mailpass = $opt{$curr}{mailpass} || $arg{mailpass};
     if ($mailpass eq 'example') {
         die qq{When using smtp mode, you must specify a mailpass!\n};
     }
-    my $mailport = $opt{$curr}{mailport} || $MAILPORT;
+    my $mailport = $opt{$curr}{mailport} || $arg{mailport};
 
     ## Attempt to connect to the server
     my $smtp;
@@ -1556,9 +1586,9 @@ sub lines_of_interest {
     undef %sorthelp;
 
     sub sortsub {
-        my $sorttype = $opt{$curr}{sortby} || $sortby;
+        my $sorttype = $opt{$curr}{sortby} || $arg{sortby};
 
-        if ($custom_type eq 'duration') {
+        if ($arg{type} eq 'duration') {
             if (! exists $sorthelp{$a}) {
                 my $lstring = $a->{string} || $a->{earliest}{string};
                 $sorthelp{$a} =
@@ -1598,15 +1628,15 @@ sub lines_of_interest {
     my $count = 1;
     for my $f (sort sortsub @sorted) {
 
-        if ($find_line_number) {
+        if ($arg{find_line_number}) {
             $f->{line} = pretty_number($f->{line});
         }
 
-        last if $showonly and $count > $showonly;
+        last if $arg{showonly} and $count > $arg{showonly};
 
         ## Sometimes we don't want to show all the durations
-        if ($custom_type eq 'duration' and $duration_limit) {
-            last if $count > $duration_limit;
+        if ($arg{type} eq 'duration' and $arg{duration_limit}) {
+            last if $count > $arg{duration_limit};
         }
 
         print "\n[$count]";
@@ -1619,9 +1649,9 @@ sub lines_of_interest {
             if ($matchfiles > 1) {
                 printf " From file %s%s\n",
                     $fab{$filename},
-                    $find_line_number ? " (line $f->{line})" : '';
+                    $arg{find_line_number} ? " (line $f->{line})" : '';
             }
-            elsif ($find_line_number) {
+            elsif ($arg{find_line_number}) {
                 print " (from line $f->{line})\n";
             }
             else {
@@ -1645,7 +1675,7 @@ sub lines_of_interest {
         my $latest = $f->{latest};
         my $pcount = pretty_number($f->{count});
 
-        if ($find_line_number) {
+        if ($arg{find_line_number}) {
             $latest->{line} = pretty_number($latest->{line});
         }
 
@@ -1654,7 +1684,7 @@ sub lines_of_interest {
         if ($samefile) {
             if ($matchfiles > 1) {
                 print " From file $fab{$filename}";
-                if ($find_line_number) {
+                if ($arg{find_line_number}) {
                     print " (between lines $f->{line} and $latest->{line}, occurs $pcount times)";
                 }
                 else {
@@ -1663,7 +1693,7 @@ sub lines_of_interest {
                 print "\n";
             }
             else {
-                if ($find_line_number) {
+                if ($arg{find_line_number}) {
                     print " (between lines $f->{line} and $latest->{line}, occurs $pcount times)";
                 }
                 else {
@@ -1675,7 +1705,7 @@ sub lines_of_interest {
         else {
             my ($A,$B) = ($fab{$earliest->{filename}}, $fab{$latest->{filename}});
             print " From files $A to $B";
-            if ($find_line_number) {
+            if ($arg{find_line_number}) {
                 printf " (between lines $f->{line} of $A and $latest->{line} of $B, occurs $pcount times)",;
             }
             else {
@@ -1730,10 +1760,10 @@ sub wrapline {
     my $len = length $line;
     my $olen = $len;
     my $waschopped = 0;
-    if ($len > $option{statement_size} and $option{statement_size}) {
-        $line = substr($line,0,$option{statement_size});
+    if ($len > $arg{statement_size} and $arg{statement_size}) {
+        $line = substr($line,0,$arg{statement_size});
         $waschopped = 1;
-        $len = $option{statement_size};
+        $len = $arg{statement_size};
     }
 
     if ($len >= $WRAPLIMIT) {
@@ -1752,19 +1782,19 @@ sub wrapline {
 
 sub final_cleanup {
 
-    $debug and warn "  Performing final cleanup\n";
+    $arg{debug} and warn "  Performing final cleanup\n";
 
     ## If offset has changed, save it
     my $newoffset = 0;
     if (exists $opt{$curr}{newoffset}) {
         $changes++;
         $newoffset = $opt{$curr}{newoffset};
-        $verbose and warn "  Setting offset to $newoffset\n";
+        $arg{verbose} and warn "  Setting offset to $newoffset\n";
     }
 
     ## Reset always rewrites the file, even in dryrun mode
-    if (($changes and !$dryrun) or $reset) {
-        $verbose and warn "  Saving new config file (changes=$changes)\n";
+    if (($changes and !$arg{dryrun}) or $arg{reset}) {
+        $arg{verbose} and warn "  Saving new config file (changes=$changes)\n";
         open my $fh, '>', $configfile or die qq{Could not write "$configfile": $!\n};
         my $oldselect = select $fh;
         my $now = localtime;
@@ -1775,8 +1805,8 @@ sub final_cleanup {
 
         for my $item (qw/ email from type duration find_line_number sortby duration_limit/) {
             next if ! exists $opt{$curr}{$item};
-            next if $item eq 'duration' and $custom_duration < 0;
-            next if $item eq 'duration_limit' and ! $duration_limit;
+            next if $item eq 'duration' and $arg{duration} < 0;
+            next if $item eq 'duration_limit' and ! $arg{duration_limit};
             ## Only rewrite if it came from this config file, not tailnmailrc or command line
             next if ! exists $opt{configfile}{$item};
             add_comments(uc $item);
@@ -1850,19 +1880,19 @@ sub pretty_number {
     return $number if $number !~ /^\d+$/ or $number < 1000;
 
     ## If this is our first time here, find the correct separator
-    if (! defined $tsep) {
+    if (! defined $arg{tsep}) {
         if (exists $opt{$curr}{tsep}) {
-            $tsep = $opt{$curr}{tsep};
+            $arg{tsep} = $opt{$curr}{tsep};
             return pretty_number($number);
         }
         my $lconv = localeconv();
-        $tsep = $lconv->{thousands_sep} || ',';
+        $arg{tsep} = $lconv->{thousands_sep} || ',';
     }
 
     ## No formatting at all
-    return $number if '' eq $tsep or ! $tsep;
+    return $number if '' eq $arg{tsep} or ! $arg{tsep};
 
-    (my $reverse = reverse $number) =~ s/(...)(?=\d)/$1$tsep/g;
+    (my $reverse = reverse $number) =~ s/(...)(?=\d)/$1$arg{tsep}/g;
     $number = reverse $reverse;
     return $number;
 

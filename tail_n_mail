@@ -1101,8 +1101,8 @@ sub process_line {
 
         my $thisletter;
 
-        $string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{
-            my ($word,$list) = ($1,$2);
+        $string =~ s{(VALUES|REPLACE|SELECT\s+\w+)\s*\((.+)\)}{
+            my ($sword,$list) = ($1,$2);
             my @word = split(//, $list);
             my $numitems = 0;
             my $status = 'start';
@@ -1161,17 +1161,14 @@ sub process_line {
 
                     ## May be the end of the whole section
                     if ($thisletter eq ';') {
-                        ## Replace what we have, then move on
-                        #my $qs = '?,' x $numitems;
-                        #chop $qs;
-                        $word .= "(?);";
+                        $sword .= "(?);";
                         $numitems = 0;
 
                         ## Grab everything forward from this point
                         my $newlist = substr($list,$x+1);
 
                         if ($newlist =~ m{(.+?(?:VALUES|REPLACE))\s*\(}io) {
-                            $word .= $1;
+                            $sword .= $1;
                             $x += length $1;
                         }
 
@@ -1221,12 +1218,10 @@ sub process_line {
             } ## end each letter (F)
 
             if ($status eq 'fail') {
-                "$word ($list)";
+                "$sword ($list)";
             }
             else {
-                #my $qs = '?,' x $numitems;
-                #chop $qs;
-                "$word (?)";
+                "$sword (?)";
             }
         }geix;
         $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;

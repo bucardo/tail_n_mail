@@ -1399,7 +1399,9 @@ sub process_report {
         print {$fh} "Minimum duration: $custom_duration ms\n";
     }
 
-    print {$fh} "Unique items: $pretty_unique_matches\n";
+    if ($custom_type ne 'duration') {
+        print {$fh} "Unique items: $pretty_unique_matches\n";
+    }
 
     ## If we parsed more than one file, label them now
     if ($matchfiles > 1) {

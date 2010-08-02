@@ -751,7 +751,8 @@ sub parse_file {
 
     my $psize = pretty_number($size);
     my $pmaxs = pretty_number($maxsize);
-    $verbose and warn "  File: $filename Offset: $offset Size: $psize Maxsize: $pmaxs\n";
+    my $poffset = pretty_number($offset);
+    $verbose and warn "  File: $filename Offset: $poffset Size: $psize Maxsize: $pmaxs\n";
 
     ## The file may have shrunk due to a logrotate
     if ($offset > $size) {

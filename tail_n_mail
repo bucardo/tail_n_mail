@@ -1256,7 +1256,7 @@ sub process_line {
             }
         }geix;
         $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
-        $string =~ s{(\bWHERE\s+\w+\s+IN\s*\().+?\)}{$1?)}gio;
+        $string =~ s{(\bWHERE\s+\w+\s+IN\s*\((?!\s*SELECT)).+?\)}{$1?)}gio;
         $string =~ s{(\bWHERE\s+\w+\s*=\s*)'[\d\w]+'}{$1'?')}gio;
         $string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
         $string =~ s/(invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;

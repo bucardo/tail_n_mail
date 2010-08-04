@@ -214,7 +214,7 @@ $llp =~ s/%c/\\S+/;
 $llp =~ s/%h/\\S+/;
 my $pgpidre = qr{($llp)(.+)};
 
-if ($arg{logmode} eq 'syslog') {
+if ($arg{pglog} eq 'syslog') {
     ## Timestamp host program[PID]: [number-sub]
     ## Regex 1=prefix 2=ts 3=pid+number 4=statement
     $pgpidre = qr{((\S+).+?\[(\d+\]: \[\d+)\-\d+\] )(.+)};

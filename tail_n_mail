@@ -1088,6 +1088,8 @@ sub process_line {
         $string = $info;
     }
 
+    $string =~ s/^\s+//o;
+
     ## Bail if it does not match the inclusion regex
     return 0 if $include and $string !~ $include;
 

@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.16.0';
+our $VERSION = '1.16.1';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -1130,9 +1130,21 @@ sub process_line {
     ## Make some adjustments to attempt to compress similar entries
     if ($arg{flatten} and $arg{type} ne 'duration') {
 
+        ## Simplistic SELECT func(arg1,arg2,...) replacement
+        $string =~ s{(SELECT\s*\w+\s*\()(.+?)\)}{
+            my ($select,$args) = ($1,$2);
+            my @arg;
+            for my $arg (split /,/ => $args) {
+                $arg =~ s/^\s*(.+?)\s*$/$1/;
+                $arg = '?' if $arg !~ /^\$\d/;
+                push @arg => $arg;
+            }
+            "$select" . (join ',' => @arg) . ')';
+        }geix;
+
         my $thisletter;
 
-        $string =~ s{(VALUES|REPLACE|SELECT\s+\w+)\s*\((.+)\)}{
+        $string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{ ## For emacs: ()()()
             my ($sword,$list) = ($1,$2);
             my @word = split(//, $list);
             my $numitems = 0;

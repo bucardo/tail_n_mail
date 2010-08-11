@@ -212,7 +212,7 @@ $llp =~ s/%d/\\w*/;
 $llp =~ s/%r/.+?\\(\\d+\\)/;
 $llp =~ s/%c/\\S+/;
 $llp =~ s/%h/\\S+/;
-my $pgpidre = qr{($llp)(.+)};
+my $pgpidre = qr{^($llp)(.+)};
 
 ## And a separate one for cluster-wide notices
 my $llp2 = $arg{log_line_prefix} || $default_llp;
@@ -227,7 +227,7 @@ $llp2 =~ s/%p/\\d+/;
 for my $char (qw/ u d r h i c l s v x/) {
     $llp2 =~ s/%$char//g;
 }
-my $pgpidre2 = qr{($llp2)(.+)};
+my $pgpidre2 = qr{^$llp2};
 
 if ($arg{pglog} eq 'syslog') {
     ## Timestamp host program[PID]: [number-sub]

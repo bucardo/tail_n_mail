@@ -320,7 +320,7 @@ sub pick_log_file {
     }
 
     my $lastfile = $opt{$curr}{lastfile};
-    my $orig = $opt{$curr}{original_filename};
+    my $orig = $opt{$curr}{original_filename} || '';
 
     ## Handle the LATEST case right away
     if ($orig =~ s{([^/\\]*)LATEST([^/\\]*)$}{}o) {

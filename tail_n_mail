@@ -214,6 +214,8 @@ $llp =~ s/%c/\\S+/;
 $llp =~ s/%h/\\S+/;
 my $pgpidre = qr{^($llp)(.+)};
 
+$arg{verbose} and warn "  Log line prefix regex: $pgpidre\n";
+
 ## And a separate one for cluster-wide notices
 my $llp2 = $arg{log_line_prefix} || $default_llp;
 ## Remove any quotes around it

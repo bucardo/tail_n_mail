@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.16.4';
+our $VERSION = '1.16.5';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -203,14 +203,21 @@ $llp =~ s{^'(.+)'$}{$1};
 ## Process the log_line_prefix and change it into a regex
 my ($havetime,$havepid) = (0,0);
 $llp =~ s/([\-\[\]])/\\$1/g;
+## This assumes timestamp comes before the pid!
 $llp =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?)/ and $havetime=1;
 $llp =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?)/ and $havetime=1;
+if (!$havetime) {
+    $llp = "()$llp";
+}
 $llp =~ s/%p/(\\d+)/ and $havepid = 1;
+$llp =~ s/%c/(\\S+)/ and $havepid = 1;
+if (!$havepid) {
+    $llp = "()$llp";
+}
 $llp =~ s/%l/\\d+/;
 $llp =~ s/%u/\\w+/;
 $llp =~ s/%d/\\w+/;
 $llp =~ s/%r/.+?\\(\\d+\\)/;
-$llp =~ s/%c/\\S+/;
 $llp =~ s/%h/\\S+/;
 my $pgpidre = qr{^($llp)(.+)};
 
@@ -919,18 +926,7 @@ sub parse_file {
                 if ($_ =~ s/$pgpidre/$4/) {
                     $pgprefix = $1;
                     ## We want the timestamp and the pid, even if we have to fake it
-                    if ($havetime and $havepid) {
-                        ($pgts,$pgpid) = ($2,$3);
-                    }
-                    elsif ($havetime) {
-                        ($pgts,$pgpid) = ($1,1);
-                    }
-                    elsif ($havepid) {
-                        ($pgts,$pgpid) = ('',$1);
-                    }
-                    else {
-                        ($pgts,$pgpid) = ('',1);
-                    }
+                    ($pgts,$pgpid) = ($2||'',$3||1);
                     if ($arg{pglog} eq 'syslog') {
                         $pgpid =~ s/(\d+)\D+(\d+)$/$1/;
                         $pgnum = $2;

@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.16.5';
+our $VERSION = '1.16.6';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -215,8 +215,8 @@ if (!$havepid) {
     $llp = "()$llp";
 }
 $llp =~ s/%l/\\d+/;
-$llp =~ s/%u/\\w+/;
-$llp =~ s/%d/\\w+/;
+$llp =~ s/%u/[\\[\\w\\]]*/;
+$llp =~ s/%d/[\\[\\w\\]]*/;
 $llp =~ s/%r/.+?\\(\\d+\\)/;
 $llp =~ s/%h/\\S+/;
 my $pgpidre = qr{^($llp)(.+)};
@@ -1124,7 +1124,6 @@ sub process_line {
     }
 
     $arg{debug} and warn "MATCH at line $line of $filename\n";
-
 
     ## Force newlines to a single line
     $string =~ s/\n/\\n/go;

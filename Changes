@@ -8,6 +8,14 @@ Version 1.16.6, released September 29, 2010
 
 * Allow null and '[unknown]' for %u and %d in log_line_prefix. [GSM]
 
+Version 1.16.5, released September 17, 2010
+
+* Allow %c as a surrogate PID, cleanup the havetimestamp and havepid logic. [GSM]
+
+Version 1.16.4, released September 16, 2010
+
+* Show generated pgpidre in verbose mode, other minor fixes. [GSM]
+
 Version 1.16.3, released August 11, 2010
 
 * Allow for four character time zones in header. [GSM]

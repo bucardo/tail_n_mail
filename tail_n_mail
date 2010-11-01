@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.16.7';
+our $VERSION = '1.16.8';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -206,12 +206,12 @@ $llp =~ s/([\-\[\]])/\\$1/g;
 ## This assumes timestamp comes before the pid!
 $llp =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?)/ and $havetime=1;
 $llp =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?)/ and $havetime=1;
-if (!$havetime) {
+if (!$havetime and $arg{pglog} ne 'syslog') {
     $llp = "()$llp";
 }
 $llp =~ s/%p/(\\d+)/ and $havepid = 1;
 $llp =~ s/%c/(\\S+)/ and $havepid = 1;
-if (!$havepid) {
+if (!$havepid and $arg{pglog} ne 'syslog') {
     $llp = "()$llp";
 }
 $llp =~ s/%l/\\d+/;
@@ -219,6 +219,17 @@ $llp =~ s/%u/[\\[\\w\\]]*/;
 $llp =~ s/%d/[\\[\\w\\]]*/;
 $llp =~ s/%r/.+?\\(\\d+\\)/;
 $llp =~ s/%h/\\S+/;
+
+if ($arg{pglog} eq 'syslog') {
+    ## Syslog is a little more specific
+    ## It's not standard, but usually standard 'enough' to build a working regex
+    ## Add in timestamp, host, process name, pid, and number
+    ## This will probably break if your log_line_prefix has a timestamp,
+    ## but why would you do that if using syslog? :)
+    $llp = "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\-\\d+\\] $llp";
+    ##Nov  1 10:37:23 db04 postgres[23445]: [5-1] client=[local],user=postgres ERROR:  relation "sample" does not exist at character 15
+    $havetime = $havepid = 1;
+}
 my $pgpidre = qr{^($llp)(.+)};
 
 $arg{verbose} and warn "  Log line prefix regex: $pgpidre\n";
@@ -237,14 +248,6 @@ for my $char (qw/ u d r h i c l s v x/) {
     $llp2 =~ s/%$char//g;
 }
 my $pgpidre2 = qr{^$llp2};
-
-if ($arg{pglog} eq 'syslog') {
-    ## Timestamp host program[PID]: [number-sub]
-    ## Regex 1=prefix 2=ts 3=pid+number 4=statement
-    $pgpidre = qr{((\S+).+?\[(\d+\]: \[\d+)\-\d+\] )(.+)};
-    $havetime = 1;
-    $havepid = 1;
-}
 
 ## Keep track of changes to know if we need to rewrite the config file or not
 my $changes = 0;
@@ -924,22 +927,23 @@ sub parse_file {
             if ($arg{pgmode}) {
                 ## 1=prefix 2=timestamp 3=PID 4=rest
                 if ($_ =~ s/$pgpidre/$4/) {
+
                     $pgprefix = $1;
                     ## We want the timestamp and the pid, even if we have to fake it
-                    ($pgts,$pgpid) = ($2||'',$3||1);
+                    ($pgts,$pgpid,$pgnum) = ($2||'',$3||1, 1);
                     if ($arg{pglog} eq 'syslog') {
-                        $pgpid =~ s/(\d+)\D+(\d+)$/$1/;
-                        $pgnum = $2;
-                    }
-                    else {
-                        $pgnum = 1;
+                        if ($pgprefix =~ /(\d+)\-\d+/) {
+                            $pgnum = $1;
+                        }
+                        ## Take out the variable syslog items from the prefix
+                        #$pgprefix =~ s/.*?\d+\-\d+\] //;
                     }
 
                     $lastpid = $pgpid;
 
                     ## Have we seen this PID before?
                     if (exists $pidline{$pgpid}) {
-                        if ($arg{pglog} eq 'syslog') {
+                        if ($arg{pglog} eq 'syslogg') {
                             if ($syslognum and $syslognum != $pgnum) {
                                 ## Got a new statement, so process the old
                                 $count += process_line(delete $pidline{$pgpid}, 0, $filename);

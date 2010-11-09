@@ -65,6 +65,8 @@ my %arg = (
               pgmode           => 1,
 ## What type of Postgres log we are parsing. Can be log, csv, or syslog
               pglog            => 'pg',
+## What is Postgres's log_line_prefix
+              log_line_prefix  => '%t [%p]',
 ## Maximum size of a statment before we truncate it.
               statement_size   => 1000,
 ## How to sort the output. Options are 'count' and 'date'
@@ -121,6 +123,7 @@ my $result = GetOptions
    'timewarp=i',
    'pgmode=s',
    'pglog=s',
+   'log_line_prefix=s',
    'maxsize=i',
    'sortby=s',
    'showonly=i',

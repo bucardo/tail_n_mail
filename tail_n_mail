@@ -528,11 +528,13 @@ sub parse_config_file {
 
         ## What file are we checking on?
         if (/^FILE:\s*(.+?)\s*$/) {
-            my $filename = $localopt{original_filename} = transform_filename($1);
+            my $filename = $localopt{original_filename} = $1;
 
             if ($filename !~ /\w/) {
                 die "No FILE found in the config file! (tried: $filename)\n";
             }
+
+            $filename = transform_filename($filename);
 
             ## If a custom file was specified, use that instead
             if ($arg{file}) {
@@ -730,6 +732,11 @@ sub parse_inherit_file {
                 $arg{duration} = $1;
             }
         }
+        ## Duration limit
+        elsif (/^DURATION_LIMIT:\s*(\d+)/) {
+            ## Command line still wins
+            $arg{duration_limit} ||= $1;
+        }
         ## Who to send emails from
         elsif (/^FROM:\s*(.+?)\s*$/) {
             $opt{$curr}{from} = $1;
@@ -744,6 +751,7 @@ sub parse_inherit_file {
         }
         ## The file to use
         elsif (/^FILE:\s*(.+)/) {
+            $opt{$curr}{original_filename} = $1;
             $opt{$curr}{filename} = transform_filename($1);
         }
         ## The mail subject

@@ -753,6 +753,7 @@ sub parse_inherit_file {
         elsif (/^FILE:\s*(.+)/) {
             $opt{$curr}{original_filename} = $1;
             $opt{$curr}{filename} = transform_filename($1);
+            $opt{$curr}{inherited_filename} = 1;
         }
         ## The mail subject
         elsif (/^MAILSUBJECT:\s*(.+)/) {
@@ -1900,7 +1901,9 @@ sub final_cleanup {
 
         print "\n";
         add_comments('FILE');
-        print "FILE: $opt{$curr}{original_filename}\n";
+        if (! $opt{$curr}{inherited_filename}) {
+            print "FILE: $opt{$curr}{original_filename}\n";
+        }
         print "LASTFILE: $opt{$curr}{filename}\n";
         print "OFFSET: $newoffset\n";
         for my $inherit (@{$opt{$curr}{inherit}}) {

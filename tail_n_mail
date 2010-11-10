@@ -1969,7 +1969,7 @@ __DATA__
 EMAIL: someone@example.com
 MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
 
-FILE: /var/log/postgresql-%Y-%m-%d.log
+FILE: /var/log/postgres-%Y-%m-%d.log
 INCLUDE: ERROR:  
 INCLUDE: FATAL:  
 INCLUDE: PANIC:  

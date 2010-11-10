@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.16.8';
+our $VERSION = '1.17.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -227,7 +227,6 @@ if ($arg{pglog} eq 'syslog') {
     ## This will probably break if your log_line_prefix has a timestamp,
     ## but why would you do that if using syslog? :)
     $llp = "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\-\\d+\\] $llp";
-    ##Nov  1 10:37:23 db04 postgres[23445]: [5-1] client=[local],user=postgres ERROR:  relation "sample" does not exist at character 15
     $havetime = $havepid = 1;
 }
 my $pgpidre = qr{^($llp)(.+)};
@@ -526,17 +525,10 @@ sub parse_config_file {
 
         ## What file are we checking on?
         if (/^FILE:\s*(.+?)\s*$/) {
-            my $filename = $localopt{original_filename} = $1;
+            my $filename = $localopt{original_filename} = transform_filename($1);
 
             if ($filename !~ /\w/) {
                 die "No FILE found in the config file! (tried: $filename)\n";
-            }
-
-            ## Transform the file name if it contains escapes
-            if ($filename =~ /%/) {
-                ## Allow moving back in time with the timewarp argument (defaults to 0)
-                my @ltime = localtime(time + $arg{timewarp});
-                $filename = strftime($filename, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
             }
 
             ## If a custom file was specified, use that instead
@@ -747,6 +739,18 @@ sub parse_inherit_file {
         elsif (/^MAILZERO:\s*(.+)/) {
             $opt{$curr}{mailzero} = $1;
         }
+        ## The file to use
+        elsif (/^FILE:\s*(.+)/) {
+            $opt{$curr}{filename} = transform_filename($1);
+        }
+        ## The mail subject
+        elsif (/^MAILSUBJECT:\s*(.+)/) {
+            $opt{$curr}{mailsubject} = $1;
+            $opt{$curr}{customsubject} = 1;
+        }
+        else {
+            warn qq{Unknown item in include file "$file": $_\n};
+        }
 
     }
     close $fh or warn qq{Could not close file "$file": $!\n};
@@ -943,7 +947,7 @@ sub parse_file {
 
                     ## Have we seen this PID before?
                     if (exists $pidline{$pgpid}) {
-                        if ($arg{pglog} eq 'syslogg') {
+                        if ($arg{pglog} eq 'syslog') {
                             if ($syslognum and $syslognum != $pgnum) {
                                 ## Got a new statement, so process the old
                                 $count += process_line(delete $pidline{$pgpid}, 0, $filename);
@@ -1047,6 +1051,22 @@ sub parse_file {
     return $count;
 
 } ## end of parse_file
+
+
+sub transform_filename {
+
+    my $name = shift or die;
+
+    ## Transform the file name if it contains escapes
+    if ($name =~ /%/) {
+        ## Allow moving back in time with the timewarp argument (defaults to 0)
+        my @ltime = localtime(time + $arg{timewarp});
+        $name = strftime($name, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
+    }
+
+    return $name;
+
+} ## end of transform_filename
 
 
 sub generate_regexes {

@@ -4,6 +4,12 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
+Version 1.16.8, released November 11, 2010
+
+* Allow FILE and MAILSUBJECT inside of inherited config files. [GSM]
+
+* Various improvements to syslog output handling. [GSM]
+
 Version 1.16.7, released September 30, 2010
 
 * Add QUERY to list of continuation key words. [GSM]

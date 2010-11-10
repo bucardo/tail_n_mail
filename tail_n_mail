@@ -759,6 +759,7 @@ sub parse_inherit_file {
         elsif (/^MAILSUBJECT:\s*(.+)/) {
             $opt{$curr}{mailsubject} = $1;
             $opt{$curr}{customsubject} = 1;
+            $opt{$curr}{inherited_mailsubject} = 1;
         }
         else {
             warn qq{Unknown item in include file "$file": $_\n};
@@ -1894,7 +1895,7 @@ sub final_cleanup {
         if ($opt{configfile}{maxsize}) {
             print "MAXSIZE: $opt{$curr}{maxsize}\n";
         }
-        if ($opt{$curr}{customsubject}) {
+        if ($opt{$curr}{customsubject} and ! $opt{$curr}{inherited_mailsubject}) {
             add_comments('MAILSUBJECT');
             print "MAILSUBJECT: $opt{$curr}{mailsubject}\n";
         }

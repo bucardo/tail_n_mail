@@ -965,8 +965,6 @@ sub parse_file {
                         if ($pgprefix =~ /(\d+)\-\d+/) {
                             $pgnum = $1;
                         }
-                        ## Take out the variable syslog items from the prefix
-                        #$pgprefix =~ s/.*?\d+\-\d+\] //;
                     }
 
                     $lastpid = $pgpid;

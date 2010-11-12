@@ -4,6 +4,13 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
+Version 1.17.2, released November 12, 2010
+
+* Better flattening: ignore empty () and count(*) [GSM]
+
+* Handle all OS-generated entries as a match: allows catching of things 
+  like out of disk space errors when archiving. [GSM]
+
 Version 1.17.1, released November 11, 2010
 
 * Allow FILE, MAILSUBJECT, and DURATION_LIMIT inside of inherited config files. [GSM]

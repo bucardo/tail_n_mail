@@ -137,6 +137,7 @@ my $result = GetOptions
    'smtp',
    'tsep=s',
    'tsepnosub',
+   'nolastfile',
    'pretty_query',
    'duration_limit=i',
    'statement_size=i',
@@ -284,6 +285,12 @@ my (%fileorder, $filenum);
 ## Generic globals
 my ($string,$time);
 
+## If they requested no lastfile, remove it now
+if ($arg{nolastfile}) {
+    delete $opt{$curr}{lastfile};
+}
+
+
 ## Parse each file returned by pick_log_file until we start looping
 my $last_logfile = '';
 my @files_parsed;
@@ -409,15 +416,19 @@ sub pick_log_file {
         my $maxloops = 24*2 * 7 * 30; ## max of 30 days
         my $bail = 0;
         my %seenfile;
+        my $lastchecked = '';
         BACKINTIME: {
 
             my @ltime = localtime(time - $timerewind);
             my $newfile = strftime($orig, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
-            $arg{debug} and warn "Checking for file $newfile (last was $lastfile)\n";
-            last if $newfile eq $lastfile;
-            if (! exists $seenfile{$newfile}) {
-                $seenfile{$newfile} = 1;
-                push @{$opt{$curr}{middle_filenames}} => $newfile;
+            if ($newfile ne $lastchecked) {
+                last if $newfile eq $lastfile;
+                $arg{debug} and warn "Checking for file $newfile (last was $lastfile)\n";
+                if (! exists $seenfile{$newfile}) {
+                    $seenfile{$newfile} = 1;
+                    push @{$opt{$curr}{middle_filenames}} => $newfile;
+                }
+                $lastchecked = $newfile;
             }
 
             $timerewind += 60*30;
@@ -432,6 +443,7 @@ sub pick_log_file {
     return $opt{$curr}{filename};
 
 } ## end of pick_log_file
+
 
 sub parse_rc_files {
 
@@ -759,7 +771,6 @@ sub parse_inherit_file {
         elsif (/^MAILSUBJECT:\s*(.+)/) {
             $opt{$curr}{mailsubject} = $1;
             $opt{$curr}{customsubject} = 1;
-            $opt{$curr}{inherited_mailsubject} = 1;
         }
         else {
             warn qq{Unknown item in include file "$file": $_\n};
@@ -1895,7 +1906,7 @@ sub final_cleanup {
         if ($opt{configfile}{maxsize}) {
             print "MAXSIZE: $opt{$curr}{maxsize}\n";
         }
-        if ($opt{$curr}{customsubject} and ! $opt{$curr}{inherited_mailsubject}) {
+        if ($opt{$curr}{customsubject}) {
             add_comments('MAILSUBJECT');
             print "MAILSUBJECT: $opt{$curr}{mailsubject}\n";
         }

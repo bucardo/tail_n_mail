@@ -1220,7 +1220,7 @@ sub process_line {
     if ($arg{flatten} and $arg{type} ne 'duration') {
 
         ## Simplistic SELECT func(arg1,arg2,...) replacement
-        $string =~ s{(SELECT\s*\w+\s*\()([^*].*?)\)}{ 
+        $string =~ s{(SELECT\s*\w+\s*\()([^*].*?)\)}{
             my ($select,$args) = ($1,$2);
             my @arg;
             for my $arg (split /,/ => $args) {
@@ -1357,7 +1357,7 @@ sub process_line {
             }
         }geix;
         $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
-        $string =~ s{(\bWHERE\s+\w+\s+IN\s*\((?!\s*SELECT)).+?\)}{$1?)}gio;
+        $string =~ s{(\bWHERE\s+\w+\s+IN\s*\((?!\s*SELECT))[^)]+\)}{$1?)}gio;
         $string =~ s{(\bWHERE\s+\w+\s*=\s*)'[\d\w]+'}{$1'?')}gio;
         $string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
         $string =~ s/(invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;

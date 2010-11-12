@@ -716,6 +716,8 @@ sub parse_inherit_file {
 
     open my $fh, '<', $filename or die qq{Could not open file "$file": $!\n};
     while (<$fh>) {
+        chomp;
+        next if /^#/ or ! /\w/;
         ## Only a few things are allowed in here
         if (/^FIND_LINE_NUMBER:\s*(\d+)/) {
             ## We adjust the global here and now

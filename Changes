@@ -10,6 +10,8 @@ Version 1.17.1, released November 11, 2010
 
 * Various improvements to syslog output handling. [GSM]
 
+* Add 'nolastfile' argument for rare case of changing log_filename [GSM]
+
 Version 1.16.7, released September 30, 2010
 
 * Add QUERY to list of continuation key words. [GSM]

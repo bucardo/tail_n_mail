@@ -1481,7 +1481,7 @@ sub process_report {
     ## Allow no specific email for dryruns
     if (! @{$opt{$curr}{email}}) {
         if ($arg{dryrun} or $arg{nomail}) {
-            push @{$opt{$curr}{email}} => 'To: dryrun@example.com';
+            push @{$opt{$curr}{email}} => 'dryrun@example.com';
         }
     }
 

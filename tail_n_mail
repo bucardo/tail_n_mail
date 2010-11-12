@@ -1480,6 +1480,13 @@ sub process_report {
     ## Some minor help with debugging
     print {$fh} "X-TNM-VERSION: $VERSION\n";
 
+    ## Allow no specific email for dryruns
+    if (! @{$opt{$curr}{email}}) {
+        if ($arg{dryrun} or $arg{nomail}) {
+            push @{$opt{$curr}{email}} => 'To: dryrun@example.com';
+        }
+    }
+
     ## Fill out the "To:" fields
     for my $email (@{$opt{$curr}{email}}) {
         print {$fh} "To: $email\n";

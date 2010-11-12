@@ -1030,15 +1030,20 @@ sub parse_file {
                 ## If we do not have a PID yet, skip this line
                 next LOGLINE if ! $lastpid;
 
-                ## Replace leading tab with a space
-                s{^\t}{ };
+                ## If there is a leading tab, remove it and treat as a continuation
+                if (s{^\t}{ }) {
+                    ## Increment the pgnum
+                    $pgnum = $current_pid_num{$lastpid} + 1;
+                    $current_pid_num{$lastpid} = $pgnum;
 
-                ## Increment the pgnum
-                $pgnum = $current_pid_num{$lastpid} + 1;
-                $current_pid_num{$lastpid} = $pgnum;
-
-                ## Store this string
-                $pidline{$lastpid}{string}{$pgnum} = $_;
+                    ## Store this string
+                    $pidline{$lastpid}{string}{$pgnum} = $_;
+                }
+                else {
+                    ## Not a continuation, so probably an error from the OS
+                    ## Simply parse it right away, force it to match
+                    $count += process_line($_, $. + $newlines, $filename, 1);
+                }
 
                 ## No need to do anything more right now if in pgmode
                 next LOGLINE;
@@ -1135,7 +1140,7 @@ sub process_line {
     ## We've got a complete statement, so do something with it!
     ## If it matches, we'll either put into %find directly, or store in %similar
 
-    my ($info,$line,$filename) = @_;
+    my ($info,$line,$filename,$forcematch) = @_;
 
     ## The final string
     $string = '';
@@ -1158,13 +1163,26 @@ sub process_line {
         $string = $info;
     }
 
+    ## Strip out leading whitespace
     $string =~ s/^\s+//o;
 
-    ## Bail if it does not match the inclusion regex
-    return 0 if $include and $string !~ $include;
+    ## Save the raw version
+    my $rawstring = $string;
 
-    ## Bail if it matches the exclusion regex
-    return 0 if $exclude and $string =~ $exclude;
+    ## Special handling for forced checks, e.g. OS errors
+    if (defined $forcematch) {
+        $pgprefix = '?';
+        goto PGPREFIX;
+    }
+    ## A forced match skips both checks below
+    else {
+
+        ## Bail if it does not match the inclusion regex
+        return 0 if $include and $string !~ $include;
+
+        ## Bail if it matches the exclusion regex
+        return 0 if $exclude and $string =~ $exclude;
+    }
 
     ## If in duration mode, and we have a minimum cutoff, discard faster ones
     if ($arg{type} eq 'duration' and $arg{duration} >= 0) {
@@ -1195,8 +1213,8 @@ sub process_line {
         return 1;
     }
 
-    ## Save the raw version
-    my $rawstring = $string;
+    ## Reassign rawstring
+    $rawstring = $string;
 
     ## Make some adjustments to attempt to compress similar entries
     if ($arg{flatten} and $arg{type} ne 'duration') {
@@ -1362,8 +1380,10 @@ sub process_line {
             $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
             $rawstring =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
         }
+        $rawstring =~ s/^([A-Z]+: ) +/$1/gmo;
     }
 
+  PGPREFIX:
     ## If we have a prefix, check for similar entries
     if (length $pgprefix) {
 
@@ -1807,11 +1827,13 @@ sub lines_of_interest {
         ## If we have prefixes available, show those
         my $estring = $f->{string};
         if (exists $earliest->{pgprefix}) {
-            printf "First: %s%s\nLast:  %s%s\n",
-                $samefile ? '' : "[$fab{$earliest->{filename}}] ",
-                $earliest->{pgprefix},
-                $samefile ? '' : "[$fab{$latest->{filename}}] ",
-                $latest->{pgprefix};
+            if ($earliest->{pgprefix} ne '?') { ## Skip direct lines
+                printf "First: %s%s\nLast:  %s%s\n",
+                    $samefile ? '' : "[$fab{$earliest->{filename}}] ",
+                    $earliest->{pgprefix},
+                    $samefile ? '' : "[$fab{$latest->{filename}}] ",
+                    $latest->{pgprefix};
+            }
             $estring =~ s/^\s+//o;
             print wrapline($estring);
             print "\n";

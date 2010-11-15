@@ -335,7 +335,7 @@ sub pick_log_file {
     ## Same for a reset - we only want the latest file
     if ($arg{file} or $arg{reset}) {
         delete $opt{$curr}{lastfile};
-        return $opt{$curr}{filename};
+        return $arg{file} || $opt{$curr}{filename};
     }
 
     my $lastfile = $opt{$curr}{lastfile};

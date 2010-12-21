@@ -15,7 +15,7 @@ if (! $ENV{RELEASE_TESTING}) {
 	plan (skip_all =>  'Test skipped unless environment variable RELEASE_TESTING is set');
 }
 
-plan tests => 3;
+plan tests => 5;
 
 my %v;
 my $vre = qr{(\d+\.\d+\.\d+\_?\d*)};
@@ -102,5 +102,18 @@ elsif ($info !~ /Good signature/) {
 else {
 	pass "Valid signed git tag found for version $lastver";
 }
+
+## Test the release.txt from bucardo.org
+my $url = 'http://bucardo.org/tail_n_mail/latest_version.txt';
+my $info = qx{wget -q -O - $url};
+
+my $t = 'latest_version.txt contains a version number';
+like ($info, qr{^\d+\.\d+\.\d+}, $t);
+
+$info =~ /(\d+\.\d+\.\d+)/;
+my $onlineversion = $1;
+
+$t = 'latest_version.txt contains the proper version';
+is ($onlineversion, $lastver, $t);
 
 exit;

@@ -8,6 +8,10 @@ Version 1.17.3, released December 21, 2010
 
 * Fixed non-functioning --file argument. [GSM]
 
+* Better syslog matching: fixed error in prefix number detection. [GSM]
+
+* Do not set a default log_line_prefix for syslog. [GSM]
+
 Version 1.17.2, released November 12, 2010
 
 * Better flattening: ignore empty () and count(*) [GSM]

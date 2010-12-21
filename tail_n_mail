@@ -963,7 +963,7 @@ sub parse_file {
                     ## We want the timestamp and the pid, even if we have to fake it
                     ($pgts,$pgpid,$pgnum) = ($2||'',$3||1, 1);
                     if ($arg{pglog} eq 'syslog') {
-                        if ($pgprefix =~ /(\d+)\-\d+/) {
+                        if ($pgprefix =~ /\[(\d+)\-\d+/) {
                             $pgnum = $1;
                         }
                     }

@@ -66,7 +66,7 @@ my %arg = (
 ## What type of Postgres log we are parsing. Can be log, csv, or syslog
               pglog            => 'pg',
 ## What is Postgres's log_line_prefix
-              log_line_prefix  => '%t [%p]',
+              log_line_prefix  => '',
 ## Maximum size of a statment before we truncate it.
               statement_size   => 1000,
 ## How to sort the output. Options are 'count' and 'date'
@@ -200,7 +200,8 @@ parse_inherited_files();
 ## Figure out the log_line_prefix, then create a regex for it
 my $default_llp = '%t [%p]';
 
-my $llp = $arg{log_line_prefix} || $default_llp;
+my $llp = $arg{log_line_prefix} || ($arg{pglog} eq 'syslog' ? '' : $default_llp);
+
 ## Remove any quotes around it
 $llp =~ s{^'(.+)'$}{$1};
 

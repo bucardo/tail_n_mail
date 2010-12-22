@@ -421,7 +421,7 @@ sub pick_log_file {
         BACKINTIME: {
 
             my @ltime = localtime(time - $timerewind);
-            my $newfile = strftime($orig, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
+            my $newfile = strftime($orig, @ltime);
             if ($newfile ne $lastchecked) {
                 last if $newfile eq $lastfile;
                 $arg{debug} and warn "Checking for file $newfile (last was $lastfile)\n";
@@ -1091,7 +1091,7 @@ sub transform_filename {
     if ($name =~ /%/) {
         ## Allow moving back in time with the timewarp argument (defaults to 0)
         my @ltime = localtime(time + $arg{timewarp});
-        $name = strftime($name, @ltime); ## no critic (ProhibitCallsToUnexportedSubs)
+        $name = strftime($name, @ltime);
     }
 
     return $name;
@@ -1232,7 +1232,7 @@ sub process_line {
             "$select" . (join ',' => @arg) . ')';
         }geix;
 
-        my $thisletter;
+        my $thisletter; ## no critic (ProhibitUnusedVariables)
 
         $string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{ ## For emacs: ()()()
             my ($sword,$list) = ($1,$2);
@@ -1695,7 +1695,8 @@ sub lines_of_interest {
     our ($current_filename, %sorthelp);
     undef %sorthelp;
 
-    sub sortsub {
+    sub sortsub { ## no critic (ProhibitNestedSubs)
+
         my $sorttype = $opt{$curr}{sortby} || $arg{sortby};
 
         if ($arg{type} eq 'duration') {
@@ -1774,8 +1775,8 @@ sub lines_of_interest {
             }
 
             ## Show the actual string, not the flattened version
-            my $string = wrapline($f->{rawstring} || $f->{string});
-            print "$string\n";
+            my $lstring = wrapline($f->{rawstring} || $f->{string});
+            print "$lstring\n";
 
             next;
         }

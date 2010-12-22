@@ -52,10 +52,10 @@ for my $filename (keys %v) {
 }
 
 if ($good) {
-	pass "All version numbers are the same ($lastver)";
+	pass ("All version numbers are the same ($lastver)");
 }
 else {
-	fail 'All version numbers were not the same!';
+	fail ('All version numbers were not the same!');
 	for my $filename (sort keys %v) {
 		for my $glob (@{$v{$filename}}) {
 			my ($ver,$line) = @$glob;
@@ -81,10 +81,10 @@ for my $file (qw/ tail_n_mail /) {
 	close $fh or warn qq{Could not close "$file": $!\n};
 
 	if ($good) {
-		pass "The file $file has no tabs or unusual characters";
+		pass ("The file $file has no tabs or unusual characters");
 	}
 	else {
-		fail "The file $file did not pass inspection!";
+		fail ("The file $file did not pass inspection!");
 	}
 }
 
@@ -94,24 +94,24 @@ my $COM = "git tag -v $lastver 2>&1";
 my $info = qx{$COM};
 
 if ($info =~ /error/) {
-	fail "No such git tag: $lastver\n";
+	fail ("No such git tag: $lastver\n");
 }
 elsif ($info !~ /Good signature/) {
-	fail "No signatiure found for git tag $lastver";
+	fail ("No signatiure found for git tag $lastver");
 }
 else {
-	pass "Valid signed git tag found for version $lastver";
+	pass ("Valid signed git tag found for version $lastver");
 }
 
 ## Test the release.txt from bucardo.org
 my $url = 'http://bucardo.org/tail_n_mail/latest_version.txt';
-my $info = qx{wget -q -O - $url};
+my $get = qx{wget -q -O - $url};
 
 my $t = 'latest_version.txt contains a version number';
-like ($info, qr{^\d+\.\d+\.\d+}, $t);
+like ($get, qr{^\d+\.\d+\.\d+}, $t);
 
-$info =~ /(\d+\.\d+\.\d+)/;
-my $onlineversion = $1;
+$get =~ /(\d+\.\d+\.\d+)/;
+my $onlineversion = $1; ## no critic (ProhibitCaptureWithoutTest)
 
 $t = 'latest_version.txt contains the proper version';
 is ($onlineversion, $lastver, $t);

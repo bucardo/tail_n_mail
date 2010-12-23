@@ -4,6 +4,12 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
+Version ??, released ??
+
+* Added more tests. [GSM]
+
+* Major fixes for CSV mode. [GSM]
+
 Version 1.17.3, released December 21, 2010
 
 * Fixed non-functioning --file argument. [GSM]

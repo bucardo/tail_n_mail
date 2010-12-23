@@ -1,4 +1,4 @@
 .tailnmailrc
 data/
 tmp/
-pg_log/
+pg_log

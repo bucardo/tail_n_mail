@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 10;
+use Test::More tests => 19;
 
 use vars qw{ $info $t };
 
@@ -73,11 +73,11 @@ $t = q{Test config 1 gives correct first item "Last" timestamp};
 like ($start, qr{\n\QLast:  2010-12-22 19:17:53 EST [29929]\E\n}, $t);
 
 $t = q{Test config 1 gives correct normalized output};
-like ($start, qr{\nERROR: type "line" not yet implemented 
+like ($start, qr{\nERROR: type "line" not yet implemented
 \QSTATEMENT: INSERT INTO dbd_pg_test_geom(xline) VALUES (?)\E\n\-\n}, $t);
 
 $t = q{Test config 1 gives correct literal output};
-like ($start, qr{\n\-\nERROR: type "line" not yet implemented 
+like ($start, qr{\n\-\nERROR: type "line" not yet implemented
 \QSTATEMENT: INSERT INTO dbd_pg_test_geom(xline) VALUES (\E\$1\)}, $t);
 
 ## Second match is a simple COPY error with a CONTEXT
@@ -87,8 +87,8 @@ like ($start, qr{\Q
 [2] (between lines 8,187 and 8,200, occurs 3 times)
 First: 2010-12-22 19:17:41 EST [29896]
 Last:  2010-12-22 19:17:41 EST [29896]
-ERROR: COPY from stdin failed: COPY terminated by new PQexec 
-CONTEXT: COPY dbd_pg_test4, line 1 
+ERROR: COPY from stdin failed: COPY terminated by new PQexec
+CONTEXT: COPY dbd_pg_test4, line 1
 STATEMENT: COPY dbd_pg_test4 FROM STDIN
 \E}, $t);
 
@@ -99,10 +99,10 @@ like ($start, qr{\Q
 [3] (between lines 1,013 and 1,015, occurs 2 times)
 First: 2010-12-22 19:17:38 EST [29867]
 Last:  2010-12-22 19:17:38 EST [29867]
-ERROR: syntax error at or near "?" at character ? 
+ERROR: syntax error at or near "?" at character ?
 STATEMENT: Testing the ShowErrorStatement attribute
 -
-ERROR: syntax error at or near "Testing" at character 1 
+ERROR: syntax error at or near "Testing" at character 1
 STATEMENT: Testing the ShowErrorStatement attribute
 \E}, $t);
 
@@ -114,7 +114,7 @@ like ($start, qr{\Q
 [5] (between lines 7,093 and 7,526, occurs 2 times)
 First: 2010-12-22 19:17:40 EST [29878]
 Last:  2010-12-22 19:17:40 EST [29882]
-ERROR: column "dbdpg_throws_an_error" does not exist at character 8 
+ERROR: column "dbdpg_throws_an_error" does not exist at character 8
 STATEMENT: SELECT dbdpg_throws_an_error
 \E}, $t);
 

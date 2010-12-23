@@ -1385,8 +1385,8 @@ sub process_line {
     ## Format the final string (and rawstring) a little bit
     if ($arg{pretty_query}) {
         for my $word (qw/DETAIL HINT QUERY CONTEXT STATEMENT/) {
-            $string =~ s/$word: /\n$word: /;
-            $rawstring =~ s/$word: /\n$word: /;
+            $string =~ s/ *$word: /\n$word: /;
+            $rawstring =~ s/ *$word: /\n$word: /;
         }
         if ($arg{type} eq 'duration') {
             $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;

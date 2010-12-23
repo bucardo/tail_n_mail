@@ -23,9 +23,6 @@ sub run {
 	return $@ ? "OOPS: $@\n" : $result;
 }
 
-my $hostname = qx{hostname};
-chomp $hostname;
-
 $t = q{Running with non-existent config file gives an error};
 $info = run('t/nosuch.config');
 like ($info, qr{Could not open}, $t);

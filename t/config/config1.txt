@@ -1,0 +1,9 @@
+## Test config file #1
+
+EMAIL: someone@example.com
+MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
+
+FILE: t/logs/testlog1.txt
+INCLUDE: ERROR:  
+INCLUDE: FATAL:  
+INCLUDE: PANIC:  

@@ -284,7 +284,7 @@ $opt{grand_total} = 0;
 my (%fileorder, $filenum);
 
 ## Generic globals
-my ($string,$time);
+my ($string,$time,$csv);
 
 ## If they requested no lastfile, remove it now
 if ($arg{nolastfile}) {
@@ -305,7 +305,11 @@ my @files_parsed;
     ## If it's the same as the last one we did, we are done
     last if $last_logfile eq $logfile;
 
-    $arg{debug} and warn "Parsing file ($logfile)\n";
+    $arg{debug} and warn " Parsing file: $logfile\n";
+
+    ## Force to CSV mode if the file ends in csv
+    $logfile =~ /\.csv/ and $arg{pglog} = 'csv';
+
     my $count = parse_file($logfile);
     push @files_parsed => [$logfile, $count];
     $fileorder{$logfile} = ++$filenum;
@@ -922,27 +926,27 @@ sub parse_file {
     my %pidline;
 
     if (lc $arg{pglog} eq 'csv') {
-        ## Move this somewhere else
-        my $csv;
+        if (! defined $csv) {
             eval {
                 require Text::CSV;
             };
-        if (!$@) {
-            $csv = Text::CSV->new({ binary => 1, eol => $/ });
-        }
-        else {
-            ## Assume it failed because it doesn't exist, so try another version
-            eval {
-                require Text::CSV_XS;
-            };
-            if ($@) {
+            if (!$@) {
+                $csv = Text::CSV->new({ binary => 1, eol => $/ });
+            }
+            else {
+                ## Assume it failed because it doesn't exist, so try another version
+                eval {
+                    require Text::CSV_XS;
+                };
+                if ($@) {
                     die qq{Cannot parse CSV logs unless Text::CSV or Text::CSV_XS is available\n};
                 }
-            $csv = Text::CSV_XS->new({ binary => 1, eol => $/ });
+                $csv = Text::CSV_XS->new({ binary => 1, eol => $/ });
+            }
         }
         while (my $line = $csv->getline($fh)) {
             my @cols = @$line;
-            $count += process_line("$line->[0] $line->[1]\@$line->[2] $line->[11]:  $line->[13] STATEMENT:  $line->[19]", $., $filename);
+            $count += process_line("$line->[11]:  $line->[13] STATEMENT:  $line->[19]", $., $filename);
         }
 
     } ## end of PG CSV mode
@@ -1368,6 +1372,7 @@ sub process_line {
         $string =~ s{Failed on request of size \d+}{Failed on request of size ?}go;
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
         $string =~ s{(syntax error at or near) "\w+" at character \d+}{$1 "?" at character ?}o;
+
     } ## end of flatten
 
     ## Format the final string (and rawstring) a little bit

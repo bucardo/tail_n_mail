@@ -17,6 +17,8 @@
 [-Miscellanea::RequireRcsKeywords]
 [-Modules::ProhibitExcessMainComplexity]
 [-References::ProhibitDoubleSigils]
+[-RegularExpressions::ProhibitCaptureWithoutTest]
+[-RegularExpressions::ProhibitComplexRegexes]
 [-RegularExpressions::ProhibitEnumeratedClasses]
 [-RegularExpressions::ProhibitEscapedMetacharacters]
 [-RegularExpressions::RequireDotMatchAnything]
@@ -39,3 +41,4 @@
 ## Things that do not work well:
 [-InputOutput::RequireBriefOpen]
 [-ErrorHandling::RequireCheckingReturnValueOfEval]
+

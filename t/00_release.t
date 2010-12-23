@@ -111,7 +111,7 @@ my $t = 'latest_version.txt contains a version number';
 like ($get, qr{^\d+\.\d+\.\d+}, $t);
 
 $get =~ /(\d+\.\d+\.\d+)/;
-my $onlineversion = $1; ## no critic (ProhibitCaptureWithoutTest)
+my $onlineversion = $1;
 
 $t = 'latest_version.txt contains the proper version';
 is ($onlineversion, $lastver, $t);

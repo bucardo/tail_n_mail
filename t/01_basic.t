@@ -106,9 +106,8 @@ ERROR: syntax error at or near "Testing" at character 1
 STATEMENT: Testing the ShowErrorStatement attribute
 \E}, $t);
 
-
 ## Fifth match has no normalization
-$t = q{Test config 1 gives correct third match};
+$t = q{Test config 1 gives correct fifth match};
 $start = substr($info,1500,300);
 like ($start, qr{\Q
 [5] (between lines 7,093 and 7,526, occurs 2 times)

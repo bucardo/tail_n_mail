@@ -947,7 +947,8 @@ sub parse_file {
         while (my $line = $csv->getline($fh)) {
             my @cols = @$line;
             my $prefix = "$line->[0] \[$line->[3]\]";
-            my $string = "$line->[11]:  $line->[13] STATEMENT:  $line->[19]";
+            my $context = length $line->[18] ? "CONTEXT: $line->[18] " : '';
+            my $string = "$line->[11]:  $line->[13] ${context}STATEMENT:  $line->[19]";
             $count += process_line({pgprefix => $prefix, rawstring => $string, line => $.}, $., $filename);
         }
 

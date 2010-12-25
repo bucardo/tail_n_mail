@@ -948,8 +948,8 @@ sub parse_file {
             my @cols = @$line;
             my $prefix = "$line->[0] \[$line->[3]\]";
             my $context = length $line->[18] ? "CONTEXT: $line->[18] " : '';
-            my $string = "$line->[11]:  $line->[13] ${context}STATEMENT:  $line->[19]";
-            $count += process_line({pgprefix => $prefix, rawstring => $string, line => $.}, $., $filename);
+            my $raw = "$line->[11]:  $line->[13] ${context}STATEMENT:  $line->[19]";
+            $count += process_line({pgprefix => $prefix, rawstring => $raw, line => $.}, $., $filename);
         }
 
     } ## end of PG CSV mode

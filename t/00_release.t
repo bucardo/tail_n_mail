@@ -19,23 +19,31 @@ plan tests => 5;
 
 my %v;
 my $vre = qr{(\d+\.\d+\.\d+\_?\d*)};
+my $found = 0;
 
 my $file = 'tail_n_mail';
 open my $fh, '<', $file or die qq{Could not open "$file": $!\n};
 while (<$fh>) {
-	push @{$v{$file}} => [$1,$.] if /VERSION = '$vre'/;
+	if (/VERSION = '$vre'/) {
+		push @{$v{$file}} => [$1,$.];
+		$found = 1;
+	}
 }
 close $fh or warn qq{Could not close "$file": $!\n};
+$found or fail "No version found inside of $file!";
 
 $file = 'Changes';
+$found = 0;
 open $fh, '<', $file or die qq{Could not open "$file": $!\n};
 while (<$fh>) {
-	if (/^$vre/) {
+	if (/^Version $vre/) {
 		push @{$v{$file}} => [$1,$.];
+		$found = 1;
 		last;
 	}
 }
 close $fh or warn qq{Could not close "$file": $!\n};
+$found or fail "No version found inside of $file!";
 
 my $good = 1;
 my $lastver;

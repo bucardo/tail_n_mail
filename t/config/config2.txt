@@ -1,0 +1,10 @@
+## Test config file #1
+
+EMAIL: csvlover@example.com
+MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
+PGLOG: csv
+
+FILE: t/logs/testlog2.csv
+INCLUDE: ERROR:  
+INCLUDE: FATAL:  
+INCLUDE: PANIC:  

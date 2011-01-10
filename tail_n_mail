@@ -630,6 +630,7 @@ sub parse_config_file {
         }
         ## The custom maxsize for this file
         elsif (/^MAXSIZE:\s*(\d+)/) {
+            print "FOUND: $1\n";
             $localopt{maxsize} = $1;
         }
         ## The subject line for this file
@@ -814,6 +815,7 @@ sub parse_file {
     ## Figure out where in the file we want to start scanning from
     my $size = -s $filename;
     my $offset = 0;
+    my $maxsize = $opt{$curr}{maxsize} ? $opt{$curr}{maxsize} : $arg{maxsize};
 
     ## Is the offset significant?
     ## Usually only is if the stored offset matches the current file
@@ -842,7 +844,7 @@ sub parse_file {
     }
 
     my $psize = pretty_number($size);
-    my $pmaxs = pretty_number($arg{maxsize});
+    my $pmaxs = pretty_number($maxsize);
     my $poffset = pretty_number($offset);
     $arg{verbose} and warn "  File: $filename Offset: $poffset Size: $psize Maxsize: $pmaxs\n";
 
@@ -859,10 +861,10 @@ sub parse_file {
     my $original_offset = $offset;
 
     ## This can happen quite a bit on busy files!
-    if ($arg{maxsize} and ($size - $offset > $arg{maxsize}) and $arg{offset} < 0) {
-        $arg{quiet} or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $arg{maxsize} bytes\n";
-        $toolarge{$filename} = qq{File "$filename" too large:\n  only read last $arg{maxsize} bytes (size=$size, offset=$offset)};
-        $offset = $size - $arg{maxsize};
+    if ($maxsize and ($size - $offset > $maxsize) and $arg{offset} < 0) {
+        $arg{quiet} or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
+        $toolarge{$filename} = qq{File "$filename" too large:\n  only read last $maxsize bytes (size=$size, offset=$offset)};
+        $offset = $size - $maxsize;
     }
 
     open my $fh, '<', $filename or die qq{Could not open "$filename": $!\n};

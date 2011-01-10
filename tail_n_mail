@@ -630,7 +630,6 @@ sub parse_config_file {
         }
         ## The custom maxsize for this file
         elsif (/^MAXSIZE:\s*(\d+)/) {
-            print "FOUND: $1\n";
             $localopt{maxsize} = $1;
         }
         ## The subject line for this file

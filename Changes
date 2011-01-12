@@ -4,11 +4,17 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
+Version thenext
+
+* Added check for MAXSIZE setting in configuration file [Selena Deckelmann]
+
+
 Version 1.17.4, released December 28, 2010
 
 * Added more tests. [GSM]
 
 * Major fixes for CSV mode. [GSM]
+
 
 Version 1.17.3, released December 21, 2010
 
@@ -18,12 +24,14 @@ Version 1.17.3, released December 21, 2010
 
 * Do not set a default log_line_prefix for syslog. [GSM]
 
+
 Version 1.17.2, released November 12, 2010
 
 * Better flattening: ignore empty () and count(*) [GSM]
 
 * Handle all OS-generated entries as a match: allows catching of things 
   like out of disk space errors when archiving. [GSM]
+
 
 Version 1.17.1, released November 11, 2010
 
@@ -33,21 +41,26 @@ Version 1.17.1, released November 11, 2010
 
 * Add 'nolastfile' argument for rare case of changing log_filename [GSM]
 
+
 Version 1.16.7, released September 30, 2010
 
 * Add QUERY to list of continuation key words. [GSM]
+
 
 Version 1.16.6, released September 29, 2010
 
 * Allow null and '[unknown]' for %u and %d in log_line_prefix. [GSM]
 
+
 Version 1.16.5, released September 17, 2010
 
 * Allow %c as a surrogate PID, cleanup the havetimestamp and havepid logic. [GSM]
 
+
 Version 1.16.4, released September 16, 2010
 
 * Show generated pgpidre in verbose mode, other minor fixes. [GSM]
+
 
 Version 1.16.3, released August 11, 2010
 
@@ -56,9 +69,11 @@ Version 1.16.3, released August 11, 2010
 
 * Skip cluster-wide log entries (e.g. autovacuum) [GSM]
 
+
 Version 1.16.2 of tail_n_mail, released August 5, 2010
 
 * Strip opening whitespace so we can effectively anchor user regexes [GSM]
+
 
 Version 1.16.1 of tail_n_mail, released August 5, 2010
 
@@ -74,9 +89,11 @@ Version 1.16.1 of tail_n_mail, released August 5, 2010
 
 * Add %c and %h to log_line_prefix handling
 
+
 Version 1.15.1 of tail_n_mail, released July 23, 2010
 
 * Handle %c and %h in log_line_prefix
+
 
 Version 1.15.0 of tail_n_mail, released July 23, 2010
 
@@ -96,6 +113,7 @@ Version 1.15.0 of tail_n_mail, released July 23, 2010
 
 * Never offset when using a custom file [GSM]
 
+
 Version 1.14.0 of tail_n_mail, not officially released
 
 * Change the name from tail_n_mail.pl to simply tail_n_mail [GSM]
@@ -107,6 +125,7 @@ Version 1.14.0 of tail_n_mail, not officially released
 * Change the default subject line to have UNIQUE : NUMBER [GSM]
 
 * Make all numbers "pretty" [GSM]
+
 
 Version 1.13.0 of tail_n_mail, released June 26, 2010
 

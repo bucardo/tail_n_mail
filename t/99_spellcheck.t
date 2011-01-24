@@ -110,9 +110,12 @@ __DATA__
 
 ## Common:
 
+Deckelmann
+MAXSIZE
 bucardo
 config
 env
+hideflatten
 perl
 txt
 
@@ -144,7 +147,6 @@ whitespace
 
 ## tail_n_mail:
 
-Deckelmann
 GetOptions
 bucardo
 clusterwide

@@ -4,6 +4,8 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
+* Expand tildes to ENV{HOME} for the 'file' argument.
+
 Version 1.17.5, released January 25, 2011
 
 * Added check for MAXSIZE setting in configuration file [Selena Deckelmann]

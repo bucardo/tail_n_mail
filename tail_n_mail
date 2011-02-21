@@ -170,6 +170,9 @@ if ($configfile =~ /duration/i) {
     $arg{type} = 'duration';
 }
 
+## Quick expansion of leading tildes for the file argument
+$arg{file} =~ s{^~/?}{$ENV{HOME}/};
+
 ## Save away our hostname
 my $hostname = qx{hostname};
 chomp $hostname;

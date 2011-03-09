@@ -2017,10 +2017,6 @@ sub pretty_number {
 
     ## If this is our first time here, find the correct separator
     if (! defined $arg{tsep}) {
-        if (exists $opt{$curr}{tsep}) {
-            $arg{tsep} = $opt{$curr}{tsep};
-            return pretty_number($number);
-        }
         my $lconv = localeconv();
         $arg{tsep} = $lconv->{thousands_sep} || ',';
     }

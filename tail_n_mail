@@ -240,7 +240,7 @@ if ($arg{pglog} eq 'syslog') {
     $llp = "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\-\\d+\\] $llp";
     $havetime = $havepid = 1;
 }
-my $pgpidre = qr{^($llp)(.+)};
+my $pgpidre = qr{^($llp)(.*)};
 
 $arg{verbose} and warn "  Log line prefix regex: $pgpidre\n";
 

@@ -8,6 +8,8 @@ Version 1.17.6
 
 * Expand tildes to ENV{HOME} for the 'file' argument.
 
+* Make main regex .* not .+ to accomodate syslog entries better. [GSM]
+
 Version 1.17.5, released January 25, 2011
 
 * Added check for MAXSIZE setting in configuration file [Selena Deckelmann]

@@ -144,6 +144,8 @@ my $result = GetOptions
    'pretty_query',
    'duration_limit=i',
    'statement_size=i',
+   'tailnmailrc=s',
+   'no-tailnmailrc',
   ) or help();
 ++$arg{verbose} if $arg{debug};
 

@@ -14,7 +14,7 @@ sub run {
 
 	my $options = shift || '';
 
-	my $COM = "perl tail_n_mail --dryrun  $conf $options";
+	my $COM = "perl tail_n_mail --dryrun --no-tailnmailrc --offset=0 $conf $options";
 
 	my $result = '';
 	eval {

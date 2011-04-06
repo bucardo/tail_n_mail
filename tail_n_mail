@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.17.6';
+our $VERSION = '1.17.7';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -713,7 +713,23 @@ sub parse_inherit_file {
             }
             else {
                 $filename = "$basedir/tnm/$file";
-                -e $filename and $filefound = 1;
+                if (-e $filename) {
+                    $filefound = 1;
+                }
+                else {
+                    ## Last ditch effort: use the config file's directory
+                    my $basedir2 = dirname($configfile);
+                    $filename = "$basedir2/$file";
+                    if (-e $filename) {
+                        $filefound = 1;
+                    }
+                    else {
+                        $filename = "basedir2/tnm/$file";
+                        if (-e $filename) {
+                            $filefound = 1;
+                        }
+                    }
+                }
             }
         }
     }

@@ -717,7 +717,7 @@ sub parse_inherit_file {
                     $filefound = 1;
                 }
                 else {
-                    ## Last ditch effort: use the config file's directory
+                    ## Use the config file's directory
                     my $basedir2 = dirname($configfile);
                     $filename = "$basedir2/$file";
                     if (-e $filename) {
@@ -727,6 +727,11 @@ sub parse_inherit_file {
                         $filename = "basedir2/tnm/$file";
                         if (-e $filename) {
                             $filefound = 1;
+                        }
+                        else {
+                            ## Try the home directory/tnm
+                            $filename = "$ENV{HOME}/tnm/$file";
+                            -e $filename and $filefound = 1;
                         }
                     }
                 }

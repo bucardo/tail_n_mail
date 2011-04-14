@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.18.0';
+our $VERSION = '1.18.1';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -105,6 +105,8 @@ my %arg = (
               tsepnosub        => 0,
 ## The maximum file size before we split things up before mailing
               maxemailsize     => 10_000_000, ## bytes
+## Do we skip lines that we cannot parse (e.g. rsync errors)?
+              skip_non_parsed => 0,
 );
 
 ## Quick check for help items
@@ -156,6 +158,7 @@ my $result = GetOptions
    'tailnmailrc=s',
    'no-tailnmailrc',
    'maxemailsize=i',
+   'skip_non_parsed',
   ) or help();
 ++$arg{verbose} if $arg{debug};
 
@@ -1077,7 +1080,9 @@ sub parse_file {
                 else {
                     ## Not a continuation, so probably an error from the OS
                     ## Simply parse it right away, force it to match
-                    $count += process_line($_, $. + $newlines, $filename, 1);
+                    if (! $arg{skip_non_parsed}) {
+                        $count += process_line($_, $. + $newlines, $filename, 1);
+                    }
                 }
 
                 ## No need to do anything more right now if in pgmode
@@ -1622,7 +1627,7 @@ sub process_report {
     ## Create the mail message
     my ($bigfh, $bigfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm');
 
-    if ($arg{dryrun}) {
+    if ($arg{dryrun2}) {
         close $bigfh or warn 'Could not close filehandle';
         $bigfh = \*STDOUT;
     }
@@ -1705,6 +1710,10 @@ sub process_report {
 
         ## Prepend the header info to our new data file
         my ($efh, $emailfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm2');
+        if ($arg{dryrun}) {
+            close $efh or warn 'Could not close filehandle';
+            $efh = \*STDOUT;
+        }
         print {$efh} "Subject: $newsubject\n";
         for (@header) {
             print {$efh} "$_\n";
@@ -1725,8 +1734,8 @@ sub process_report {
 
         while (<$bigfh>) {
             print {$efh} $_;
-			next if ! $stop_point;
-			last if tell $bigfh >= $stop_point;
+            next if ! $stop_point;
+            last if tell $bigfh >= $stop_point;
         }
         close $efh or warn qq{Could not close $emailfile: $!\n};
 

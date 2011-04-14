@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.17.7';
+our $VERSION = '1.18.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -103,6 +103,8 @@ my %arg = (
               tsep             => undef,
 ## Whether to turn off thousands separator in subject lines (mailman bug workaround)
               tsepnosub        => 0,
+## The maximum file size before we split things up before mailing
+              maxemailsize     => 10_000_000, ## bytes
 );
 
 ## Quick check for help items
@@ -153,6 +155,7 @@ my $result = GetOptions
    'statement_size=i',
    'tailnmailrc=s',
    'no-tailnmailrc',
+   'maxemailsize=i',
   ) or help();
 ++$arg{verbose} if $arg{debug};
 
@@ -660,7 +663,7 @@ sub parse_config_file {
     }
     if ($arg{debug}) {
         local $Data::Dumper::Varname = 'opt';
-        warn Dumper \%opt;
+        warn Dumper \%arg;
     }
 
     return;
@@ -1480,14 +1483,7 @@ sub process_line {
 
 sub process_report {
 
-    ## Create the mail message
-    my ($fh, $tempfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm');
-
-    if ($arg{dryrun}) {
-        close $fh or warn 'Could not close filehandle';
-        $fh = \*STDOUT;
-    }
-
+    ## No files means nothing to do
     if (! @files_parsed) {
         $arg{quiet} or warn qq{No files were read in, exiting\n};
         exit 1;
@@ -1527,14 +1523,16 @@ sub process_report {
         $subject =~ s/NUMBER/$pretty_grand_total/g;
         $subject =~ s/UNIQUE/$pretty_unique_matches/g;
     }
-    print {$fh} "Subject: $subject\n";
+
+    ## Store the header separate from the body for later size checking
+    my @header;
 
     ## Discourage vacation programs from replying
-    print {$fh} "Auto-Submitted: auto-generated\n";
-    print {$fh} "Precedence: bulk\n";
+    push @header => 'Auto-Submitted: auto-generated';
+    push @header => 'Precedence: bulk';
 
     ## Some minor help with debugging
-    print {$fh} "X-TNM-VERSION: $VERSION\n";
+    push @header => "X-TNM-VERSION: $VERSION";
 
     ## Allow no specific email for dryruns
     if (! @{$opt{$curr}{email}}) {
@@ -1545,7 +1543,7 @@ sub process_report {
 
     ## Fill out the "To:" fields
     for my $email (@{$opt{$curr}{email}}) {
-        print {$fh} "To: $email\n";
+        push @header => "To: $email";
     }
     if (! @{$opt{$curr}{email}}) {
         die "Cannot send email without knowing who to send to!\n";
@@ -1556,31 +1554,31 @@ sub process_report {
     ## Custom From:
     my $from_addr = $opt{$curr}{from} || '';
     if ($from_addr ne '') {
-        print {$fh} "From: $from_addr\n";
+        push @header => "From: $from_addr";
         $mailcom .= " -f $from_addr";
     }
     ## End header section
-    print {$fh} "\n";
+    my @msg;
 
     my $tz = strftime('%Z', localtime());
     my $now = scalar localtime;
-    print {$fh} "Date: $now $tz\n";
-    print {$fh} "Host: $hostname\n";
+    push @msg => "Date: $now $tz";
+    push @msg => "Host: $hostname";
     if ($arg{timewarp}) {
-        print {$fh} "Timewarp: $arg{timewarp}\n";
+        push @msg => "Timewarp: $arg{timewarp}";
     }
     if ($arg{duration} >= 0) {
-        print {$fh} "Minimum duration: $arg{duration} ms\n";
+        push @msg => "Minimum duration: $arg{duration} ms";
     }
 
     if ($arg{type} ne 'duration') {
-        print {$fh} "Unique items: $pretty_unique_matches\n";
+        push @msg => "Unique items: $pretty_unique_matches";
     }
 
     ## If we parsed more than one file, label them now
     if ($matchfiles > 1) {
         my $letter = 0;
-        print {$fh} "Total matches: $pretty_grand_total\n";
+        push @msg => "Total matches: $pretty_grand_total";
         my $maxcount = 1;
         my $maxletter = 1;
         for my $file (@files_parsed) {
@@ -1599,7 +1597,7 @@ sub process_report {
         for my $file (@files_parsed) {
             next if ! $file->[1];
             my $name = $fab{$file->[0]};
-            printf {$fh} "Matches from %-*s %s: %*s\n",
+            push @msg => sprintf "Matches from %-*s %s: %*s",
                 $maxletter + 2,
                 "[$name]",
                 $file->[0],
@@ -1608,45 +1606,167 @@ sub process_report {
         }
     }
     else {
-        print {$fh} "Matches from $last_file_parsed: $pretty_grand_total\n";
+        push @msg => "Matches from $last_file_parsed: $pretty_grand_total";
     }
 
     for my $file (@files_parsed) {
         if (exists $toolarge{$file->[0]}) {
-            print {$fh} "$toolarge{$file->[0]}\n";
+            push @msg => "$toolarge{$file->[0]}";
         }
     }
 
     if ($arg{type} eq 'duration' and $arg{duration_limit} and $grand_total > $arg{duration_limit}) {
-        print {$fh} "Not showing all lines: duration limit is $arg{duration_limit}\n";
+        push @msg => "Not showing all lines: duration limit is $arg{duration_limit}";
     }
 
-    ## The meat of the message
-    lines_of_interest($fh, $matchfiles);
+    ## Create the mail message
+    my ($bigfh, $bigfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm');
 
-    print {$fh} "\n";
-    close $fh or die qq{Could not close "$tempfile": $!\n};
+    if ($arg{dryrun}) {
+        close $bigfh or warn 'Could not close filehandle';
+        $bigfh = \*STDOUT;
+    }
+
+    ## The meat of the message: save to the temporary file
+    lines_of_interest($bigfh, $matchfiles);
+    print {$bigfh} "\n";
+
+	## Are we going to need to chunk it up?
+	my $filesize = -s $bigfile;
+	my $split = 0;
+	if ($filesize > $arg{maxemailsize} and ! $arg{dryrun}) {
+		$split = 1;
+		$arg{verbose} and print qq{File $bigfile too big ($filesize > $arg{maxemailsize})\n};
+	}
 
     my $emails = join ' ' => @{$opt{$curr}{email}};
-    $arg{verbose} and warn "  Sending mail to: $emails\n";
-    my $COM = qq{$mailcom $emails < $tempfile};
-    if ($arg{dryrun} or $arg{nomail}) {
-        $arg{quiet} or warn "  DRYRUN: $COM\n";
-        unlink $tempfile;
-        return;
+
+	## Sanity check on number of loops below
+    my $safety = 1;
+
+    ## If chunking, which chunk are we currently on?
+    my $chunk = 0;
+
+	## Where in the data file are we starting from?
+	my $start_point = 0;
+	## Where in the data file are we going to? 0 means until the end
+	my $stop_point = 0;
+
+  LOOP: {
+
+		## If we are splitting, calculate the new start and stop points
+		if ($split) {
+			$chunk++;
+
+			## Start at the old stop point
+			$start_point = $stop_point;
+			## Seek up to it, then walk backwards etc.
+
+			seek $bigfh, $start_point + $arg{maxemailsize}, 0;
+			my $firstpos = tell $bigfh;
+			if ($firstpos >= $filesize) {
+				## We are done!
+				$stop_point = 0;
+				$split = 0;
+			}
+			else {
+				## Go backwards a few chunks at a time, see if we can find a good stop point
+				ROUND: for my $round (1..10) {
+					  seek $bigfh, $firstpos - ($round*5000), 0;
+
+					  ## Only seek forward 10 lines
+					  my $lines = 0;
+
+					  while (<$bigfh>) {
+						  ## Got a match? Rewind to just before the opening number
+						  if ($_ =~ /(.*?)^\[\d/ms) {
+							  my $rewind = length($_) - length($1);
+							  $stop_point = tell($bigfh) - $rewind;
+							  seek $bigfh, $stop_point, 0;
+							  if ($start_point >= $stop_point) {
+								  $stop_point = 0;
+								  $split = 0;
+							  }
+							  last ROUND;
+						  }
+						  last if $lines++ > 10;
+					  }
+					  $stop_point = 0;
+					  $split = 0;
+				  }
+			}
+		}
+
+        ## Add the subject, adjusting it if needed
+        my $newsubject = $subject;
+        if ($chunk) {
+            $newsubject = "[Chunk $chunk] $subject";
+        }
+
+        ## Prepend the header info to our new data file
+        my ($efh, $emailfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm2');
+        print {$efh} "Subject: $newsubject\n";
+        for (@header) {
+            print {$efh} "$_\n";
+        }
+
+        ## Stop headers, start the message
+        print {$efh} "\n";
+
+		$chunk and print {$efh} "Message was split: this is chunk #$chunk\n";
+        for (@msg) {
+            print {$efh} "$_\n";
+        }
+        ## Add a little space before the actual data
+        print {$efh} "\n";
+
+        ## Add some subset of the data file to our new temp file
+		seek $bigfh, $start_point, 0;
+
+        while (<$bigfh>) {
+            print {$efh} $_;
+			next if ! $stop_point;
+			last if tell $bigfh >= $stop_point;
+        }
+        close $efh or warn qq{Could not close $emailfile: $!\n};
+
+        $arg{verbose} and warn "  Sending mail to: $emails\n";
+        my $COM = qq{$mailcom $emails < $emailfile};
+        if ($arg{dryrun} or $arg{nomail}) {
+            $arg{quiet} or warn "  DRYRUN: $COM\n";
+        }
+        else {
+            my $mailmode = $opt{$curr}{mailmode} || $arg{mailmode};
+            if ($arg{mailmode} eq 'sendmail') {
+                system $COM;
+            }
+            elsif ($arg{mailmode} eq 'smtp') {
+                send_smtp_email($from_addr, $emails, $newsubject, $emailfile);
+            }
+            else {
+                die "Unknown mailmode: $mailmode\n";
+            }
+        }
+
+		## Remove our temp file
+        unlink $emailfile;
+
+		## If we didn't split, we are done
+		$split or return;
+
+		## Sleep a little bit to not overwhelm the mail system
+        sleep 1;
+
+		## In case of bugs or very large messages, set an upper limit on loops
+		if ($safety++ > 5) {
+			die qq{Too many loops, bailing out!\n};
+		}
+
+        redo;
     }
 
-    my $mailmode = $opt{$curr}{mailmode} || $arg{mailmode};
-    if ($arg{mailmode} eq 'sendmail') {
-        system $COM;
-    }
-    elsif ($arg{mailmode} eq 'smtp') {
-        send_smtp_email($from_addr, $emails, $subject, $tempfile);
-    }
-    else {
-        die "Unknown mailmode: $mailmode\n";
-    }
-    unlink $tempfile;
+    ## Clean up the original data file
+    unlink $bigfile;
 
     return;
 

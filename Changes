@@ -4,9 +4,13 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
-Version 1.17.7
+Version 1.18.1, released April 15, 2011
 
 * Try harder to find inherited file, using the base of the config file [GSM]
+
+* Allow large files to be chunked so as not to overload outgoing mail programs. [GSM]
+
+* Add 'skip_non_parsed' option, to ignore non-standard log lines. [GSM]
 
 Version 1.17.6, released March 17, 2011
 

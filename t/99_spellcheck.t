@@ -149,6 +149,7 @@ whitespace
 
 GetOptions
 bucardo
+chesnok
 clusterwide
 config
 cperl

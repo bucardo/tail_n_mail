@@ -1602,7 +1602,7 @@ sub process_report {
         for my $file (@files_parsed) {
             next if ! $file->[1];
             my $name = $fab{$file->[0]};
-            push @msg => sprintf "Matches from %-*s %s: %*s",
+            push @msg => sprintf 'Matches from %-*s %s: %*s',
                 $maxletter + 2,
                 "[$name]",
                 $file->[0],

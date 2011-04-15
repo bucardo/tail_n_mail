@@ -1636,71 +1636,71 @@ sub process_report {
     lines_of_interest($bigfh, $matchfiles);
     print {$bigfh} "\n";
 
-	## Are we going to need to chunk it up?
-	my $filesize = -s $bigfile;
-	my $split = 0;
-	if ($filesize > $arg{maxemailsize} and ! $arg{dryrun}) {
-		$split = 1;
-		$arg{verbose} and print qq{File $bigfile too big ($filesize > $arg{maxemailsize})\n};
-	}
+    ## Are we going to need to chunk it up?
+    my $filesize = -s $bigfile;
+    my $split = 0;
+    if ($filesize > $arg{maxemailsize} and ! $arg{dryrun}) {
+        $split = 1;
+        $arg{verbose} and print qq{File $bigfile too big ($filesize > $arg{maxemailsize})\n};
+    }
 
     my $emails = join ' ' => @{$opt{$curr}{email}};
 
-	## Sanity check on number of loops below
+    ## Sanity check on number of loops below
     my $safety = 1;
 
     ## If chunking, which chunk are we currently on?
     my $chunk = 0;
 
-	## Where in the data file are we starting from?
-	my $start_point = 0;
-	## Where in the data file are we going to? 0 means until the end
-	my $stop_point = 0;
+    ## Where in the data file are we starting from?
+    my $start_point = 0;
+    ## Where in the data file are we going to? 0 means until the end
+    my $stop_point = 0;
 
   LOOP: {
 
-		## If we are splitting, calculate the new start and stop points
-		if ($split) {
-			$chunk++;
+        ## If we are splitting, calculate the new start and stop points
+        if ($split) {
+            $chunk++;
 
-			## Start at the old stop point
-			$start_point = $stop_point;
-			## Seek up to it, then walk backwards etc.
+            ## Start at the old stop point
+            $start_point = $stop_point;
+            ## Seek up to it, then walk backwards etc.
 
-			seek $bigfh, $start_point + $arg{maxemailsize}, 0;
-			my $firstpos = tell $bigfh;
-			if ($firstpos >= $filesize) {
-				## We are done!
-				$stop_point = 0;
-				$split = 0;
-			}
-			else {
-				## Go backwards a few chunks at a time, see if we can find a good stop point
-				ROUND: for my $round (1..10) {
-					  seek $bigfh, $firstpos - ($round*5000), 0;
+            seek $bigfh, $start_point + $arg{maxemailsize}, 0;
+            my $firstpos = tell $bigfh;
+            if ($firstpos >= $filesize) {
+                ## We are done!
+                $stop_point = 0;
+                $split = 0;
+            }
+            else {
+                ## Go backwards a few chunks at a time, see if we can find a good stop point
+                ROUND: for my $round (1..10) {
+                      seek $bigfh, $firstpos - ($round*5000), 0;
 
-					  ## Only seek forward 10 lines
-					  my $lines = 0;
+                      ## Only seek forward 10 lines
+                      my $lines = 0;
 
-					  while (<$bigfh>) {
-						  ## Got a match? Rewind to just before the opening number
-						  if ($_ =~ /(.*?)^\[\d/ms) {
-							  my $rewind = length($_) - length($1);
-							  $stop_point = tell($bigfh) - $rewind;
-							  seek $bigfh, $stop_point, 0;
-							  if ($start_point >= $stop_point) {
-								  $stop_point = 0;
-								  $split = 0;
-							  }
-							  last ROUND;
-						  }
-						  last if $lines++ > 10;
-					  }
-					  $stop_point = 0;
-					  $split = 0;
-				  }
-			}
-		}
+                      while (<$bigfh>) {
+                          ## Got a match? Rewind to just before the opening number
+                          if ($_ =~ /(.*?)^\[\d/ms) {
+                              my $rewind = length($_) - length($1);
+                              $stop_point = tell($bigfh) - $rewind;
+                              seek $bigfh, $stop_point, 0;
+                              if ($start_point >= $stop_point) {
+                                  $stop_point = 0;
+                                  $split = 0;
+                              }
+                              last ROUND;
+                          }
+                          last if $lines++ > 10;
+                      }
+                      $stop_point = 0;
+                      $split = 0;
+                  }
+            }
+        }
 
         ## Add the subject, adjusting it if needed
         my $newsubject = $subject;
@@ -1722,7 +1722,7 @@ sub process_report {
         ## Stop headers, start the message
         print {$efh} "\n";
 
-		$chunk and print {$efh} "Message was split: this is chunk #$chunk\n";
+        $chunk and print {$efh} "Message was split: this is chunk #$chunk\n";
         for (@msg) {
             print {$efh} "$_\n";
         }
@@ -1730,7 +1730,7 @@ sub process_report {
         print {$efh} "\n";
 
         ## Add some subset of the data file to our new temp file
-		seek $bigfh, $start_point, 0;
+        seek $bigfh, $start_point, 0;
 
         while (<$bigfh>) {
             print {$efh} $_;
@@ -1757,19 +1757,19 @@ sub process_report {
             }
         }
 
-		## Remove our temp file
+        ## Remove our temp file
         unlink $emailfile;
 
-		## If we didn't split, we are done
-		$split or return;
+        ## If we didn't split, we are done
+        $split or return;
 
-		## Sleep a little bit to not overwhelm the mail system
+        ## Sleep a little bit to not overwhelm the mail system
         sleep 1;
 
-		## In case of bugs or very large messages, set an upper limit on loops
-		if ($safety++ > 5) {
-			die qq{Too many loops, bailing out!\n};
-		}
+        ## In case of bugs or very large messages, set an upper limit on loops
+        if ($safety++ > 5) {
+            die qq{Too many loops, bailing out!\n};
+        }
 
         redo;
     }

@@ -1627,7 +1627,7 @@ sub process_report {
     ## Create the mail message
     my ($bigfh, $bigfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm');
 
-    if ($arg{dryrun2}) {
+    if ($arg{dryrun}) {
         close $bigfh or warn 'Could not close filehandle';
         $bigfh = \*STDOUT;
     }

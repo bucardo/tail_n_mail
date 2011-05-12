@@ -4,6 +4,13 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
+Version 1.19.0, released May 12, 2011
+
+* Allow log_line_prefix to be specified in include files. [GSM]
+
+* Fix problem with --debug output. [GSM]
+
+
 Version 1.18.1, released April 15, 2011
 
 * Try harder to find inherited file, using the base of the config file [GSM]
@@ -12,11 +19,13 @@ Version 1.18.1, released April 15, 2011
 
 * Add 'skip_non_parsed' option, to ignore non-standard log lines. [GSM]
 
+
 Version 1.17.6, released March 17, 2011
 
 * Expand tildes to ENV{HOME} for the 'file' argument.
 
 * Make main regex .* not .+ to accommodate syslog entries better. [GSM]
+
 
 Version 1.17.5, released January 25, 2011
 

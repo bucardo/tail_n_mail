@@ -128,6 +128,7 @@ PID
 POSIX
 args
 autovacuum
+chunked
 config
 filename
 func

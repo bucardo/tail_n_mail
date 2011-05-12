@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.18.1';
+our $VERSION = '1.19.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -208,7 +208,9 @@ parse_inherited_files();
 ## Figure out the log_line_prefix, then create a regex for it
 my $default_llp = '%t [%p]';
 
-my $llp = $arg{log_line_prefix} || ($arg{pglog} eq 'syslog' ? '' : $default_llp);
+my $llp = $arg{log_line_prefix}
+    || $opt{log_line_prefix}
+    ||($arg{pglog} eq 'syslog' ? '' : $default_llp);
 
 ## Remove any quotes around it
 $llp =~ s{^'(.+)'$}{$1};
@@ -807,6 +809,10 @@ sub parse_inherit_file {
         elsif (/^MAILSUBJECT:\s*(.+)/) {
             $opt{$curr}{mailsubject} = $1;
             $opt{$curr}{customsubject} = 1;
+        }
+        ## The log line prefix
+        elsif (/^LOG.LINE.PREFIX:\s*(.+)/o) {
+            $opt{log_line_prefix} = $1;
         }
         else {
             warn qq{Unknown item in include file "$file": $_\n};
@@ -1626,11 +1632,6 @@ sub process_report {
 
     ## Create the mail message
     my ($bigfh, $bigfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm');
-
-    if ($arg{dryrun}) {
-        close $bigfh or warn 'Could not close filehandle';
-        $bigfh = \*STDOUT;
-    }
 
     ## The meat of the message: save to the temporary file
     lines_of_interest($bigfh, $matchfiles);

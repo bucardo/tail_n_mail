@@ -4,6 +4,11 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
+Version 1.19.1
+
+* Minor improvements to the SQL 'flattening' process [GSM]
+
+
 Version 1.19.0, released May 12, 2011
 
 * Allow log_line_prefix to be specified in include files. [GSM]

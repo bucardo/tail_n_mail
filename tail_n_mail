@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.19.0';
+our $VERSION = '1.19.1';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -1407,6 +1407,9 @@ sub process_line {
                 "$sword (?)";
             }
         }geix;
+
+        ## Various other flattenings
+        ## May not qork perfectly, but they don't need to (and patches welcome!)
         $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
         $string =~ s{(\bWHERE\s+\w+\s+IN\s*\((?!\s*SELECT))[^)]+\)}{$1?)}gio;
         $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)'.+?'}{$1'?')}gio;
@@ -1418,7 +1421,21 @@ sub process_line {
         $string =~ s{(DETAIL: Key \(\w+\))=\(.+?\)}{$1=(?)}go;
         $string =~ s{Failed on request of size \d+}{Failed on request of size ?}go;
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
+
+        ## Syntax error at a specific character
         $string =~ s{(syntax error at or near) "\w+" at character \d+}{$1 "?" at character ?}o;
+
+        ## Ambiguity at a specific character
+        $string =~ s{(" is ambiguous at character )\d+}{$1 ?}o;
+
+        ## Case of hard-coded numbers at the start of an inner SELECT
+        $string =~ s{(\bSELECT\s*)\d+,\s*\d+,}{$1 ?,?,}gio;
+
+        ## Some PostGIS functions
+        $string =~ s{(\bST_GeomFromText\(').*?',\d+\)}{$1(?,?)}gio;
+
+        ## Declaring a named cursor
+        $string =~ s{\b(DECLARE\s*(\S+)\s*CURSOR\b)}{DECLARE ? CURSOR}gio;
 
     } ## end of flatten
 

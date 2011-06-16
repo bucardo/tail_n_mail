@@ -4,7 +4,7 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
-Version 1.19.1
+Version 1.19.1, released June 16, 2011
 
 * Minor improvements to the SQL 'flattening' process [GSM]
 

@@ -2,3 +2,4 @@
 data/
 tmp/
 pg_log
+*.tnm

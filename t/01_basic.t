@@ -48,7 +48,7 @@ $t = q{Test config 1 inserts a 'To' header};
 like ($start, qr{\nTo: someone\@example.com\n}, $t);
 
 $t = q{Test config 1 inserts a 'Date' line with newlines before it};
-like ($start, qr{\n\n\Date: \w\w\w \w\w\w \d\d}, $t);
+like ($start, qr{\n\n\Date: \w\w\w \w\w\w [\d ]\d}, $t);
 
 $t = q{Test config 1 inserts a 'Host' line};
 like ($start, qr{\nHost: \w}, $t);

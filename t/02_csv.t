@@ -31,7 +31,7 @@ $t = qq{Test config $num gives correct subject line};
 like ($start, qr{^Subject: Acme core Postgres errors 50 : 60\n}, $t);
 
 $t = qq{Test config $num inserts a 'Date' line with newlines before it};
-like ($start, qr{\n\n\Date: \w\w\w \w\w\w \d\d}, $t);
+like ($start, qr{\n\n\Date: \w\w\w \w\w\w [\d ]\d}, $t);
 
 $t = qq{Test config $num inserts a 'Host' line};
 like ($start, qr{\nHost: \w}, $t);

@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.19.3';
+our $VERSION = '1.19.4';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -1809,7 +1809,11 @@ sub process_report {
         unlink $emailfile;
 
         ## If we didn't split, we are done
-        $split or return;
+        if (! $split) {
+            ## Clean up the original data file and leave
+            unlink $bigfile;
+            return;
+        }
 
         ## Sleep a little bit to not overwhelm the mail system
         sleep 1;

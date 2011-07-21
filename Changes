@@ -4,7 +4,13 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
-Version 1.19.4
+
+Version 1.20.0
+
+* Allow statement_size to be changed via config file [GSM]
+
+
+Version 1.19.4, released July 18, 2011
 
 * Make sure we unlink the temporary file when done [GSM]
 

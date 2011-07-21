@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.19.4';
+our $VERSION = '1.20.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -67,7 +67,7 @@ my %arg = (
               pglog            => 'pg',
 ## What is Postgres's log_line_prefix
               log_line_prefix  => '',
-## Maximum size of a statment before we truncate it.
+## Maximum size of a statement before we truncate it.
               statement_size   => 1000,
 ## How to sort the output. Options are 'count' and 'date'
               sortby           => 'count',
@@ -670,6 +670,10 @@ sub parse_config_file {
         elsif (/^MAILZERO:\s*(.+)/) {
             $localopt{mailzero} = $1;
         }
+        ## Size at which we cutoff long statements
+        elsif (/^STATEMENT_SIZE:\s*(.+)/) {
+            $localopt{statement_size} = $1;
+        }
     }
     close $c or die qq{Could not close "$configfile": $!\n};
 
@@ -832,6 +836,10 @@ sub parse_inherit_file {
         ## The log line prefix
         elsif (/^LOG.LINE.PREFIX:\s*(.+)/o) {
             $opt{log_line_prefix} = $1;
+        }
+        ## Size at which we cutoff long statements
+        elsif (/^STATEMENT_SIZE:\s*(.+)/) {
+            $opt{$curr}{statement_size} = $1;
         }
         else {
             warn qq{Unknown item in include file "$file": $_\n};
@@ -2092,10 +2100,14 @@ sub wrapline {
     my $len = length $line;
     my $olen = $len;
     my $waschopped = 0;
-    if ($len > $arg{statement_size} and $arg{statement_size}) {
-        $line = substr($line,0,$arg{statement_size});
+    my $maxsize = defined $opt{$curr}{statement_size}
+        ? $opt{$curr}{statement_size}
+        : $arg{statement_size};
+
+    if ($maxsize and $len > $maxsize) {
+        $line = substr($line,0,$maxsize);
         $waschopped = 1;
-        $len = $arg{statement_size};
+        $len = $maxsize;
     }
 
     if ($len >= $WRAPLIMIT) {

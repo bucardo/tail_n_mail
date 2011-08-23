@@ -963,7 +963,7 @@ sub parse_file {
                     $chunksize = $pos - $current;
                 }
                 my $foobar;
-                my $res = sysread $fh, $foobar, $chunksize;
+                my $res = read $fh, $foobar, $chunksize;
                 ## How many newlines in there?
                 $newlines += $foobar =~ y/\n/\n/;
                 $current += $chunksize;

@@ -142,6 +142,7 @@ pgpidre
 regex
 regexes
 syslog
+sysread
 timestamp
 uniques
 whitespace

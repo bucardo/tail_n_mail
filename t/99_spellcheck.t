@@ -122,6 +122,7 @@ txt
 ## Changes:
 
 CSV
+Fiske
 GSM
 MAILSUBJECT
 PID

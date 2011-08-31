@@ -4,6 +4,10 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
+Version 1.20.2
+
+* Make the %r escape like %h [Keith Fiske]
+
 
 Version 1.20.1, released August 26, 2011
 

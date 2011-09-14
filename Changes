@@ -4,11 +4,6 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
-Version 1.20.3
-
-* Fix broken regex in log_line_prefix parsing
-
-
 Version 1.20.2, released August 31, 2011
 
 * Make the %r escape like %h [Keith Fiske]

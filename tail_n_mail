@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.20.2';
+our $VERSION = '1.20.3';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -233,8 +233,8 @@ if (!$havepid and $arg{pglog} ne 'syslog') {
     $llp = "()$llp";
 }
 $llp =~ s/%l/\\d+/;
-$llp =~ s/%u/[\\[\\w\\]]*/;
-$llp =~ s/%d/[\\[\\w\\]]*/;
+$llp =~ s/%u/(?:\\[\\w\\])*/;
+$llp =~ s/%d/(?:\\[\\w\\])*/;
 $llp =~ s/%r/\\S*/;
 $llp =~ s/%h/\\S*/;
 

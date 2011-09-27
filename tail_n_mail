@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.20.2';
+our $VERSION = '1.20.3';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -340,8 +340,11 @@ my @files_parsed;
     $logfile =~ /\.csv/ and $arg{pglog} = 'csv';
 
     my $count = parse_file($logfile);
-    push @files_parsed => [$logfile, $count];
-    $fileorder{$logfile} = ++$filenum;
+    if ($count >= 0) {
+        push @files_parsed => [$logfile, $count];
+        $fileorder{$logfile} = ++$filenum;
+    }
+
     $last_logfile = $logfile;
     redo;
 }
@@ -866,11 +869,11 @@ sub parse_file {
     ## Make sure the file exists and is readable
     if (! -e $filename) {
         $arg{quiet} or warn qq{WARNING! Skipping non-existent file "$filename"\n};
-        return 0;
+        return -1;
     }
     if (! -f $filename) {
         $arg{quiet} or warn qq{WARNING! Skipping non-file "$filename"\n};
-        return 0;
+        return -1;
     }
 
     ## Figure out where in the file we want to start scanning from

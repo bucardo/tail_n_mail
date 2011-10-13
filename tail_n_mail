@@ -71,12 +71,14 @@ my %arg = (
               statement_size   => 1000,
 ## How to sort the output. Options are 'count' and 'date'
               sortby           => 'count',
-## What type of file is this? Options are 'normal' and 'duration'
+## What type of file is this? Options are 'normal', 'duration', and 'tempfile'
               type             => 'normal',
 ## Allow the offset to be changed on the fly
               offset           => -1,
 ## Set the minimum duration
               duration         => -1,
+## Set the minimum temp file size
+              tempfile         => -1,
 ## Allow override of the log file to check
               file             => '',
 ## Do not send email
@@ -97,8 +99,10 @@ my %arg = (
               mailzero         => 0,
 ## Perform some final prettification of queries
               pretty_query     => 1,
-## Set the minimum duration that we care about
+## Set the minimum number of matching duration entries that we care about
               duration_limit   => 0,
+## Set the minimum number of matching tempfile entries that we care about
+              tempfile_limit   => 0,
 ## The thousands separator for formatting numbers.
               tsep             => undef,
 ## Whether to turn off thousands separator in subject lines (mailman bug workaround)
@@ -130,6 +134,7 @@ my $result = GetOptions
    'version',
    'offset=i',
    'duration=i',
+   'tempfile=i',
    'file=s',
    'type=s',
    'flatten!',
@@ -154,6 +159,7 @@ my $result = GetOptions
    'nolastfile',
    'pretty_query',
    'duration_limit=i',
+   'tempfile_limit=i',
    'statement_size=i',
    'tailnmailrc=s',
    'no-tailnmailrc',
@@ -180,9 +186,16 @@ $arg{smtp} and $arg{mailmode} = 'smtp';
 ## First option is always the config file, which must exist.
 my $configfile = shift or die qq{Usage: $0 configfile\n};
 
-## If the file has the name 'duration' in it, switch to that type as the default
-if ($configfile =~ /duration/i) {
+## If the file has the name 'duration' in it, or we have set the duration parameter,
+## switch to that type as the default
+if ($configfile =~ /duration/i or $arg{duration} > 0) {
     $arg{type} = 'duration';
+}
+
+## If the file has the name 'tempfile' in it, or we have set the tempfile parameter,
+## switch to that type as the default
+if ($configfile =~ /tempfile/i or $arg{tempfile} > 0) {
+    $arg{type} = 'tempfile';
 }
 
 ## Quick expansion of leading tildes for the file argument
@@ -340,15 +353,16 @@ my @files_parsed;
     $logfile =~ /\.csv/ and $arg{pglog} = 'csv';
 
     my $count = parse_file($logfile);
+
     if ($count >= 0) {
         push @files_parsed => [$logfile, $count];
         $fileorder{$logfile} = ++$filenum;
     }
 
     $last_logfile = $logfile;
+
     redo;
 }
-
 
 $opt{$curr}{filename} = $last_logfile;
 
@@ -520,6 +534,9 @@ sub parse_rc_files {
             if ($name eq 'duration_limit') {
                 $arg{duration_limit} = $value;
             }
+            if ($name eq 'tempfile_limit') {
+                $arg{tempfile_limit} = $value;
+            }
         }
         close $rc or die;
     }
@@ -634,6 +651,20 @@ sub parse_config_file {
             ## Command line still wins
             if (!$arg{duration_limit}) {
                 $arg{duration_limit} = $localopt{duration_limit} = $1;
+            }
+        }
+        ## Exclude tempfiles below this number
+        elsif (/^TEMPFILE:\s*(\d+)/) {
+            ## Command line still wins
+            if ($arg{tempfile} < 0) {
+                $arg{tempfile} = $localopt{tempfile} = $1;
+            }
+        }
+        ## Limit how many tempfile matches we show
+        elsif (/^TEMPFILE_LIMIT:\s*(\d+)/) {
+            ## Command line still wins
+            if (!$arg{tempfile_limit}) {
+                $arg{tempfile_limit} = $localopt{tempfile_limit} = $1;
             }
         }
         ## How to sort the output
@@ -812,6 +843,18 @@ sub parse_inherit_file {
         elsif (/^DURATION_LIMIT:\s*(\d+)/) {
             ## Command line still wins
             $arg{duration_limit} ||= $1;
+        }
+        ## Exclude tempfiles below this number
+        elsif (/^TEMPFILE:\s*(\d+)/) {
+            ## Command line still wins
+            if ($arg{tempfile} < 0) {
+                $arg{tempfile} = $1;
+            }
+        }
+        ## Tempfile limit
+        elsif (/^TEMPFILE_LIMIT:\s*(\d+)/) {
+            ## Command line still wins
+            $arg{tempfile_limit} ||= $1;
         }
         ## Who to send emails from
         elsif (/^FROM:\s*(.+?)\s*$/) {
@@ -1275,6 +1318,11 @@ sub process_line {
         return 0 if ($string =~ / duration: (\d+)/o and $1 < $arg{duration});
     }
 
+    ## If in tempfile mode, and we have a minimum cutoff, discard smaller ones
+    if ($arg{type} eq 'tempfile' and $arg{tempfile} >= 0) {
+        return 0 if ($string =~ / temporary file:.+?size (\d+)/o and $1 < $arg{tempfile});
+    }
+
     $arg{debug} and warn "MATCH at line $line of $filename\n";
 
     ## Force newlines to a single line
@@ -1303,7 +1351,7 @@ sub process_line {
     $rawstring = $string;
 
     ## Make some adjustments to attempt to compress similar entries
-    if ($arg{flatten} and $arg{type} ne 'duration') {
+    if ($arg{flatten} and $arg{type} eq 'normal') {
 
         ## Simplistic SELECT func(arg1,arg2,...) replacement
         $string =~ s{(SELECT\s*\w+\s*\()([^*].*?)\)}{
@@ -1490,8 +1538,12 @@ sub process_line {
             $rawstring =~ s/ *$word: /\n$word: /;
         }
         if ($arg{type} eq 'duration') {
-            $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
-            $rawstring =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /;
+            $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
+            $rawstring =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
+        }
+        if ($arg{type} eq 'tempfile') {
+            $string =~ s/LOG: temporary file:.+?size (\d+)/"TEMPFILE: $1 (" . pretty_size($1) . ')'/oe;
+            $rawstring =~ s/LOG: temporary file:.+?size (\d+)/"TEMPFILE: $1 (" . pretty_size($1) . ')'/oe;
         }
         $rawstring =~ s/^([A-Z]+: ) +/$1/gmo;
     }
@@ -1642,8 +1694,11 @@ sub process_report {
     if ($arg{duration} >= 0) {
         push @msg => "Minimum duration: $arg{duration} ms";
     }
+    if ($arg{tempfile} >= 0) {
+        push @msg => "Minimum tempfile size: $arg{tempfile} bytes";
+    }
 
-    if ($arg{type} ne 'duration') {
+    if ($arg{type} eq 'normal') {
         push @msg => "Unique items: $pretty_unique_matches";
     }
 
@@ -1689,6 +1744,9 @@ sub process_report {
 
     if ($arg{type} eq 'duration' and $arg{duration_limit} and $grand_total > $arg{duration_limit}) {
         push @msg => "Not showing all lines: duration limit is $arg{duration_limit}";
+    }
+    if ($arg{type} eq 'tempfile' and $arg{tempfile_limit} and $grand_total > $arg{tempfile_limit}) {
+        push @msg => "Not showing all lines: tempfile limit is $arg{tempfile_limit}";
     }
 
     ## Create the mail message
@@ -1936,12 +1994,27 @@ sub lines_of_interest {
             if (! exists $sorthelp{$a}) {
                 my $lstring = $a->{string} || $a->{earliest}{string};
                 $sorthelp{$a} =
-                    $lstring =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+                    $lstring =~ /duration: (\d+\.\d+)/o ? $1 : 0;
             }
             if (! exists $sorthelp{$b}) {
                 my $lstring = $b->{string} || $b->{earliest}{string};
                 $sorthelp{$b} =
-                    $lstring =~ /duration: (\d+\.\d+)/ ? $1 : 0;
+                    $lstring =~ /duration: (\d+\.\d+)/o ? $1 : 0;
+            }
+            return ($sorthelp{$b} <=> $sorthelp{$a})
+                    || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
+                    || ($a->{line} <=> $b->{line});
+        }
+        elsif ($arg{type} eq 'tempfile') {
+            if (! exists $sorthelp{$a}) {
+                my $lstring = $a->{string} || $a->{earliest}{string};
+                $sorthelp{$a} =
+                    $lstring =~ /TEMPFILE: (\d+)/o ? $1 : 0;
+            }
+            if (! exists $sorthelp{$b}) {
+                my $lstring = $b->{string} || $b->{earliest}{string};
+                $sorthelp{$b} =
+                    $lstring =~ /TEMPFILE: (\d+)/o ? $1 : 0;
             }
             return ($sorthelp{$b} <=> $sorthelp{$a})
                     || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
@@ -1981,6 +2054,11 @@ sub lines_of_interest {
         ## Sometimes we don't want to show all the durations
         if ($arg{type} eq 'duration' and $arg{duration_limit}) {
             last if $count > $arg{duration_limit};
+        }
+
+        ## Sometimes we don't want to show all the tempfiles
+        if ($arg{type} eq 'tempfile' and $arg{tempfile_limit}) {
+            last if $count > $arg{tempfile_limit};
         }
 
         print "\n[$count]";
@@ -2153,10 +2231,15 @@ sub final_cleanup {
 ## Last updated: $now
 };
 
-        for my $item (qw/ email from type duration find_line_number sortby duration_limit/) {
+        for my $item (qw/ email from type duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
             next if ! exists $opt{$curr}{$item};
+
             next if $item eq 'duration' and $arg{duration} < 0;
             next if $item eq 'duration_limit' and ! $arg{duration_limit};
+
+            next if $item eq 'tempfile' and $arg{tempfile} < 0;
+            next if $item eq 'tempfile_limit' and ! $arg{tempfile_limit};
+
             ## Only rewrite if it came from this config file, not tailnmailrc or command line
             next if ! exists $opt{configfile}{$item};
             add_comments(uc $item);
@@ -2245,6 +2328,33 @@ sub pretty_number {
     return $number;
 
 } ## end of pretty_number
+
+
+sub pretty_size {
+
+    ## Transform number of bytes to a SI display similar to Postgres' format
+
+    my $bytes = shift;
+    my $rounded = shift || 0;
+
+    return "$bytes bytes" if $bytes < 10240;
+
+    my @unit = qw/kB MB GB TB PB EB YB ZB/;
+
+    for my $p (1..@unit) {
+        if ($bytes <= 1024**$p) {
+            $bytes /= (1024**($p-1));
+            return $rounded ?
+                sprintf ('%d %s', $bytes, $unit[$p-2]) :
+                    sprintf ('%.2f %s', $bytes, $unit[$p-2]);
+        }
+    }
+
+    return $bytes;
+
+} ## end of pretty_size
+
+
 
 __DATA__
 

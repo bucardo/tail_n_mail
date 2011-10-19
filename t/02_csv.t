@@ -4,7 +4,16 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 14;
+use Test::More;
+
+if (!eval { require Text::CSV; 1 }) {
+	if (!eval { require Text::CSV_XS; 1}) {
+		plan skip_all => 'Could not find Text::CSV or Text::CSV_XS';
+	}
+}
+else {
+	plan tests => 14;
+}
 
 use vars qw{ $info $t };
 

@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.20.4';
+our $VERSION = '1.21.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -1076,6 +1076,7 @@ sub parse_file {
                 if ($_ =~ s/$pgpidre/$4/) {
 
                     $pgprefix = $1;
+                    $pgprefix =~ s/\s+$//o;
                     ## We want the timestamp and the pid, even if we have to fake it
                     ($pgts,$pgpid,$pgnum) = ($2||'',$3||1, 1);
                     if ($arg{pglog} eq 'syslog') {
@@ -1320,7 +1321,7 @@ sub process_line {
 
     ## If in tempfile mode, and we have a minimum cutoff, discard smaller ones
     if ($arg{type} eq 'tempfile' and $arg{tempfile} >= 0) {
-        return 0 if ($string =~ / temporary file:.+?size (\d+)/o and $1 < $arg{tempfile});
+        #return 0 if ($string =~ / temporary file:.+?size (\d+)/o and $1 < $arg{tempfile});
     }
 
     $arg{debug} and warn "MATCH at line $line of $filename\n";
@@ -1347,11 +1348,24 @@ sub process_line {
         return 1;
     }
 
+    ## For tempfiles, strip out the size information and store it
+    my $tempfilesize = 0;
+    if ($arg{type} eq 'tempfile') {
+        if ($string =~ s/LOG: temporary file:.+?size (\d+)\s*//o) {
+            $tempfilesize = $1;
+        }
+        else {
+            ## If we cannot figure out a size, skip this line
+            return 1;
+        }
+        $string =~ s/^\s*STATEMENT:\s*//o;
+    }
+
     ## Reassign rawstring
     $rawstring = $string;
 
     ## Make some adjustments to attempt to compress similar entries
-    if ($arg{flatten} and $arg{type} eq 'normal') {
+    if ($arg{flatten} and $arg{type} ne 'duration') {
 
         ## Simplistic SELECT func(arg1,arg2,...) replacement
         $string =~ s{(SELECT\s*\w+\s*\()([^*].*?)\)}{
@@ -1542,11 +1556,81 @@ sub process_line {
             $rawstring =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
         }
         if ($arg{type} eq 'tempfile') {
-            $string =~ s/LOG: temporary file:.+?size (\d+)/"TEMPFILE: $1 (" . pretty_size($1) . ')'/oe;
-            $rawstring =~ s/LOG: temporary file:.+?size (\d+)/"TEMPFILE: $1 (" . pretty_size($1) . ')'/oe;
+            #$string =~ s/LOG: temporary file:.+?size (\d+)/"TEMPFILE: $1 (" . pretty_size($1) . ')'/oe;
+            #$rawstring =~ s/LOG: temporary file:.+?size (\d+)/"TEMPFILE: $1 (" . pretty_size($1) . ')'/oe;
         }
         $rawstring =~ s/^([A-Z]+: ) +/$1/gmo;
     }
+
+    ## Special handling for tempfile mode
+    if ($arg{type} eq 'tempfile') {
+        ## We should know the temp file size by now
+        ## We want to store up to four possible versions of a statment:
+        ## Earliest, latest, smallest, largest
+
+        ## The record we are going to store
+        my $thisrecord = {
+            filename => $filename,
+            line     => $line,
+            pgprefix => $pgprefix,
+            time     => $time,
+            filesize => $tempfilesize,
+        };
+
+
+        ## If we've not seen this before, simply create the structure and go
+        if (! exists $similar{$string}) {
+
+            ## Store all four versions as the same structure
+            $similar{$string}{earliest} =
+            $similar{$string}{latest} =
+            $similar{$string}{smallest} =
+            $similar{$string}{largest} =
+                $thisrecord;
+
+            ## Start counting how many times this statement appears
+            $similar{$string}{count} = 1;
+
+            ## Store the summary of all sizes so we can compute medians, stddev, etc.
+            $similar{$string}{total} = $tempfilesize;
+
+
+            ## ??Store this away for eventual output
+            $find{$filename}{$line} = $similar{$string};
+            $find{$filename}{$line}{string} = $string;
+            $find{$filename}{$line}{rawstring} = $rawstring;
+
+            ## ??Copy filename and line up a level for later sorting ease
+            $find{$filename}{$line}{filename} = $similar{$string}{earliest}{filename};
+            $find{$filename}{$line}{line} = $similar{$string}{earliest}{line};
+            return 1;
+
+        } ## end if we have not seen this statement before in tempfile mode
+
+        ## We have seen it before, so make some changes
+
+        ## First, increment the count
+        $similar{$string}{count}++;
+
+        ## Update our total size
+        $similar{$string}{total} += $tempfilesize;
+
+        ## As files are read sequentially, this becomes the latest
+        $similar{$string}{latest} = $thisrecord;
+
+        ## If this size is larger than the current record holder, reassign the largest pointer
+        if ($tempfilesize > $similar{$string}{largest}{filesize}) {
+            $similar{$string}{largest} = $thisrecord;
+        }
+        ## If this size is smaller than the current record holder, reassign the smallest pointer
+        if ($tempfilesize < $similar{$string}{smallest}{filesize}) {
+            $similar{$string}{smallest} = $thisrecord;
+        }
+
+        return 1;
+
+    } ## end of tempfile mode
+
 
   PGPREFIX:
     ## If we have a prefix, check for similar entries
@@ -2005,18 +2089,18 @@ sub lines_of_interest {
                     || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
                     || ($a->{line} <=> $b->{line});
         }
+        ## For tempfile, we want to sort by largest overall tempfile
+        ## In a tie, we do the highest mean, count, filename, then line number!
         elsif ($arg{type} eq 'tempfile') {
-            if (! exists $sorthelp{$a}) {
-                my $lstring = $a->{string} || $a->{earliest}{string};
-                $sorthelp{$a} =
-                    $lstring =~ /TEMPFILE: (\d+)/o ? $1 : 0;
-            }
-            if (! exists $sorthelp{$b}) {
-                my $lstring = $b->{string} || $b->{earliest}{string};
-                $sorthelp{$b} =
-                    $lstring =~ /TEMPFILE: (\d+)/o ? $1 : 0;
-            }
-            return ($sorthelp{$b} <=> $sorthelp{$a})
+            return ($b->{largest}{filesize} <=> $a->{largest}{filesize})
+                    || $b->{mean} <=> $a->{mean}
+                    || $b->{count} <=> $a->{count}
+                    || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
+                    || ($a->{line} <=> $b->{line});
+        }
+        ## Special sorting for the display of means
+        elsif ($arg{type} eq 'tempfilemean') {
+            return ($b->{mean} <=> $a->{mean})
                     || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
                     || ($a->{line} <=> $b->{line});
         }
@@ -2042,8 +2126,54 @@ sub lines_of_interest {
         }
     }
 
-    my $count = 1;
+    ## If we are in tempfile mode, perform some statistics
+    if ($arg{type} eq 'tempfile') {
+
+        for my $row (@sorted) {
+            $row->{mean} = int ($row->{total} / $row->{count});
+            ## Mode is meaningless, median too hard to compute
+        }
+
+        ## Show a list of highest by mean
+        ## Then a list of total highest
+        ## Either way, we want to limit the list somehow
+        ## Hard to do until at least this point, unless we compute things earlier!
+
+        my $totalitems = @sorted;
+
+        ## We want to show the top X means
+
+        ## Assign our numbers so we can display the list of means
+        my $count = 0;
+        for my $f (sort sortsub @sorted) {
+            $count++;
+            $f->{displaycount} = $count;
+        }
+
+        ## Show the means!
+        $arg{type} = 'tempfilemean'; ## Trickery
+        print "Top items by arithmetic mean:\n";
+        my $maxmean = 0;
+        $count = 0;
+        for my $f (sort sortsub @sorted) {
+            $count++;
+            printf " %s (item %d below)\n", pretty_size($f->{mean}), $f->{displaycount};
+            $maxmean = $f->{displaycount} if $f->{displaycount} > $maxmean;
+            last if $arg{tempfile_limit} and $count >= $arg{tempfile_limit};
+        }
+        $arg{type} = 'tempfile';
+
+        ## Set a new tempfile_limit based on how many mean entries we found above
+        if ($maxmean > $arg{tempfile_limit}) {
+            $arg{tempfile_limit} = $maxmean;
+        }
+
+    } ## end of tempfile mode
+
+    my $count = 0;
     for my $f (sort sortsub @sorted) {
+
+        $count++;
 
         if ($arg{find_line_number}) {
             $f->{line} = pretty_number($f->{line});
@@ -2062,7 +2192,6 @@ sub lines_of_interest {
         }
 
         print "\n[$count]";
-        $count++;
 
         my $filename = exists $f->{earliest} ? $f->{earliest}{filename} : $f->{filename};
 
@@ -2078,6 +2207,11 @@ sub lines_of_interest {
             }
             else {
                 print "\n";
+            }
+
+            ## If in tempfile mode, show the prettified information here
+            if ($arg{type} eq 'tempfile') {
+                printf "Temp file size: %s\n", pretty_size($f->{largest}{filesize});
             }
 
             ## If we are using prefixes, show it here
@@ -2134,6 +2268,26 @@ sub lines_of_interest {
                 print " Count: $pcount";
             }
             print "\n";
+        }
+
+        if ($arg{type} eq 'tempfile') {
+            if ($f->{smallest}{filesize} == $f->{largest}{filesize}) {
+                printf "Temp file size: %s\n", pretty_size($f->{largest}{filesize});
+            }
+            else {
+                ## Show the smallest and the largest temp files used for this statement
+                ## Show the prefix (e.g. timestamp) when it occurred if available
+
+                my $s = $f->{smallest};
+                printf "Smallest temp file size: %s%s\n",
+                    pretty_size($s->{filesize}),
+                    (exists $s->{pgprefix} and $s->{pgprefix} ne '?') ? " ($s->{pgprefix})" : '';
+
+                my $l = $f->{largest};
+                printf "Largest temp file size: %s%s\n",
+                    pretty_size($l->{filesize}),
+                    (exists $l->{pgprefix} and $l->{pgprefix} ne '?') ? " ($l->{pgprefix})" : '';
+            }
         }
 
         ## If we have prefixes available, show those

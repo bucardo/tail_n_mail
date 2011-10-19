@@ -1319,11 +1319,6 @@ sub process_line {
         return 0 if ($string =~ / duration: (\d+)/o and $1 < $arg{duration});
     }
 
-    ## If in tempfile mode, and we have a minimum cutoff, discard smaller ones
-    if ($arg{type} eq 'tempfile' and $arg{tempfile} >= 0) {
-        #return 0 if ($string =~ / temporary file:.+?size (\d+)/o and $1 < $arg{tempfile});
-    }
-
     $arg{debug} and warn "MATCH at line $line of $filename\n";
 
     ## Force newlines to a single line

@@ -122,15 +122,21 @@ txt
 ## Changes:
 
 CSV
+ENV
 Fiske
 GSM
+Johan
 MAILSUBJECT
+Mullane
 PID
 POSIX
+Sabino
+SQL
 args
 autovacuum
 chunked
 config
+durations
 filename
 func
 havepid
@@ -144,8 +150,10 @@ regex
 regexes
 syslog
 sysread
+tempfile
 timestamp
 uniques
+unlink
 whitespace
 
 

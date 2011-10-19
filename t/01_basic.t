@@ -34,9 +34,11 @@ $verinfo =~ /(\d+\.\d+\.\d+)/ or die;
 my $ver = $1;
 
 $info = run('t/config/config1.txt');
-my $start = substr($info,0,250);
+my $start = substr($info,0,300);
 $t = q{Test config 1 gives correct subject line};
-like ($start, qr{^Subject: Acme core Postgres errors 50 : 60\n}, $t);
+my $host = qx{hostname};
+chomp $host;
+like ($start, qr{^Subject: Acme $host Postgres errors 50 : 60\n}, $t);
 
 $t = q{Test config 1 gives correct bulk email headers};
 like ($start, qr{\nAuto-Submitted: auto-generated\nPrecedence: bulk\n}, $t);

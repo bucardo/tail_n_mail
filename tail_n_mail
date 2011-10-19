@@ -1550,10 +1550,6 @@ sub process_line {
             $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
             $rawstring =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
         }
-        if ($arg{type} eq 'tempfile') {
-            #$string =~ s/LOG: temporary file:.+?size (\d+)/"TEMPFILE: $1 (" . pretty_size($1) . ')'/oe;
-            #$rawstring =~ s/LOG: temporary file:.+?size (\d+)/"TEMPFILE: $1 (" . pretty_size($1) . ')'/oe;
-        }
         $rawstring =~ s/^([A-Z]+: ) +/$1/gmo;
     }
 

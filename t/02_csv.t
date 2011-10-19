@@ -35,9 +35,11 @@ sub run {
 my $num = 2;
 
 $info = run('t/config/config2.txt');
-my $start = substr($info,0,250);
+my $start = substr($info,0,300);
 $t = qq{Test config $num gives correct subject line};
-like ($start, qr{^Subject: Acme core Postgres errors 50 : 60\n}, $t);
+my $host = qx{hostname};
+chomp $host;
+like ($start, qr{^Subject: Acme $host Postgres errors 50 : 60\n}, $t);
 
 $t = qq{Test config $num inserts a 'Date' line with newlines before it};
 like ($start, qr{\n\n\Date: \w\w\w \w\w\w [\d ]\d}, $t);
@@ -74,7 +76,7 @@ like ($start, qr{\n\-\nERROR: type "line" not yet implemented
 
 ## Second match is a simple COPY error with a CONTEXT
 $t = qq{Test config $num gives correct second match};
-$start = substr($info,550,300);
+$start = substr($info,550,350);
 like ($start, qr{\Q
 [2] (between lines 7,365 and 7,374, occurs 3 times)
 First: 2010-12-23 11:27:56.010 EST [7679]

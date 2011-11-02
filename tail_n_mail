@@ -24,7 +24,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.21.1';
+our $VERSION = '1.22.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -1319,6 +1319,11 @@ sub process_line {
         return 0 if ($string =~ / duration: (\d+)/o and $1 < $arg{duration});
     }
 
+    ## If in tempfile mode, and we have a minimum cutoff, discard smaller ones
+    if ($arg{type} eq 'tempfile' and $arg{tempfile} >= 0) {
+        #return 0 if ($string =~ / temporary file:.+?size (\d+)/o and $1 < $arg{tempfile});
+    }
+
     $arg{debug} and warn "MATCH at line $line of $filename\n";
 
     ## Force newlines to a single line
@@ -2095,6 +2100,12 @@ sub lines_of_interest {
                     || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
                     || ($a->{line} <=> $b->{line});
         }
+        ## Special sorting for the display of means
+        elsif ($arg{type} eq 'tempfiletotal') {
+            return ($b->{total} <=> $a->{total})
+                    || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
+                    || ($a->{line} <=> $b->{line});
+        }
         elsif ($sorttype eq 'count') {
             return ($b->{count} <=> $a->{count})
                     || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
@@ -2125,11 +2136,6 @@ sub lines_of_interest {
             ## Mode is meaningless, median too hard to compute
         }
 
-        ## Show a list of highest by mean
-        ## Then a list of total highest
-        ## Either way, we want to limit the list somehow
-        ## Hard to do until at least this point, unless we compute things earlier!
-
         my $totalitems = @sorted;
 
         ## We want to show the top X means
@@ -2141,22 +2147,51 @@ sub lines_of_interest {
             $f->{displaycount} = $count;
         }
 
-        ## Show the means!
+        ## Gather the means
+        my @mean;
         $arg{type} = 'tempfilemean'; ## Trickery
-        print "Top items by arithmetic mean:\n";
         my $maxmean = 0;
-        $count = 0;
+        my $meancount = 0;
         for my $f (sort sortsub @sorted) {
-            $count++;
-            printf " %s (item %d below)\n", pretty_size($f->{mean}), $f->{displaycount};
+            $meancount++;
+            my $item = sprintf '(item %d, count is %d)', $f->{displaycount}, $f->{count};
+            push @mean => sprintf "%10s %-22s", pretty_size($f->{mean},1), $item;
             $maxmean = $f->{displaycount} if $f->{displaycount} > $maxmean;
-            last if $arg{tempfile_limit} and $count >= $arg{tempfile_limit};
+            last if $arg{tempfile_limit} and $meancount >= $arg{tempfile_limit};
+        }
+
+        ## Gather the totaltemp
+        my @totaltemp;
+        $arg{type} = 'tempfiletotal';
+        my $maxtotal = 0;
+        my $totalcount = 0;
+        for my $f (sort sortsub @sorted) {
+            $totalcount++;
+            my $item = sprintf '(item %d, count is %d)', $f->{displaycount}, $f->{count};
+            push @totaltemp => sprintf "%10s %-22s", pretty_size($f->{total},1), $item;
+            $maxtotal = $f->{displaycount} if $f->{displaycount} > $maxtotal;
+            last if $arg{tempfile_limit} and $totalcount >= $arg{tempfile_limit};
         }
         $arg{type} = 'tempfile';
+
+        ## Print out both the mean and the total
+        print "  Top items by arithmetic mean    |   Top items by total size\n";
+        print "----------------------------------+-------------------------------\n";
+        $count = 0;
+        {
+            last if ! defined $mean[$count] and ! defined $totaltemp[$count];
+            printf "%-s |", defined $mean[$count] ? $mean[$count] : '';
+            printf "%s\n", defined $totaltemp[$count] ? $totaltemp[$count] : '';
+            $count++;
+            redo;
+        }
 
         ## Set a new tempfile_limit based on how many mean entries we found above
         if ($maxmean > $arg{tempfile_limit}) {
             $arg{tempfile_limit} = $maxmean;
+        }
+        if ($maxtotal > $arg{tempfile_limit}) {
+            $arg{tempfile_limit} = $maxtotal;
         }
 
     } ## end of tempfile mode
@@ -2262,6 +2297,14 @@ sub lines_of_interest {
         }
 
         if ($arg{type} eq 'tempfile') {
+
+            ## If there was more than one, show some summary information
+            if ($f->{count} > 1) {
+                printf "Total count=%d, aritmetic mean is %s, total size is %s\n",
+                    $f->{count}, pretty_size($f->{mean}), pretty_size($f->{total});
+            }
+
+            ## Show the exact size, or the smallest and largest if both available
             if ($f->{smallest}{filesize} == $f->{largest}{filesize}) {
                 printf "Temp file size: %s\n", pretty_size($f->{largest}{filesize});
             }

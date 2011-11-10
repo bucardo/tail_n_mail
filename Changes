@@ -4,7 +4,7 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
-Version 1.22.0
+Version 1.22.1, released November 10, 2011
 
 * Add grand totals and better displays to tempfile output. [GSM]
 

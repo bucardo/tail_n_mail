@@ -2300,7 +2300,7 @@ sub lines_of_interest {
 
             ## If there was more than one, show some summary information
             if ($f->{count} > 1) {
-                printf "Aritmetic mean is %s, total size is %s\n",
+                printf "Arithmetic mean is %s, total size is %s\n",
                     pretty_size($f->{mean}), pretty_size($f->{total});
             }
 

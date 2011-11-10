@@ -2300,8 +2300,8 @@ sub lines_of_interest {
 
             ## If there was more than one, show some summary information
             if ($f->{count} > 1) {
-                printf "Total count=%d, aritmetic mean is %s, total size is %s\n",
-                    $f->{count}, pretty_size($f->{mean}), pretty_size($f->{total});
+                printf "Aritmetic mean is %s, total size is %s\n",
+                    pretty_size($f->{mean}), pretty_size($f->{total});
             }
 
             ## Show the exact size, or the smallest and largest if both available

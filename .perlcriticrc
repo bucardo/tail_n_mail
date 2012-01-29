@@ -1,4 +1,5 @@
 ## Perl::Critic things we are not going to worry about:
+
 [-Bangs::ProhibitNumberedNames]
 [-Bangs::ProhibitVagueNames]
 [-CodeLayout::ProhibitParensWithBuiltins]
@@ -28,10 +29,12 @@
 [-Tics::ProhibitLongLines]
 [-ValuesAndExpressions::ProhibitAccessOfPrivateData]
 [-ValuesAndExpressions::ProhibitEmptyQuotes]
+[-ValuesAndExpressions::ProhibitFiletest_f]
 [-ValuesAndExpressions::ProhibitImplicitNewlines]
 [-ValuesAndExpressions::ProhibitMagicNumbers]
 [-ValuesAndExpressions::ProhibitMixedBooleanOperators]
 [-ValuesAndExpressions::ProhibitNoisyQuotes]
+[-ValuesAndExpressions::RequireNumberSeparators]
 [-ValuesAndExpressions::RestrictLongStrings]
 [-Variables::ProhibitPackageVars]
 [-Variables::ProhibitPunctuationVars]

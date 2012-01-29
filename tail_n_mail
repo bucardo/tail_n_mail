@@ -1406,7 +1406,7 @@ sub process_line {
             "$select" . (join ',' => @arg) . ')';
         }geix;
 
-        my $thisletter;
+        my $thisletter = '';
 
         $string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{ ## For emacs: ()()()
             my ($sword,$list) = ($1,$2);
@@ -1768,7 +1768,7 @@ sub process_report {
     ## Allow no specific email for dryruns
     if (! @{$opt{$curr}{email}}) {
         if ($arg{dryrun} or $arg{nomail}) {
-            push @{$opt{$curr}{email}} => 'dryrun@example.com';
+            push @{$opt{$curr}{email}} => 'dryrun@example.com'; ## no critic (RequireInterpolationOfMetachars)
         }
     }
 
@@ -2182,7 +2182,7 @@ sub lines_of_interest {
         for my $f (sort sortsub @sorted) {
             $meancount++;
             my $item = sprintf '(item %d, count is %d)', $f->{displaycount}, $f->{count};
-            push @mean => sprintf "%10s %-22s", pretty_size($f->{mean},1), $item;
+            push @mean => sprintf '%10s %-22s', pretty_size($f->{mean},1), $item;
             $maxmean = $f->{displaycount} if $f->{displaycount} > $maxmean;
             last if $arg{tempfile_limit} and $meancount >= $arg{tempfile_limit};
         }
@@ -2195,7 +2195,7 @@ sub lines_of_interest {
         for my $f (sort sortsub @sorted) {
             $totalcount++;
             my $item = sprintf '(item %d, count is %d)', $f->{displaycount}, $f->{count};
-            push @totaltemp => sprintf "%10s %-22s", pretty_size($f->{total},1), $item;
+            push @totaltemp => sprintf '%10s %-22s', pretty_size($f->{total},1), $item;
             $maxtotal = $f->{displaycount} if $f->{displaycount} > $maxtotal;
             last if $arg{tempfile_limit} and $totalcount >= $arg{tempfile_limit};
         }
@@ -2207,7 +2207,7 @@ sub lines_of_interest {
         $count = 0;
         {
             last if ! defined $mean[$count] and ! defined $totaltemp[$count];
-            printf "%-s |", defined $mean[$count] ? $mean[$count] : '';
+            printf '%-s |', defined $mean[$count] ? $mean[$count] : '';
             printf "%s\n", defined $totaltemp[$count] ? $totaltemp[$count] : '';
             $count++;
             redo;

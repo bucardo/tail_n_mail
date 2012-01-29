@@ -5,6 +5,7 @@
 ## Developed at End Point Corporation by:
 ## Greg Sabino Mullane <greg@endpoint.com>
 ## Selena Deckelmann <selena@chesnok.com>
+## See more contributors in the 'Changes' file
 ## BSD licensed
 ## For full documentation, please see: http://bucardo.org/wiki/Tail_n_mail
 
@@ -24,7 +25,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.22.1';
+our $VERSION = '1.23.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';

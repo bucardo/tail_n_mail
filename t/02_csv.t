@@ -6,10 +6,8 @@ use Data::Dumper;
 use lib 't','.';
 use Test::More;
 
-if (!eval { require Text::CSV; 1 }) {
-	if (!eval { require Text::CSV_XS; 1}) {
-		plan skip_all => 'Could not find Text::CSV or Text::CSV_XS';
-	}
+if (!eval { require Text::CSV; 1 } and !eval { require Text::CSV_XS; 1}) {
+	plan skip_all => 'Could not find Text::CSV or Text::CSV_XS';
 }
 else {
 	plan tests => 14;

@@ -302,7 +302,7 @@ $arg{verbose} and warn "  Log line prefix regex3: $pgpidre3\n";
 my $changes = 0;
 
 ## Global regex: may change per file
-my ($exclude, $include);
+my ($exclude, $include, $exclude_prefix);
 
 ## Note if we bumped into maxsize when trying to read a file
 my (%toolarge);
@@ -621,6 +621,7 @@ sub parse_config_file {
             ## Set some default values
             $localopt{filename} = $filename;
             $localopt{exclude} ||= [];
+            $localopt{exclude_prefix} ||= [];
             $localopt{include} ||= [];
             $localopt{email}   ||= [];
 
@@ -685,6 +686,10 @@ sub parse_config_file {
         ## Which lines to exclude from the report
         elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
             push @{$localopt{exclude}}, $1;
+        }
+        ## Which prefix lines to exclude from the report
+        elsif (/^EXCLUDE_PREFIX:\s*(.+?)\s*$/) {
+            push @{$localopt{exclude_prefix}}, $1;
         }
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
@@ -826,6 +831,10 @@ sub parse_inherit_file {
         ## Which lines to exclude from the report
         elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
             push @{$opt{$curr}{exclude}}, $1;
+        }
+        ## Which prefix lines to exclude from the report
+        elsif (/^EXCLUDE_PREFIX:\s*(.+?)\s*$/) {
+            push @{$opt{$curr}{exclude_prefix}}, $1;
         }
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
@@ -1026,7 +1035,7 @@ sub parse_file {
     } ## end find_line_number
 
     ## Get exclusion and inclusion regexes for this file
-    ($exclude,$include) = generate_regexes($filename);
+    ($exclude,$include,$exclude_prefix) = generate_regexes($filename);
 
     ## Discard the previous line if needed (we rewound by 10 characters above)
     $original_offset and <$fh>;
@@ -1232,7 +1241,8 @@ sub generate_regexes {
 
     ## Currently, all files get the same regex, so we cache it
     if (exists $opt{globalexcluderegex}) {
-        return $opt{globalexcluderegex}, $opt{globalincluderegex};
+        return $opt{globalexcluderegex}, $opt{globalincluderegex}, $opt{globalexcludeprefixregex};
+
     }
 
     ## Build an exclusion regex
@@ -1245,6 +1255,16 @@ sub generate_regexes {
     $lexclude =~ s/\|$//;
     $arg{verbose} and $lexclude and warn "  Exclusion: $lexclude\n";
 
+    ## Build a prefix exclusion regex
+    my $lexclude_prefix = '';
+    for my $ex (@{$opt{$curr}{exclude_prefix}}) {
+        $arg{debug} and warn "  Adding exclusion_prefix: $ex\n";
+        my $regex = qr{$ex};
+        $lexclude_prefix .= "$regex|";
+    }
+    $lexclude_prefix =~ s/\|$//;
+    $arg{verbose} and $lexclude_prefix and warn "  Exclusion_prefix: $lexclude_prefix\n";
+
     ## Build an inclusion regex
     my $linclude = '';
     for my $in (@{$opt{$curr}{include}}) {
@@ -1256,9 +1276,10 @@ sub generate_regexes {
     $arg{verbose} and $linclude and warn "  Inclusion: $linclude\n";
 
     $opt{globalexcluderegex} = $lexclude;
+    $opt{globalexcludeprefixregex} = $lexclude_prefix;
     $opt{globalincluderegex} = $linclude;
 
-    return $lexclude, $linclude;
+    return $lexclude, $linclude, $lexclude_prefix;
 
 } ## end of generate_regexes
 
@@ -1315,6 +1336,9 @@ sub process_line {
 
         ## Bail if it matches the exclusion regex
         return 0 if $exclude and $string =~ $exclude;
+
+        ## Bail if it matches the prefix exclusion regex
+        return 0 if $exclude_prefix and $pgprefix =~ $exclude_prefix;
     }
 
     ## If in duration mode, and we have a minimum cutoff, discard faster ones
@@ -2472,6 +2496,11 @@ sub final_cleanup {
             next if ! exists $opt{configfile}{"exclude.$exclude"};
             add_comments("EXCLUDE: $exclude");
             print "EXCLUDE: $exclude\n";
+        }
+        for my $exclude_prefix (@{$opt{$curr}{exclude_prefix}}) {
+            next if ! exists $opt{configfile}{"exclude_prefix.$exclude_prefix"};
+            add_comments("EXCLUDE_PREFIX: $exclude_prefix");
+            print "EXCLUDE_PREFIX: $exclude_prefix\n";
         }
         print "\n";
 

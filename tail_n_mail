@@ -98,6 +98,8 @@ my %arg = (
               showonly         => 0,
 ## Send an email even if 0 matches were found
               mailzero         => 0,
+## Append a signature to the end of mailed messages
+              mailsig          => [],
 ## Perform some final prettification of queries
               pretty_query     => 1,
 ## Set the minimum number of matching duration entries that we care about
@@ -154,6 +156,7 @@ my $result = GetOptions
    'mailpass=s',
    'mailport=s',
    'mailzero',
+   'mailsig=s@',
    'smtp',
    'tsep=s',
    'tsepnosub',
@@ -337,6 +340,22 @@ if ($arg{nolastfile}) {
     delete $opt{$curr}{lastfile};
 }
 
+## If they want a mail signature, open the file(s) and read it in now
+if (defined $arg{mailsig}->[0]) {
+    ## Combine all files in order into a single string
+    my $sigstring = '';
+    my $fh;
+    for my $sigfile (@{$arg{mailsig}}) {
+        $sigfile =~ s{^~/?}{$ENV{HOME}/};
+        if (! open $fh, '<', $sigfile) {
+            warn qq{Could not open signature file "$sigfile": $!\n};
+            exit 1;
+        }
+        { local $/; $sigstring .= <$fh>; }
+        close $fh or warn qq{Could not close "$sigfile": $!\n};
+    }
+    $arg{mailsignature} = $sigstring;
+}
 
 ## Parse each file returned by pick_log_file until we start looping
 my $last_logfile = '';
@@ -713,6 +732,10 @@ sub parse_config_file {
         elsif (/^MAILZERO:\s*(.+)/) {
             $localopt{mailzero} = $1;
         }
+        ## Allow mail signatures
+        elsif (/^MAILSIG:\s*(.+)/) {
+            push @{$arg{mailsig}}, $1;
+        }
         ## Size at which we cutoff long statements
         elsif (/^STATEMENT_SIZE:\s*(.+)/) {
             $localopt{statement_size} = $1;
@@ -734,6 +757,8 @@ sub parse_config_file {
     }
     if ($arg{debug}) {
         local $Data::Dumper::Varname = 'opt';
+        warn Dumper \%opt;
+        local $Data::Dumper::Varname = 'arg';
         warn Dumper \%arg;
     }
 
@@ -1965,6 +1990,13 @@ sub process_report {
             next if ! $stop_point;
             last if tell $bigfh >= $stop_point;
         }
+
+        ## If we have a signature, add it
+        if ($arg{mailsignature}) {
+            ## Caller's responsibility to add a "--" line
+            print {$efh} $arg{mailsignature};
+        }
+
         close $efh or warn qq{Could not close $emailfile: $!\n};
 
         $arg{verbose} and warn "  Sending mail to: $emails\n";

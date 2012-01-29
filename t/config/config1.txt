@@ -1,9 +1,10 @@
 ## Config file for the tail_n_mail program
 ## This file is automatically updated
-## Last updated: Tue Mar  8 21:45:42 2011
+## Last updated: Sun Jan 29 17:07:20 2012
 ## Test config file #1
 EMAIL: someone@example.com
 MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
+MAILSIG: abc
 
 FILE: t/logs/testlog1.txt
 LASTFILE: t/logs/testlog1.txt

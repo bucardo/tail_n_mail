@@ -233,7 +233,10 @@ my $original_llp = $llp;
 
 ## Process the log_line_prefix and change it into a regex
 my ($havetime,$havepid) = (0,0);
-$llp =~ s/([\-\[\]])/\\$1/g;
+
+## Escape certain things that may confuse the regex parser
+$llp =~ s/([\-\[\]\(\)])/\\$1/g;
+
 ## This assumes timestamp comes before the pid!
 $llp =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?)/ and $havetime=1;
 $llp =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?)/ and $havetime=1;

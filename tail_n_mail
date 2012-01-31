@@ -1113,10 +1113,10 @@ sub parse_file {
                 ## 1=prefix 2=timestamp 3=PID 4=rest
                 if ($_ =~ s/$pgpidre/$4/) {
 
-                    $pgprefix = $1;
-                    $pgprefix =~ s/\s+$//o;
                     ## We want the timestamp and the pid, even if we have to fake it
-                    ($pgts,$pgpid,$pgnum) = ($2||'',$3||1, 1);
+                    ($pgprefix,$pgts,$pgpid,$pgnum) = ($1, $2||'', $3||1, 1);
+
+                    $pgprefix =~ s/\s+$//o;
                     if ($arg{pglog} eq 'syslog') {
                         if ($pgprefix =~ /\[(\d+)\-\d+/) {
                             $pgnum = $1;

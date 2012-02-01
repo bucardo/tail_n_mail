@@ -12,6 +12,8 @@ Version 1.23.0
 * Add mailsig option to append signatures from one or more files 
   to the emailed reports. Per idea from D. Joseph Creighton
 
+* Fix error in prefix parsing. [GSM]
+
 
 Version 1.22.1, released November 10, 2011
 

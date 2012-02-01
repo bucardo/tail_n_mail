@@ -734,6 +734,7 @@ sub parse_config_file {
         }
         ## Allow mail signatures
         elsif (/^MAILSIG:\s*(.+)/) {
+            push @{$localopt{mailsig}}, $1;
             push @{$arg{mailsig}}, $1;
         }
         ## Size at which we cutoff long statements
@@ -916,6 +917,10 @@ sub parse_inherit_file {
         elsif (/^MAILSUBJECT:\s*(.+)/) {
             $opt{$curr}{mailsubject} = $1;
             $opt{$curr}{customsubject} = 1;
+        }
+        ## The mail signature
+        elsif (/^MAILSIG:\s*(.+)/) {
+            push @{$opt{$curr}{mailsig}}, $1;
         }
         ## The log line prefix
         elsif (/^LOG.LINE.PREFIX:\s*(.+)/o) {
@@ -2479,7 +2484,7 @@ sub final_cleanup {
 ## Last updated: $now
 };
 
-        for my $item (qw/ email from type duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
+        for my $item (qw/ email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
             next if ! exists $opt{$curr}{$item};
 
             next if $item eq 'duration' and $arg{duration} < 0;

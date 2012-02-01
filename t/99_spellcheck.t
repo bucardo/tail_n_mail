@@ -143,6 +143,7 @@ havepid
 havetimestamp
 http
 lookahead
+mailsig
 nolastfile
 pgformat
 pgpidre

@@ -543,7 +543,7 @@ sub parse_rc_files {
         open my $rc, '<', $file or die qq{Could not open "$file": $!\n};
         while (<$rc>) {
             next if /^\s*#/;
-            next if ! /^\s*([\w\-]+)\s*[=:]\s*(.+?)\s*$/o;
+            next if ! /^\s*([\w\_\-]+)\s*[=:]\s*(.+?)\s*$/o;
             my ($name,$value) = (lc $1,$2);
             $opt{$curr}{$name} = $value;
             $arg{$name} = $value;
@@ -604,7 +604,7 @@ sub parse_config_file {
         }
 
         ## A non-comment after one or comments allows us to map them to each other
-        if (@comment and m{^([\w\-]+):}) {
+        if (@comment and m{^([\w\_\-]+):}) {
             chomp;
             for my $c (@comment) {
                 ## We store as both the keyword and the entire line
@@ -693,7 +693,7 @@ sub parse_config_file {
         }
         ## Allow a very local log_line_prefix
         elsif (/^LOG\-LINE\-PREFIX:\s*(.+)/) {
-            $localopt{'log-line-prefix'} = $1;
+            $localopt{'log_line_prefix'} = $1;
         }
         ## How to sort the output
         elsif (/^SORTBY:\s*(\w+)/) {
@@ -2488,7 +2488,7 @@ sub final_cleanup {
 ## Last updated: $now
 };
 
-        for my $item (qw/ log-line-prefix email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
+        for my $item (qw/ log_line_prefix email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
             next if ! exists $opt{$curr}{$item};
 
             next if $item eq 'duration' and $arg{duration} < 0;

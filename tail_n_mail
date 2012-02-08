@@ -692,7 +692,7 @@ sub parse_config_file {
             }
         }
         ## Allow a very local log_line_prefix
-        elsif (/^LOG\-LINE\-PREFIX:\s*(.+)/) {
+        elsif (/^LOG_LINE_PREFIX:\s*(.+)/) {
             $localopt{'log_line_prefix'} = $1;
         }
         ## How to sort the output

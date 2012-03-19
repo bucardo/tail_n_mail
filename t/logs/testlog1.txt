@@ -10347,4 +10347,4 @@
 2010-12-22 19:17:53 EST [29931] LOG:  duration: 0.020 ms  execute dbdpg_p29930_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
 2010-12-22 19:17:53 EST [29931] DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
 2010-12-22 19:17:53 EST [29931] LOG:  duration: 4.503 ms  statement: commit
-2010-12-22 19:17:53 EST [29931] LOG:  disconnection: session time: 0:00:00.081 user=greg database=greg host=[local]
+2010-12-22 19:17:38 EST [29867] CHOMP:  syntax error at or ne

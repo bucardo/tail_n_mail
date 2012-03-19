@@ -5,9 +5,12 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
 
-Version 1.24.0
+Version 1.24.0, released March 19, 2012
 
 * Allow LOG_LINE_PREFIX in config files [Arsen Stasic]
+
+* Handle cases in which something is in the middle of writing a 
+log file line, and thus it does not end with a newline. [GSM]
 
 
 Version 1.23.0, released February 1, 2012

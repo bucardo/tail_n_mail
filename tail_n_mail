@@ -1067,6 +1067,7 @@ sub parse_file {
             seek $fh, 0, $pos;
 
         } ## end pos > 1
+
     } ## end find_line_number
 
     ## Get exclusion and inclusion regexes for this file
@@ -1115,9 +1116,29 @@ sub parse_file {
         my $pgnum = 1;
         my $lastline = '';
         my $syslognum = 0; ## used by syslog only
+        my $bailout = 0; ## emergency bail out in case we end up sleep seeking
       LOGLINE: while (<$fh>) {
+
+            ## We ran into a truncated line last time, so we are most likely done
+            last if $bailout;
+
             ## Easiest to just remove the newline here and now
-            chomp;
+            if (! chomp) {
+                ## There was no newline, so it's possible some other process is in
+                ## the middle of writing this line. Just in case this is so, sleep and
+                ## let it finish, then try again. Because we don't want to turn this
+                ## into a tail -f situation, bail out of the loop once done
+                sleep 1;
+                ## Rewind just far enough to try this line again
+                seek $fh, - (length $_), 1;
+                $_ = <$fh>;
+                if (! chomp) {
+                    ## Still no go! Let's just leave and abandon this line
+                    last LOGLINE;
+                }
+                ## Success! Finish up this line, but then abandon any further slurping
+                $bailout = 1;
+            }
             if ($arg{pgmode}) {
                 ## 1=prefix 2=timestamp 3=PID 4=rest
                 if ($_ =~ s/$pgpidre/$4/) {

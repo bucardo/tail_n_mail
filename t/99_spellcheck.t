@@ -121,6 +121,7 @@ txt
 
 ## Changes:
 
+Arsen
 CSV
 ENV
 Fiske
@@ -149,6 +150,7 @@ pgformat
 pgpidre
 regex
 regexes
+Stasic
 syslog
 sysread
 tempfile

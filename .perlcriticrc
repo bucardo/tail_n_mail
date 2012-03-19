@@ -14,7 +14,6 @@
 [-InputOutput::ProhibitBacktickOperators]
 [-InputOutput::ProhibitOneArgSelect]
 [-InputOutput::RequireCheckedSyscalls]
-[-Lax::ProhibitEmptyQuotes::ExceptAsFallback]
 [-Miscellanea::RequireRcsKeywords]
 [-Modules::ProhibitExcessMainComplexity]
 [-References::ProhibitDoubleSigils]

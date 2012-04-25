@@ -211,9 +211,6 @@ for (@{ $arg{file} }) {
 my $hostname = qx{hostname};
 chomp $hostname;
 
-## We use a CURRENT key for future expansion
-my $curr = 'CURRENT';
-
 ## Global option variables
 my (%opt, %itemcomment);
 
@@ -339,7 +336,7 @@ my ($string,$time,$csv);
 
 ## If they requested no lastfile, remove it now
 if ($arg{nolastfile}) {
-    delete $opt{$curr}{lastfile};
+    delete $opt{lastfile};
 }
 
 ## If they want a mail signature, open the file(s) and read it in now
@@ -363,7 +360,7 @@ if (defined $arg{mailsig}->[0]) {
 my $last_logfile = '';
 my @files_parsed;
 my $filenumber = 0;
-my $fileinfo = $opt{$curr}{file}[$filenumber];
+my $fileinfo = $opt{file}[$filenumber];
 
 {
 
@@ -373,7 +370,7 @@ my $fileinfo = $opt{$curr}{file}[$filenumber];
     ## If undefined or same as last time, we are done with this file
     if (! defined $logfile or $logfile eq $last_logfile) {
         ## Grab the next extry
-        $fileinfo = $opt{$curr}{file}[++$filenumber];
+        $fileinfo = $opt{file}[++$filenumber];
         ## No more file? We are done!
         last if ! defined $fileinfo;
         # Otherwise, loop back with the new fileinfo
@@ -395,7 +392,7 @@ my $fileinfo = $opt{$curr}{file}[$filenumber];
 }
 
 ## We're done parsing the message, send an email if needed
-process_report() if $opt{grand_total} or $arg{mailzero} or $opt{$curr}{mailzero};
+process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero};
 final_cleanup();
 
 exit 0;
@@ -563,7 +560,7 @@ sub parse_rc_files {
             next if /^\s*#/;
             next if ! /^\s*([\w\_\-]+)\s*[=:]\s*(.+?)\s*$/o;
             my ($name,$value) = (lc $1,$2);
-            $opt{$curr}{$name} = $value;
+            $opt{$name} = $value;
             $arg{$name} = $value;
             ## If we are disabled, simply exit quietly
             if ($name eq 'disable' and $value) {
@@ -833,7 +830,7 @@ sub parse_config_file {
                 $opt{configfile}{"$k.$ik"} = 1;
             }
         }
-        $opt{$curr}{$k} = $localopt{$k};
+        $opt{$k} = $localopt{$k};
     }
 
     if ($arg{debug}) {
@@ -852,7 +849,7 @@ sub parse_inherited_files {
 
     ## Call parse_inherit_file on each item in $opt{inherit}
 
-    for my $file (@{$opt{$curr}{inherit}}) {
+    for my $file (@{$opt{inherit}}) {
         parse_inherit_file($file);
     }
 
@@ -933,23 +930,23 @@ sub parse_inherit_file {
         }
         ## How to sort the output
         elsif (/^SORTBY:\s*(\w+)/) {
-            $opt{$curr}{sortby} = $1;
+            $opt{sortby} = $1;
         }
         ## Which lines to exclude from the report
         elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
-            push @{$opt{$curr}{exclude}}, $1;
+            push @{$opt{exclude}}, $1;
         }
         ## Which prefix lines to exclude from the report
         elsif (/^EXCLUDE_PREFIX:\s*(.+?)\s*$/) {
-            push @{$opt{$curr}{exclude_prefix}}, $1;
+            push @{$opt{exclude_prefix}}, $1;
         }
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
-            push @{$opt{$curr}{include}}, $1;
+            push @{$opt{include}}, $1;
         }
         ## Maximum file size
         elsif (/^MAXSIZE:\s*(\d+)/) {
-            $opt{$curr}{maxsize} = $1;
+            $opt{maxsize} = $1;
         }
         ## Exclude durations below this number
         elsif (/^DURATION:\s*(\d+)/) {
@@ -977,15 +974,15 @@ sub parse_inherit_file {
         }
         ## Who to send emails from
         elsif (/^FROM:\s*(.+?)\s*$/) {
-            $opt{$curr}{from} = $1;
+            $opt{from} = $1;
         }
         ## Who to send emails to for this file
         elsif (/^EMAIL:\s*(.+?)\s*$/) {
-            push @{$opt{$curr}{email}}, $1;
+            push @{$opt{email}}, $1;
         }
         ## Force mail to be sent - overrides any other setting
         elsif (/^MAILZERO:\s*(.+)/) {
-            $opt{$curr}{mailzero} = $1;
+            $opt{mailzero} = $1;
         }
         ## The file to use
         elsif (/^FILE(\d*):\s*(.+)/) {
@@ -999,7 +996,7 @@ sub parse_inherit_file {
 
             ## As with the normal config file, store a temp version
             ## Save to the local list, storing the original filename for config rewriting
-            push @{ $opt{$curr}{tempifile} } =>
+            push @{ $opt{tempifile} } =>
                 {
                  original => $filename,
                  suffix => $suffix,
@@ -1007,12 +1004,12 @@ sub parse_inherit_file {
         }
         ## The mail subject
         elsif (/^MAILSUBJECT:\s*(.+)/) {
-            $opt{$curr}{mailsubject} = $1;
-            $opt{$curr}{customsubject} = 1;
+            $opt{mailsubject} = $1;
+            $opt{customsubject} = 1;
         }
         ## The mail signature
         elsif (/^MAILSIG:\s*(.+)/) {
-            push @{$opt{$curr}{mailsig}}, $1;
+            push @{$opt{mailsig}}, $1;
         }
         ## The log line prefix
         elsif (/^LOG.LINE.PREFIX:\s*(.+)/o) {
@@ -1020,7 +1017,7 @@ sub parse_inherit_file {
         }
         ## Size at which we cutoff long statements
         elsif (/^STATEMENT_SIZE:\s*(.+)/) {
-            $opt{$curr}{statement_size} = $1;
+            $opt{statement_size} = $1;
         }
         else {
             warn qq{Unknown item in include file "$file": $_\n};
@@ -1032,10 +1029,10 @@ sub parse_inherit_file {
     ## Merge all the "FILE" entries and adjust suffixes
     ## We allow overlap between the normal and inherited lists
 
-    if (exists $opt{$curr}{tempifile}) {
+    if (exists $opt{tempifile}) {
 
         my %numused;
-        for my $file (@{ $opt{$curr}{tempifile} }) {
+        for my $file (@{ $opt{tempifile} }) {
             $file->{suffix} ||= 0;
             next if ! $file->{suffix};
             if ($numused{$file->{suffix}}++) {
@@ -1043,7 +1040,7 @@ sub parse_inherit_file {
             }
         }
 
-        for my $file (@{ $opt{$curr}{tempifile} }) {
+        for my $file (@{ $opt{tempifile} }) {
 
             ## Change zero to the first free number
             if (! $file->{suffix}) {
@@ -1061,7 +1058,7 @@ sub parse_inherit_file {
             }
 
             ## Create our real entry
-            push @{ $opt{$curr}{file} } =>
+            push @{ $opt{file} } =>
                 {
                  name      => transform_filename($file->{original}),
                  original  => $file->{original},
@@ -1071,7 +1068,7 @@ sub parse_inherit_file {
         }
 
         ## Remove our temporary list
-        delete $opt{$curr}{tempifile};
+        delete $opt{tempifile};
     }
 
     return;
@@ -1116,7 +1113,7 @@ sub parse_file {
     ## Figure out where in the file we want to start scanning from
     my $size = -s $filename;
     my $offset = 0;
-    my $maxsize = $opt{$curr}{maxsize} ? $opt{$curr}{maxsize} : $arg{maxsize};
+    my $maxsize = $opt{maxsize} ? $opt{maxsize} : $arg{maxsize};
 
     ## Is the offset significant?
     if (!$arg{file}[0]               ## ...not if we passed in filenames manually
@@ -1459,7 +1456,7 @@ sub generate_regexes {
 
     ## Build an exclusion regex
     my $lexclude = '';
-    for my $ex (@{$opt{$curr}{exclude}}) {
+    for my $ex (@{$opt{exclude}}) {
         $arg{debug} and warn "  Adding exclusion: $ex\n";
         my $regex = qr{$ex};
         $lexclude .= "$regex|";
@@ -1469,7 +1466,7 @@ sub generate_regexes {
 
     ## Build a prefix exclusion regex
     my $lexclude_prefix = '';
-    for my $ex (@{$opt{$curr}{exclude_prefix}}) {
+    for my $ex (@{$opt{exclude_prefix}}) {
         $arg{debug} and warn "  Adding exclusion_prefix: $ex\n";
         my $regex = qr{$ex};
         $lexclude_prefix .= "$regex|";
@@ -1479,7 +1476,7 @@ sub generate_regexes {
 
     ## Build an inclusion regex
     my $linclude = '';
-    for my $in (@{$opt{$curr}{include}}) {
+    for my $in (@{$opt{include}}) {
         $arg{debug} and warn "  Adding inclusion: $in\n";
         my $regex = qr{$in};
         $linclude .= "$regex|";
@@ -1950,10 +1947,10 @@ sub process_report {
     $last_file_parsed = $files_parsed[-1]->[0] if ! defined $last_file_parsed;
 
     ## Subject with replaced keywords:
-    my $subject = $opt{$curr}{mailsubject} || $DEFAULT_SUBJECT;
+    my $subject = $opt{mailsubject} || $DEFAULT_SUBJECT;
     $subject =~ s/FILE/$last_file_parsed/g;
     $subject =~ s/HOST/$hostname/g;
-    if ($arg{tsepnosub} or $opt{$curr}{tsepnosub}) {
+    if ($arg{tsepnosub} or $opt{tsepnosub}) {
         $subject =~ s/NUMBER/$grand_total/g;
         $subject =~ s/UNIQUE/$unique_matches/g;
     }
@@ -1973,24 +1970,24 @@ sub process_report {
     push @header => "X-TNM-VERSION: $VERSION";
 
     ## Allow no specific email for dryruns
-    if (! @{$opt{$curr}{email}}) {
+    if (! @{$opt{email}}) {
         if ($arg{dryrun} or $arg{nomail}) {
-            push @{$opt{$curr}{email}} => 'dryrun@example.com'; ## no critic (RequireInterpolationOfMetachars)
+            push @{$opt{email}} => 'dryrun@example.com'; ## no critic (RequireInterpolationOfMetachars)
         }
     }
 
     ## Fill out the "To:" fields
-    for my $email (@{$opt{$curr}{email}}) {
+    for my $email (@{$opt{email}}) {
         push @header => "To: $email";
     }
-    if (! @{$opt{$curr}{email}}) {
+    if (! @{$opt{email}}) {
         die "Cannot send email without knowing who to send to!\n";
     }
 
-    my $mailcom = $opt{$curr}{mailcom} || $arg{mailcom};
+    my $mailcom = $opt{mailcom} || $arg{mailcom};
 
     ## Custom From:
-    my $from_addr = $opt{$curr}{from} || '';
+    my $from_addr = $opt{from} || '';
     if ($from_addr ne '') {
         push @header => "From: $from_addr";
         $mailcom .= " -f $from_addr";
@@ -2081,7 +2078,7 @@ sub process_report {
         $arg{verbose} and print qq{File $bigfile too big ($filesize > $arg{maxemailsize})\n};
     }
 
-    my $emails = join ' ' => @{$opt{$curr}{email}};
+    my $emails = join ' ' => @{$opt{email}};
 
     ## Sanity check on number of loops below
     my $safety = 1;
@@ -2189,7 +2186,7 @@ sub process_report {
             $arg{quiet} or warn "  DRYRUN: $COM\n";
         }
         else {
-            my $mailmode = $opt{$curr}{mailmode} || $arg{mailmode};
+            my $mailmode = $opt{mailmode} || $arg{mailmode};
             if ($arg{mailmode} eq 'sendmail') {
                 system $COM;
             }
@@ -2251,19 +2248,19 @@ sub send_smtp_email {
     require Net::SMTP::SSL;
 
     ## Absorb any values set by rc files, and sanity check things
-    my $mailserver = $opt{$curr}{mailserver} || $arg{mailserver};
+    my $mailserver = $opt{mailserver} || $arg{mailserver};
     if ($mailserver eq 'example.com') {
         die qq{When using smtp mode, you must specify a mailserver!\n};
     }
-    my $mailuser = $opt{$curr}{mailuser} || $arg{mailuser};
+    my $mailuser = $opt{mailuser} || $arg{mailuser};
     if ($mailuser eq 'example') {
         die qq{When using smtp mode, you must specify a mailuser!\n};
     }
-    my $mailpass = $opt{$curr}{mailpass} || $arg{mailpass};
+    my $mailpass = $opt{mailpass} || $arg{mailpass};
     if ($mailpass eq 'example') {
         die qq{When using smtp mode, you must specify a mailpass!\n};
     }
-    my $mailport = $opt{$curr}{mailport} || $arg{mailport};
+    my $mailport = $opt{mailport} || $arg{mailport};
 
     ## Attempt to connect to the server
     my $smtp;
@@ -2312,7 +2309,7 @@ sub lines_of_interest {
 
     sub sortsub { ## no critic (ProhibitNestedSubs)
 
-        my $sorttype = $opt{$curr}{sortby} || $arg{sortby};
+        my $sorttype = $opt{sortby} || $arg{sortby};
 
         if ($arg{type} eq 'duration') {
             if (! exists $sorthelp{$a}) {
@@ -2616,8 +2613,8 @@ sub wrapline {
     my $len = length $line;
     my $olen = $len;
     my $waschopped = 0;
-    my $maxsize = defined $opt{$curr}{statement_size}
-        ? $opt{$curr}{statement_size}
+    my $maxsize = defined $opt{statement_size}
+        ? $opt{statement_size}
         : $arg{statement_size};
 
     if ($maxsize and $len > $maxsize) {
@@ -2648,7 +2645,7 @@ sub final_cleanup {
     ## For the moment, that only means the offset and the lastfile
 
     ## Have we got new lastfiles or offsets?
-    for my $t (@{ $opt{$curr}{file} }) {
+    for my $t (@{ $opt{file} }) {
         if ($t->{latest} ne $t->{lastfile}) {
             $changes++;
             $t->{lastfile} = delete $t->{latest};
@@ -2676,7 +2673,7 @@ sub final_cleanup {
 };
 
     for my $item (qw/ log_line_prefix email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
-        next if ! exists $opt{$curr}{$item};
+        next if ! exists $opt{$item};
 
         next if $item eq 'duration' and $arg{duration} < 0;
         next if $item eq 'duration_limit' and ! $arg{duration_limit};
@@ -2687,29 +2684,29 @@ sub final_cleanup {
         ## Only rewrite if it came from this config file, not tailnmailrc or command line
         next if ! exists $opt{configfile}{$item};
         add_comments(uc $item);
-        if (ref $opt{$curr}{$item} eq 'ARRAY') {
-            for my $itemz (@{$opt{$curr}{$item}}) {
+        if (ref $opt{$item} eq 'ARRAY') {
+            for my $itemz (@{$opt{$item}}) {
                 next if ! exists $opt{configfile}{"$item.$itemz"};
                 printf "%s: %s\n", uc $item, $itemz;
             }
         }
         else {
-            printf "%s: %s\n", uc $item, $opt{$curr}{$item};
+            printf "%s: %s\n", uc $item, $opt{$item};
         }
     }
 
     if ($opt{configfile}{maxsize}) {
-        print "MAXSIZE: $opt{$curr}{maxsize}\n";
+        print "MAXSIZE: $opt{maxsize}\n";
     }
-    if ($opt{$curr}{customsubject}) {
+    if ($opt{customsubject}) {
         add_comments('MAILSUBJECT');
-        print "MAILSUBJECT: $opt{$curr}{mailsubject}\n";
+        print "MAILSUBJECT: $opt{mailsubject}\n";
     }
 
     print "\n";
     add_comments('FILE');
     for my $f (sort { $a->{suffix} <=> $b->{suffix} }
-               @{ $opt{$curr}{file} }) {
+               @{ $opt{file} }) {
 
         ## Skip inherited files
         next if exists $f->{inherited};
@@ -2728,21 +2725,21 @@ sub final_cleanup {
             printf "OFFSET%d: %d\n", $f->{suffix}, $f->{offset};
         }
     }
-    for my $inherit (@{$opt{$curr}{inherit}}) {
+    for my $inherit (@{$opt{inherit}}) {
         add_comments("INHERIT: $inherit");
         print "INHERIT: $inherit\n";
     }
-    for my $include (@{$opt{$curr}{include}}) {
+    for my $include (@{$opt{include}}) {
         next if ! exists $opt{configfile}{"include.$include"};
         add_comments("INCLUDE: $include");
         print "INCLUDE: $include\n";
     }
-    for my $exclude (@{$opt{$curr}{exclude}}) {
+    for my $exclude (@{$opt{exclude}}) {
         next if ! exists $opt{configfile}{"exclude.$exclude"};
         add_comments("EXCLUDE: $exclude");
         print "EXCLUDE: $exclude\n";
     }
-    for my $exclude_prefix (@{$opt{$curr}{exclude_prefix}}) {
+    for my $exclude_prefix (@{$opt{exclude_prefix}}) {
         next if ! exists $opt{configfile}{"exclude_prefix.$exclude_prefix"};
         add_comments("EXCLUDE_PREFIX: $exclude_prefix");
         print "EXCLUDE_PREFIX: $exclude_prefix\n";

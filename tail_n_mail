@@ -2704,6 +2704,27 @@ sub final_cleanup {
     }
 
     print "\n";
+    for my $inherit (@{$opt{inherit}}) {
+        add_comments("INHERIT: $inherit");
+        print "INHERIT: $inherit\n";
+    }
+    for my $include (@{$opt{include}}) {
+        next if ! exists $opt{configfile}{"include.$include"};
+        add_comments("INCLUDE: $include");
+        print "INCLUDE: $include\n";
+    }
+    for my $exclude (@{$opt{exclude}}) {
+        next if ! exists $opt{configfile}{"exclude.$exclude"};
+        add_comments("EXCLUDE: $exclude");
+        print "EXCLUDE: $exclude\n";
+    }
+    for my $exclude_prefix (@{$opt{exclude_prefix}}) {
+        next if ! exists $opt{configfile}{"exclude_prefix.$exclude_prefix"};
+        add_comments("EXCLUDE_PREFIX: $exclude_prefix");
+        print "EXCLUDE_PREFIX: $exclude_prefix\n";
+    }
+
+    print "\n";
     add_comments('FILE');
     for my $f (sort { $a->{suffix} <=> $b->{suffix} }
                @{ $opt{file} }) {
@@ -2724,25 +2745,6 @@ sub final_cleanup {
         elsif ($f->{offset}) {
             printf "OFFSET%d: %d\n", $f->{suffix}, $f->{offset};
         }
-    }
-    for my $inherit (@{$opt{inherit}}) {
-        add_comments("INHERIT: $inherit");
-        print "INHERIT: $inherit\n";
-    }
-    for my $include (@{$opt{include}}) {
-        next if ! exists $opt{configfile}{"include.$include"};
-        add_comments("INCLUDE: $include");
-        print "INCLUDE: $include\n";
-    }
-    for my $exclude (@{$opt{exclude}}) {
-        next if ! exists $opt{configfile}{"exclude.$exclude"};
-        add_comments("EXCLUDE: $exclude");
-        print "EXCLUDE: $exclude\n";
-    }
-    for my $exclude_prefix (@{$opt{exclude_prefix}}) {
-        next if ! exists $opt{configfile}{"exclude_prefix.$exclude_prefix"};
-        add_comments("EXCLUDE_PREFIX: $exclude_prefix");
-        print "EXCLUDE_PREFIX: $exclude_prefix\n";
     }
     print "\n";
 

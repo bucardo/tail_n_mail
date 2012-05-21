@@ -662,7 +662,10 @@ sub parse_config_file {
                         ## Add it to our local list both as final and original name
                         push @{ $localopt{file} } => {
                             name => $filename,
-                            original => $filename
+                            original => $filename,
+                            commandline => 1,
+                            lastfile => '',
+                            offset => 0,
                         };
                     }
 
@@ -797,6 +800,9 @@ sub parse_config_file {
         }
     }
     for my $file (@{ $localopt{file} }) {
+
+        ## No need to change anything if we forced via the command line
+        next if $file->{commandline};
 
         ## Only need to adjust 0s
         if (! $file->{suffix}) {

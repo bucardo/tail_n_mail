@@ -256,6 +256,7 @@ $llp =~ s/%u/[\\[\\w\\]]*/;
 $llp =~ s/%d/[\\[\\w\\]]*/;
 $llp =~ s/%r/\\S*/;
 $llp =~ s/%h/\\S*/;
+$llp =~ s/%a/\\S*/;
 
 if ($arg{pglog} eq 'syslog') {
     ## Syslog is a little more specific

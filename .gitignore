@@ -5,3 +5,4 @@ pg_log
 *.tnm
 nytprof*
 gregtest*
+*~

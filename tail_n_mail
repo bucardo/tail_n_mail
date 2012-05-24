@@ -1979,7 +1979,7 @@ sub process_report {
     push @header => "X-TNM-VERSION: $VERSION";
 
     ## Allow no specific email for dryruns
-    if (! @{$opt{email}}) {
+    if (! exists $opt{email} or ! @{$opt{email}}) {
         if ($arg{dryrun} or $arg{nomail}) {
             push @{$opt{email}} => 'dryrun@example.com'; ## no critic (RequireInterpolationOfMetachars)
         }

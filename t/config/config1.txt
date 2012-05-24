@@ -4,7 +4,6 @@
 ## Test config file #1
 EMAIL: someone@example.com
 MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
-MAILSIG: abc
 
 FILE: t/logs/testlog1.txt
 LASTFILE: t/logs/testlog1.txt

@@ -5,6 +5,13 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
 
+Version 1.26.0, released July 10, 2012
+
+* Added the 'sqlstate' argument, to handle cases where log_error_verbosity 
+  is set to verbose and the SQLSTATE codes show up. If enabled, codes 
+  after FATAL and ERROR will be stripped for easier regex matching.
+
+
 Version 1.25.2, released May 23, 2012
 
 * Fix bug that prevented the --file argument from working [GSM]

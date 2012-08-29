@@ -151,6 +151,8 @@ pgformat
 pgpidre
 regex
 regexes
+SQLSTATE
+sqlstate
 Stasic
 syslog
 sysread

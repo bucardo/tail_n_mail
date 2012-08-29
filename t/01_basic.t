@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 19;
+use Test::More tests => 25;
 
 use vars qw{ $info $t };
 
@@ -119,4 +119,30 @@ ERROR: column "dbdpg_throws_an_error" does not exist at character 8
 STATEMENT: SELECT dbdpg_throws_an_error
 \E}, $t);
 
+$info = run('t/config/config3.txt');
+$start = substr($info,0,300);
+$t = q{Test config 3 gives correct subject line};
+$host = qx{hostname};
+chomp $host;
+like ($start, qr{^Subject: Acme $host Postgres errors 3 : 5\n}, $t);
+
+$t = q{Test config 3 gives correct first item match};
+$start = substr($info,0,600);
+like ($start, qr{\n\Q[1] (between lines 236 and 238, occurs 2 times)}, $t);
+
+my $who = 'greg@space tower';
+$t = q{Test config 3 gives correct first item "First" timestamp};
+like ($start, qr{\n\QFirst: 2012-08-29 11:21:22.327 EDT [32343] $who\E\n}, $t);
+
+$t = q{Test config 3 gives correct first item "Last" timestamp};
+like ($start, qr{\n\QLast:  2012-08-29 11:21:22.328 EDT [32343] $who\E\n}, $t);
+
+$t = q{Test config 3 gives correct normalized output};
+like ($start, qr{\n\QERROR: syntax error at or near "?" at character ?
+STATEMENT: Testing the ShowErrorStatement attribute\E\n\-\n}, $t);
+
+$t = q{Test config 3 gives correct literal output};
+like ($start, qr{\n\-\nERROR: syntax error at or near "Testing" at character 1}, $t);
+
 exit;
+

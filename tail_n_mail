@@ -272,7 +272,7 @@ if ($arg{pglog} eq 'syslog') {
 }
 my $pgpidre = qr{^($llp)(.*)};
 
-$arg{verbose} and warn "  Log line prefix regex: $pgpidre\n";
+$arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex: $pgpidre\n";
 
 ## And a separate one for cluster-wide notices
 my $llp2 = $original_llp;
@@ -288,7 +288,7 @@ for my $char (qw/ u d r h i c l s v x/) {
 }
 my $pgpidre2 = qr{^$llp2};
 
-$arg{verbose} and warn "  Log line prefix regex2: $pgpidre2\n";
+$arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex2: $pgpidre2\n";
 
 ## And one more for things that throw out everything except the timestamp
 ## May not work on against all log_line_prefixes
@@ -303,7 +303,7 @@ $llp3 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w
 $llp3 =~ s/%\w//g;
 my $pgpidre3 = qr{^$llp3};
 
-$arg{verbose} and warn "  Log line prefix regex3: $pgpidre3\n";
+$arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex3: $pgpidre3\n";
 
 ## Keep track of changes to know if we need to rewrite the config file or not
 my $changes = 0;

@@ -2199,7 +2199,7 @@ sub process_report {
         close $efh or warn qq{Could not close $emailfile: $!\n};
 
         $arg{verbose} and warn "  Sending mail to: $emails\n";
-        my $COM = qq{$mailcom $emails < $emailfile};
+        my $COM = qq{$mailcom '$emails' < $emailfile};
         if ($arg{dryrun} or $arg{nomail}) {
             $arg{quiet} or warn "  DRYRUN: $COM\n";
         }

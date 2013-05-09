@@ -545,7 +545,7 @@ sub parse_rc_files {
     my $file;
     if (! $arg{'no-tailnmailrc'}) {
         if ($arg{tailnmailrc}) {
-            -e $arg{tailnmailrc} or die qq{Could not find the file "$arg{tailnmailrc}"\n};
+            -e $arg{tailnmailrc} or die "Could not find the file ", $arg{tailnmailrc}, "\n";
             $file = $arg{tailnmailrc};
         }
         elsif (-e '.tailnmailrc') {

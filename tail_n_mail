@@ -25,7 +25,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.26.1';
+our $VERSION = '1.26.2';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -598,6 +598,9 @@ sub parse_config_file {
     ## Temporarily store user comments until we know where to put them
     my (@comment);
 
+    ## Keep track of duplicate lines: ignore any but the first
+    my %seenit;
+
     ## Store locally so we can easily populate %opt at the end
     my %localopt;
 
@@ -622,13 +625,22 @@ sub parse_config_file {
             next;
         }
 
-        ## A non-comment after one or comments allows us to map them to each other
+        ## If the exact same line shows up more than once ignore it.
+        ## Failing to do so will confuse the comment hash
+        if (/^[\w]/ and $seenit{$_}++) {
+            warn "Duplicate entry will be ignored at line $.: $_\n";
+            next;
+        }
+
+        ## A non-comment after one or more comments allows us to map them to each other
         if (@comment and m{^([\w\_\-]+):}) {
-            chomp;
+            my $keyword = $1;
+            my $line = $_;
+            chomp $line;
             for my $c (@comment) {
                 ## We store as both the keyword and the entire line
-                push @{$itemcomment{$1}} => $c;
-                push @{$itemcomment{$_}} => $c;
+                push @{$itemcomment{$keyword}} => $c;
+                push @{$itemcomment{$line}} => $c;
             }
             ## Empty out our user comment queue
             undef @comment;

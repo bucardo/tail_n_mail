@@ -25,7 +25,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.26.3';
+our $VERSION = '1.26.4';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -1777,6 +1777,7 @@ sub process_line {
         $string =~ s{Failed on request of size \d+}{Failed on request of size ?}go;
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
         $string =~ s{(invalid input syntax for integer:) ".+?"}{$1: "?"}o;
+        $string =~ s{value ".+?" (is out of range for type)}{value "?" $1}o;
 
         ## Syntax error at a specific character
         $string =~ s{(syntax error at or near) "\w+" at character \d+}{$1 "?" at character ?}o;

@@ -1,0 +1,28 @@
+
+This file is to help developers of the tail_n_mail program.
+Additions are welcome!
+
+** RELEASE PROCESS **
+
+Quick notes on the current release process:
+
+* Increment the version number as needed: one place in the tail_n_mail file
+* Update the Changes file: add the latest version, put a release date, and adjust the spacing.
+* Generate a new tail_n_mail.asc file
+* Make sure everything is committed in git
+* Add a new tag: git tag -u 14964ac8 1.2.3 -m "Version 1.26.3, released September 24, 2013"
+* git push; git push --tags
+
+Login to the bucardo.org box, and then:
+
+* cd tmp/tail_n_mail; git pull
+* cp tail_n_mail * ~/www.downloads/
+* edit ~/www/tail_n_mail/latest_version.txt
+
+Update the wiki at http://bucardo.org/wiki/Tail_n_mail
+
+* Bump the version, plus any needed changes
+
+* Send an email to tnm-announce@bucardo.org. See previous emails for examples.
+
+

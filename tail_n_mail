@@ -255,8 +255,8 @@ if (!$havepid and $arg{pglog} ne 'syslog') {
     $llp = "()$llp";
 }
 $llp =~ s/%l/\\d+/;
-$llp =~ s/%u/[\\[\\w\\]]*/;
-$llp =~ s/%d/[\\[\\w\\]]*/;
+$llp =~ s/%u/[\\[\\w\\].]*/;
+$llp =~ s/%d/[\\[\\w\\].]*/;
 $llp =~ s/%r/\\S*/;
 $llp =~ s/%h/\\S*/;
 $llp =~ s/%a/\\S*/;

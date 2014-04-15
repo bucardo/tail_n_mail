@@ -310,7 +310,7 @@ $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex3: $pgpidre3\n";
 my $changes = 0;
 
 ## Global regex: may change per file
-my ($exclude, $include, $exclude_prefix);
+my ($exclude, $include, $exclude_prefix, $exclude_non_parsed);
 
 ## Note if we bumped into maxsize when trying to read a file
 my (%toolarge);
@@ -771,6 +771,10 @@ sub parse_config_file {
         elsif (/^EXCLUDE_PREFIX:\s*(.+?)\s*$/) {
             push @{$localopt{exclude_prefix}}, $1;
         }
+        ## Which lines to exclude from the report
+        elsif (/^EXCLUDE_NON_PARSED:\s*(.+?)\s*$/) {
+            push @{$localopt{exclude_non_parsed}}, $1;
+        }
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
             push @{$localopt{include}}, $1;
@@ -965,6 +969,10 @@ sub parse_inherit_file {
         ## Which prefix lines to exclude from the report
         elsif (/^EXCLUDE_PREFIX:\s*(.+?)\s*$/) {
             push @{$opt{exclude_prefix}}, $1;
+        }
+        ## Which lines to exclude from the report
+        elsif (/^EXCLUDE_NON_PARSED:\s*(.+?)\s*$/) {
+            push @{$opt{exclude_non_parsed}}, $1;
         }
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
@@ -1246,7 +1254,7 @@ sub parse_file {
     } ## end find_line_number
 
     ## Get exclusion and inclusion regexes for this file
-    ($exclude,$include,$exclude_prefix) = generate_regexes($filename);
+    ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
 
     ## Discard the previous line if needed (we rewound by 10 characters above)
     $original_offset and <$fh>;
@@ -1481,7 +1489,7 @@ sub generate_regexes {
 
     ## Currently, all files get the same regex, so we cache it
     if (exists $opt{globalexcluderegex}) {
-        return $opt{globalexcluderegex}, $opt{globalincluderegex}, $opt{globalexcludeprefixregex};
+        return $opt{globalexcluderegex}, $opt{globalincluderegex}, $opt{globalexcludeprefixregex}, $opt{globalexcludenonparsedregex};
 
     }
 
@@ -1494,6 +1502,16 @@ sub generate_regexes {
     }
     $lexclude =~ s/\|$//;
     $arg{verbose} and $lexclude and warn "  Exclusion: $lexclude\n";
+
+    ## Build an exclusion non-parsed regex
+    my $lexclude_non_parsed = '';
+    for my $ex (@{$opt{exclude_non_parsed}}) {
+        $arg{debug} and warn "  Adding exclusion_non_parsed: $ex\n";
+        my $regex = qr{$ex};
+        $lexclude_non_parsed .= "$regex|";
+    }
+    $lexclude_non_parsed =~ s/\|$//;
+    $arg{verbose} and $lexclude_non_parsed and warn "  Exclusion_non_parsed: $lexclude_non_parsed\n";
 
     ## Build a prefix exclusion regex
     my $lexclude_prefix = '';
@@ -1517,9 +1535,10 @@ sub generate_regexes {
 
     $opt{globalexcluderegex} = $lexclude;
     $opt{globalexcludeprefixregex} = $lexclude_prefix;
+    $opt{globalexcludenonparsedregex} = $lexclude_non_parsed;
     $opt{globalincluderegex} = $linclude;
 
-    return $lexclude, $linclude, $lexclude_prefix;
+    return $lexclude, $linclude, $lexclude_prefix, $lexclude_non_parsed;
 
 } ## end of generate_regexes
 
@@ -1566,6 +1585,10 @@ sub process_line {
     ## Special handling for forced checks, e.g. OS errors
     if (defined $forcematch) {
         $pgprefix = '?';
+
+        ## Bail if it matches the exclusion non-parsed regex
+        return 0 if $exclude_non_parsed and $string =~ $exclude_non_parsed;
+
         goto PGPREFIX;
     }
     ## A forced match skips both checks below
@@ -2756,6 +2779,11 @@ sub final_cleanup {
         next if ! exists $opt{configfile}{"exclude_prefix.$exclude_prefix"};
         add_comments("EXCLUDE_PREFIX: $exclude_prefix");
         print "EXCLUDE_PREFIX: $exclude_prefix\n";
+    }
+    for my $exclude_non_parsed (@{$opt{exclude_non_parsed}}) {
+        next if ! exists $opt{configfile}{"exclude_non_parsed.$exclude_non_parsed"};
+        add_comments("EXCLUDE_NON_PARSED: $exclude_non_parsed");
+        print "EXCLUDE_NON_PARSED: $exclude_non_parsed\n";
     }
 
     print "\n";

@@ -1,0 +1,48 @@
+2014-04-17 10:11:22.384 EDT [31988]:  [2-1] greg greg@[local] psql STATEMENT:  sle;
+2014-04-17 10:11:26.896 EDT [31988]:  [3-1] greg greg@[local] psql LOG:  statement: show log_statement;
+2014-04-17 10:11:26.932 EDT [31988]:  [4-1] greg greg@[local] psql LOG:  duration: 36.256 ms
+2014-04-17 10:11:30.252 EDT [31988]:  [5-1] greg greg@[local] psql LOG:  statement: select 123;
+2014-04-17 10:11:30.253 EDT [31988]:  [6-1] greg greg@[local] psql LOG:  duration: 0.606 ms
+2014-04-17 10:11:31.669 EDT [31988]:  [7-1] greg greg@[local] psql LOG:  statement: SELECT name FROM  (SELECT pg_catalog.lower(name) AS name FROM pg_catalog.pg_settings   WHERE context IN ('user', 'superuser')   UNION ALL SELECT 'constraints'   UNION ALL SELECT 'transaction'   UNION ALL SELECT 'session'   UNION ALL SELECT 'role'   UNION ALL SELECT 'tablespace'   UNION ALL SELECT 'all') ss  WHERE substring(name,1,5)='appli'
+	LIMIT 1000
+2014-04-17 10:11:31.909 EDT [31988]:  [8-1] greg greg@[local] psql LOG:  duration: 240.288 ms
+2014-04-17 10:11:37.373 EDT [31988]:  [9-1] greg greg@[local] psql LOG:  statement: set application_name = 'bobapp';
+2014-04-17 10:11:37.373 EDT [31988]:  [10-1] greg greg@[local] bobapp LOG:  duration: 0.346 ms
+2014-04-17 10:11:41.107 EDT [31988]:  [11-1] greg greg@[local] bobapp LOG:  statement: select 123;
+2014-04-17 10:11:41.107 EDT [31988]:  [12-1] greg greg@[local] bobapp LOG:  duration: 0.364 ms
+2014-04-17 10:11:42.261 EDT [31988]:  [13-1] greg greg@[local] bobapp ERROR:  syntax error at or near "being" at character 1
+2014-04-17 10:11:42.261 EDT [31988]:  [14-1] greg greg@[local] bobapp STATEMENT:  being;
+2014-04-17 10:11:44.403 EDT [31988]:  [15-1] greg greg@[local] bobapp LOG:  statement: begin;
+2014-04-17 10:11:44.403 EDT [31988]:  [16-1] greg greg@[local] bobapp LOG:  duration: 0.181 ms
+2014-04-17 10:11:47.706 EDT [31988]:  [17-1] greg greg@[local] bobapp LOG:  statement: SELECT n.nspname as "Schema",
+	  c.relname as "Name",
+	  CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' WHEN 'i' THEN 'index' WHEN 'S' THEN 'sequence' WHEN 's' THEN 'special' WHEN 'f' THEN 'foreign table' END as "Type",
+	  pg_catalog.pg_get_userbyid(c.relowner) as "Owner"
+	FROM pg_catalog.pg_class c
+	     LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+	WHERE c.relkind IN ('r','v','S','f','')
+	      AND n.nspname <> 'pg_catalog'
+	      AND n.nspname <> 'information_schema'
+	      AND n.nspname !~ '^pg_toast'
+	  AND pg_catalog.pg_table_is_visible(c.oid)
+	ORDER BY 1,2;
+2014-04-17 10:11:47.827 EDT [31988]:  [18-1] greg greg@[local] bobapp LOG:  duration: 121.751 ms
+2014-04-17 10:11:54.667 EDT [31988]:  [19-1] greg greg@[local] bobapp LOG:  statement: set application_name = 'bob spacey';
+2014-04-17 10:11:54.668 EDT [31988]:  [99-1] greg greg@[local] bob spacey ERROR:  syntax error at or near "being" at character 1
+2014-04-17 10:11:54.668 EDT [31988]:  [99-1] greg greg@[local] bob spacey STATEMENT:  being;
+2014-04-17 10:11:54.668 EDT [31988]:  [20-1] greg greg@[local] bob spacey LOG:  duration: 0.271 ms
+2014-04-17 10:11:55.880 EDT [31988]:  [21-1] greg greg@[local] bob spacey LOG:  statement: SELECT n.nspname as "Schema",
+	  c.relname as "Name",
+	  CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' WHEN 'i' THEN 'index' WHEN 'S' THEN 'sequence' WHEN 's' THEN 'special' WHEN 'f' THEN 'foreign table' END as "Type",
+	  pg_catalog.pg_get_userbyid(c.relowner) as "Owner"
+	FROM pg_catalog.pg_class c
+	     LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+	WHERE c.relkind IN ('r','v','S','f','')
+	      AND n.nspname <> 'pg_catalog'
+	      AND n.nspname <> 'information_schema'
+	      AND n.nspname !~ '^pg_toast'
+	  AND pg_catalog.pg_table_is_visible(c.oid)
+	ORDER BY 1,2;
+2014-04-17 10:11:55.882 EDT [31988]:  [22-1] greg greg@[local] bob spacey LOG:  duration: 1.748 ms
+2014-04-17 10:11:58.583 EDT [31988]:  [23-1] greg greg@[local] bob spacey LOG:  statement: select 1243;
+2014-04-17 10:11:58.583 EDT [31988]:  [24-1] greg greg@[local] bob spacey LOG:  duration: 0.322 ms

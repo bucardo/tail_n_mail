@@ -112,7 +112,7 @@ Version 1.19.3, released July 17, 2011
 
 Version 1.19.2, released July 7, 2011
 
-* Do not assume the host is log_line_prefix will always have a length [GSM]
+* Do not assume the host in log_line_prefix will always have a length [GSM]
 
 * More minor improvements to the SQL 'flattening' process [GSM]
 

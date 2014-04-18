@@ -130,7 +130,7 @@ $t = q{Test config 3 gives correct first item match};
 $start = substr($info,0,600);
 like ($start, qr{\n\Q[1] (between lines 236 and 238, occurs 2 times)}, $t);
 
-my $who = 'greg@space-tower';
+my $who = 'greg@space-tower.com';
 $t = q{Test config 3 gives correct first item "First" timestamp};
 like ($start, qr{\n\QFirst: 2012-08-29 11:21:22.327 EDT [32343] $who\E\n}, $t);
 

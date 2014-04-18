@@ -9,7 +9,12 @@ Version 1.26.4
 
 * More minor improvements to similar-error-code squashing [GSM]
 
-* Allow hyphens in user and database names. (Github issue #12) [Jan Urbański]
+* Allow dots in user and database names of log_line_prefix.
+  (Github issue #9) [Markus Zimmermann]
+
+* Allow hyphens in user and database names of log_line_prefix.
+  (Github issue #12) [Jan Urbański]
+
 
 
 Version 1.26.3, released September 24, 2013

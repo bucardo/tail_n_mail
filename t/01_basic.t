@@ -130,11 +130,7 @@ $t = q{Test config 3 gives correct first item match};
 $start = substr($info,0,600);
 like ($start, qr{\n\Q[1] (between lines 236 and 238, occurs 2 times)}, $t);
 
-TODO: {
-
-	local $TODO = 'No good way to handle spaces in log_line_prefix yet';
-
-my $who = 'greg@space tower';
+my $who = 'greg@space-tower';
 $t = q{Test config 3 gives correct first item "First" timestamp};
 like ($start, qr{\n\QFirst: 2012-08-29 11:21:22.327 EDT [32343] $who\E\n}, $t);
 
@@ -147,8 +143,6 @@ STATEMENT: Testing the ShowErrorStatement attribute\E\n\-\n}, $t);
 
 $t = q{Test config 3 gives correct literal output};
 like ($start, qr{\n\-\nERROR: syntax error at or near "Testing" at character 1}, $t);
-
-}
 
 $info = run('t/config/config4.txt');
 $start = substr($info,0,300);

@@ -7,42 +7,42 @@
 2012-08-29 11:21:21.176 EDT [32338] @ DEBUG:  transaction ID wrap limit is 2147485442, limited by database with OID 1
 2012-08-29 11:21:21.240 EDT [32336] @ LOG:  database system is ready to accept connections
 2012-08-29 11:21:21.240 EDT [32341] @ LOG:  autovacuum launcher started
-2012-08-29 11:21:21.751 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
-2012-08-29 11:21:21.751 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
-2012-08-29 11:21:21.751 EDT [32343] greg@space tower LOG:  statement: SET LC_MESSAGES = 'C'
-2012-08-29 11:21:21.751 EDT [32343] greg@space tower LOG:  statement: SELECT 'DBD::Pg ping test'
-2012-08-29 11:21:21.752 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.752 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test5'
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test4'
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_test3'
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_test2'
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.753 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test1'
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test'
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test_geom'
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence'
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_testsequence2'
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.754 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_testsequence3'
-2012-08-29 11:21:21.755 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:21.755 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
-2012-08-29 11:21:21.755 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:21.755 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
-2012-08-29 11:21:21.755 EDT [32343] greg@space tower LOG:  statement: CREATE SCHEMA dbd_pg_testschema
-2012-08-29 11:21:21.759 EDT [32343] greg@space tower LOG:  statement: SET search_path TO dbd_pg_testschema
-2012-08-29 11:21:21.759 EDT [32343] greg@space tower LOG:  statement: CREATE SEQUENCE dbd_pg_testsequence
-2012-08-29 11:21:21.774 EDT [32343] greg@space tower LOG:  statement: 
+2012-08-29 11:21:21.751 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
+2012-08-29 11:21:21.751 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
+2012-08-29 11:21:21.751 EDT [32343] greg@space-tower LOG:  statement: SET LC_MESSAGES = 'C'
+2012-08-29 11:21:21.751 EDT [32343] greg@space-tower LOG:  statement: SELECT 'DBD::Pg ping test'
+2012-08-29 11:21:21.752 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.752 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test5'
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test4'
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_test3'
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_test2'
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.753 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test1'
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test'
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test_geom'
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence'
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_testsequence2'
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.754 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_testsequence3'
+2012-08-29 11:21:21.755 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:21.755 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+2012-08-29 11:21:21.755 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:21.755 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
+2012-08-29 11:21:21.755 EDT [32343] greg@space-tower LOG:  statement: CREATE SCHEMA dbd_pg_testschema
+2012-08-29 11:21:21.759 EDT [32343] greg@space-tower LOG:  statement: SET search_path TO dbd_pg_testschema
+2012-08-29 11:21:21.759 EDT [32343] greg@space-tower LOG:  statement: CREATE SEQUENCE dbd_pg_testsequence
+2012-08-29 11:21:21.774 EDT [32343] greg@space-tower LOG:  statement: 
 	CREATE TABLE dbd_pg_test (
 	  id         integer not null primary key,
 	  lii        integer unique not null default nextval('dbd_pg_testsequence'),
@@ -59,54 +59,54 @@
 	  bytetest   bytea
 	)
 	
-2012-08-29 11:21:21.779 EDT [32343] greg@space tower DEBUG:  building index "pg_toast_16880_index" on table "pg_toast_16880"
-2012-08-29 11:21:21.820 EDT [32343] greg@space tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_pkey" for table "dbd_pg_test"
-2012-08-29 11:21:21.821 EDT [32343] greg@space tower DEBUG:  building index "dbd_pg_test_pkey" on table "dbd_pg_test"
-2012-08-29 11:21:21.874 EDT [32343] greg@space tower NOTICE:  CREATE TABLE / UNIQUE will create implicit index "dbd_pg_test_lii_key" for table "dbd_pg_test"
-2012-08-29 11:21:21.875 EDT [32343] greg@space tower DEBUG:  building index "dbd_pg_test_lii_key" on table "dbd_pg_test"
-2012-08-29 11:21:21.930 EDT [32343] greg@space tower LOG:  statement: COMMENT ON COLUMN dbd_pg_test.id IS 'Bob is your uncle'
-2012-08-29 11:21:21.945 EDT [32343] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:21.945 EDT [32343] greg@space tower LOG:  statement: DELETE FROM dbd_pg_test
-2012-08-29 11:21:21.945 EDT [32343] greg@space tower LOG:  statement: commit
-2012-08-29 11:21:21.950 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
-2012-08-29 11:21:21.951 EDT [32344] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
-2012-08-29 11:21:21.951 EDT [32344] greg@space tower LOG:  statement: SET LC_MESSAGES = 'C'
-2012-08-29 11:21:21.951 EDT [32344] greg@space tower LOG:  statement: SELECT 'DBD::Pg ping test'
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test5'
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test4'
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.952 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
-2012-08-29 11:21:21.953 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.953 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
-2012-08-29 11:21:21.953 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.953 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test1'
-2012-08-29 11:21:21.953 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.953 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test'
-2012-08-29 11:21:21.953 EDT [32344] greg@space tower LOG:  statement: DROP TABLE dbd_pg_testschema.dbd_pg_test
-2012-08-29 11:21:21.965 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.965 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test_geom'
-2012-08-29 11:21:21.965 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.965 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence'
-2012-08-29 11:21:21.966 EDT [32344] greg@space tower LOG:  statement: DROP SEQUENCE dbd_pg_testschema.dbd_pg_testsequence
-2012-08-29 11:21:21.975 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.975 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence2'
-2012-08-29 11:21:21.975 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:21.975 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence3'
-2012-08-29 11:21:21.976 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:21.976 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
-2012-08-29 11:21:21.976 EDT [32344] greg@space tower LOG:  statement: DROP SCHEMA dbd_pg_testschema CASCADE
-2012-08-29 11:21:21.986 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:21.986 EDT [32344] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
-2012-08-29 11:21:21.986 EDT [32344] greg@space tower LOG:  statement: CREATE SCHEMA dbd_pg_testschema
-2012-08-29 11:21:21.997 EDT [32344] greg@space tower LOG:  statement: SET search_path TO dbd_pg_testschema
-2012-08-29 11:21:21.997 EDT [32344] greg@space tower LOG:  statement: CREATE SEQUENCE dbd_pg_testsequence
-2012-08-29 11:21:22.008 EDT [32344] greg@space tower LOG:  statement: 
+2012-08-29 11:21:21.779 EDT [32343] greg@space-tower DEBUG:  building index "pg_toast_16880_index" on table "pg_toast_16880"
+2012-08-29 11:21:21.820 EDT [32343] greg@space-tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_pkey" for table "dbd_pg_test"
+2012-08-29 11:21:21.821 EDT [32343] greg@space-tower DEBUG:  building index "dbd_pg_test_pkey" on table "dbd_pg_test"
+2012-08-29 11:21:21.874 EDT [32343] greg@space-tower NOTICE:  CREATE TABLE / UNIQUE will create implicit index "dbd_pg_test_lii_key" for table "dbd_pg_test"
+2012-08-29 11:21:21.875 EDT [32343] greg@space-tower DEBUG:  building index "dbd_pg_test_lii_key" on table "dbd_pg_test"
+2012-08-29 11:21:21.930 EDT [32343] greg@space-tower LOG:  statement: COMMENT ON COLUMN dbd_pg_test.id IS 'Bob is your uncle'
+2012-08-29 11:21:21.945 EDT [32343] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:21.945 EDT [32343] greg@space-tower LOG:  statement: DELETE FROM dbd_pg_test
+2012-08-29 11:21:21.945 EDT [32343] greg@space-tower LOG:  statement: commit
+2012-08-29 11:21:21.950 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
+2012-08-29 11:21:21.951 EDT [32344] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
+2012-08-29 11:21:21.951 EDT [32344] greg@space-tower LOG:  statement: SET LC_MESSAGES = 'C'
+2012-08-29 11:21:21.951 EDT [32344] greg@space-tower LOG:  statement: SELECT 'DBD::Pg ping test'
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test5'
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test4'
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.952 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
+2012-08-29 11:21:21.953 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.953 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
+2012-08-29 11:21:21.953 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.953 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test1'
+2012-08-29 11:21:21.953 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.953 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test'
+2012-08-29 11:21:21.953 EDT [32344] greg@space-tower LOG:  statement: DROP TABLE dbd_pg_testschema.dbd_pg_test
+2012-08-29 11:21:21.965 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.965 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test_geom'
+2012-08-29 11:21:21.965 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.965 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence'
+2012-08-29 11:21:21.966 EDT [32344] greg@space-tower LOG:  statement: DROP SEQUENCE dbd_pg_testschema.dbd_pg_testsequence
+2012-08-29 11:21:21.975 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.975 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence2'
+2012-08-29 11:21:21.975 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:21.975 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence3'
+2012-08-29 11:21:21.976 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:21.976 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+2012-08-29 11:21:21.976 EDT [32344] greg@space-tower LOG:  statement: DROP SCHEMA dbd_pg_testschema CASCADE
+2012-08-29 11:21:21.986 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:21.986 EDT [32344] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
+2012-08-29 11:21:21.986 EDT [32344] greg@space-tower LOG:  statement: CREATE SCHEMA dbd_pg_testschema
+2012-08-29 11:21:21.997 EDT [32344] greg@space-tower LOG:  statement: SET search_path TO dbd_pg_testschema
+2012-08-29 11:21:21.997 EDT [32344] greg@space-tower LOG:  statement: CREATE SEQUENCE dbd_pg_testsequence
+2012-08-29 11:21:22.008 EDT [32344] greg@space-tower LOG:  statement: 
 	CREATE TABLE dbd_pg_test (
 	  id         integer not null primary key,
 	  lii        integer unique not null default nextval('dbd_pg_testsequence'),
@@ -123,180 +123,180 @@
 	  bytetest   bytea
 	)
 	
-2012-08-29 11:21:22.014 EDT [32344] greg@space tower DEBUG:  building index "pg_toast_16897_index" on table "pg_toast_16897"
-2012-08-29 11:21:22.067 EDT [32344] greg@space tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_pkey" for table "dbd_pg_test"
-2012-08-29 11:21:22.068 EDT [32344] greg@space tower DEBUG:  building index "dbd_pg_test_pkey" on table "dbd_pg_test"
-2012-08-29 11:21:22.120 EDT [32344] greg@space tower NOTICE:  CREATE TABLE / UNIQUE will create implicit index "dbd_pg_test_lii_key" for table "dbd_pg_test"
-2012-08-29 11:21:22.120 EDT [32344] greg@space tower DEBUG:  building index "dbd_pg_test_lii_key" on table "dbd_pg_test"
-2012-08-29 11:21:22.176 EDT [32344] greg@space tower LOG:  statement: COMMENT ON COLUMN dbd_pg_test.id IS 'Bob is your uncle'
-2012-08-29 11:21:22.187 EDT [32343] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.188 EDT [32343] greg@space tower LOG:  statement: INSERT INTO dbd_pg_test (id, pname, val) VALUES (1, 'Coconut', 'Mango')
-2012-08-29 11:21:22.190 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT COUNT(*) FROM dbd_pg_test WHERE id = 1
-2012-08-29 11:21:22.190 EDT [32344] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_4
-2012-08-29 11:21:22.191 EDT [32343] greg@space tower LOG:  statement: INSERT INTO dbd_pg_test (id, pname, val) VALUES (2, 'Grapefruit', 'Pomegranate')
-2012-08-29 11:21:22.193 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT COUNT(*) FROM dbd_pg_test WHERE id = 2
-2012-08-29 11:21:22.193 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_4
-2012-08-29 11:21:22.194 EDT [32343] greg@space tower LOG:  statement: commit
-2012-08-29 11:21:22.199 EDT [32344] greg@space tower LOG:  execute dbdpg_p32331_5: SELECT COUNT(*) FROM dbd_pg_test WHERE id = 1
-2012-08-29 11:21:22.199 EDT [32344] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_5
-2012-08-29 11:21:22.207 EDT [32343] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.208 EDT [32343] greg@space tower LOG:  statement: SET client_min_messages = 'NOTICE'
-2012-08-29 11:21:22.208 EDT [32343] greg@space tower LOG:  statement: CREATE TEMP TABLE dbd_pg_test_temp(id INT PRIMARY KEY)
-2012-08-29 11:21:22.209 EDT [32343] greg@space tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_temp_pkey" for table "dbd_pg_test_temp"
-2012-08-29 11:21:22.210 EDT [32343] greg@space tower DEBUG:  building index "dbd_pg_test_temp_pkey" on table "dbd_pg_test_temp"
-2012-08-29 11:21:22.212 EDT [32343] greg@space tower LOG:  statement: rollback
-2012-08-29 11:21:22.212 EDT [32343] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.212 EDT [32343] greg@space tower LOG:  statement: CREATE TEMP TABLE dbd_pg_test_temp(id INT PRIMARY KEY)
-2012-08-29 11:21:22.213 EDT [32343] greg@space tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_temp_pkey" for table "dbd_pg_test_temp"
-2012-08-29 11:21:22.214 EDT [32343] greg@space tower DEBUG:  building index "dbd_pg_test_temp_pkey" on table "dbd_pg_test_temp"
-2012-08-29 11:21:22.214 EDT [32343] greg@space tower LOG:  statement: rollback
-2012-08-29 11:21:22.216 EDT [32343] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.217 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_5: SELECT $1::bool
-2012-08-29 11:21:22.217 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 't'
-2012-08-29 11:21:22.217 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_5: SELECT $1::bool
-2012-08-29 11:21:22.217 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'f'
-2012-08-29 11:21:22.218 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_5: SELECT $1::bool
-2012-08-29 11:21:22.218 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 't'
-2012-08-29 11:21:22.218 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_5: SELECT $1::bool
-2012-08-29 11:21:22.218 EDT [32343] greg@space tower DETAIL:  parameters: $1 = 'f'
-2012-08-29 11:21:22.221 EDT [32343] greg@space tower LOG:  statement: SET standard_conforming_strings = on
-2012-08-29 11:21:22.221 EDT [32343] greg@space tower LOG:  statement: SET standard_conforming_strings = off
-2012-08-29 11:21:22.221 EDT [32343] greg@space tower LOG:  statement: SET standard_conforming_strings = on
-2012-08-29 11:21:22.222 EDT [32343] greg@space tower LOG:  statement: SHOW client_encoding
-2012-08-29 11:21:22.231 EDT [32343] greg@space tower LOG:  statement: SHOW server_encoding
-2012-08-29 11:21:22.231 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_5
-2012-08-29 11:21:22.232 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_6: SELECT id, pname FROM dbd_pg_test WHERE id = $1
-2012-08-29 11:21:22.232 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '1'
-2012-08-29 11:21:22.233 EDT [32343] greg@space tower LOG:  statement: INSERT INTO dbd_pg_test (id, pname, val) VALUES (40, 'Ādam', 'Orange')
-2012-08-29 11:21:22.234 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_6: SELECT id, pname FROM dbd_pg_test WHERE id = $1
-2012-08-29 11:21:22.234 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '40'
-2012-08-29 11:21:22.235 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_6: SELECT id, pname FROM dbd_pg_test WHERE id = $1
-2012-08-29 11:21:22.235 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '1'
-2012-08-29 11:21:22.236 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_6
-2012-08-29 11:21:22.240 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_7: SELECT 123 AS "Sheep", CAST(id AS float) FROM dbd_pg_test WHERE id=$1
-2012-08-29 11:21:22.240 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '12'
-2012-08-29 11:21:22.248 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_7
-2012-08-29 11:21:22.248 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_8: UPDATE dbd_pg_test SET id = 99 WHERE id = $1
-2012-08-29 11:21:22.248 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '1'
-2012-08-29 11:21:22.250 EDT [32343] greg@space tower LOG:  statement: UPDATE dbd_pg_test SET id = 1 WHERE id = 99
-2012-08-29 11:21:22.251 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_8
-2012-08-29 11:21:22.251 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_9: UPDATE dbd_pg_test SET id = 99 WHERE id = $1 RETURNING id, expo, "CaseTest"
-2012-08-29 11:21:22.251 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '1'
-2012-08-29 11:21:22.255 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=11
-2012-08-29 11:21:22.257 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=12
-2012-08-29 11:21:22.257 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=1
-2012-08-29 11:21:22.258 EDT [32343] greg@space tower LOG:  statement: UPDATE dbd_pg_test SET id = 1 WHERE id = 99
-2012-08-29 11:21:22.258 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_9
-2012-08-29 11:21:22.259 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_10: INSERT INTO dbd_pg_test(id) VALUES($1) RETURNING id, lii, expo, "CaseTest"
-2012-08-29 11:21:22.259 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '88'
-2012-08-29 11:21:22.262 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=11
-2012-08-29 11:21:22.263 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=12
-2012-08-29 11:21:22.263 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=2
-2012-08-29 11:21:22.263 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=1
-2012-08-29 11:21:22.264 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_10
-2012-08-29 11:21:22.264 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_11: DELETE FROM dbd_pg_test WHERE id = 88 RETURNING id, lii, expo, "CaseTest"
-2012-08-29 11:21:22.268 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=11
-2012-08-29 11:21:22.268 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=12
-2012-08-29 11:21:22.269 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=2
-2012-08-29 11:21:22.269 EDT [32343] greg@space tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=1
-2012-08-29 11:21:22.269 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_11
-2012-08-29 11:21:22.269 EDT [32343] greg@space tower LOG:  statement: SHOW random_page_cost
-2012-08-29 11:21:22.278 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_12: SELECT id FROM dbd_pg_test WHERE id=$1 AND val=$2 AND pname=$3
-2012-08-29 11:21:22.278 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '99', $2 = NULL, $3 = 'Sparky'
-2012-08-29 11:21:22.279 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_12
-2012-08-29 11:21:22.287 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_13: SELECT id FROM dbd_pg_test WHERE id=$1 AND val=$2 AND lii=$3
-2012-08-29 11:21:22.287 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '1', $2 = 'TMW', $3 = '3'
-2012-08-29 11:21:22.288 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_13
-2012-08-29 11:21:22.289 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_14: SELECT id, pname, val, score, Fixed, pdate, "CaseTest" FROM dbd_pg_test
-2012-08-29 11:21:22.290 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_14: SELECT id, pname, val, score, Fixed, pdate, "CaseTest" FROM dbd_pg_test
-2012-08-29 11:21:22.290 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_14
-2012-08-29 11:21:22.291 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_15: INSERT INTO dbd_pg_test (id, val) VALUES ($1, 'lemon')
-2012-08-29 11:21:22.291 EDT [32343] greg@space tower DETAIL:  parameters: $1 = '500'
-2012-08-29 11:21:22.291 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_15
-2012-08-29 11:21:22.291 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_16: INSERT INTO dbd_pg_test (id,val) VALUES (400, 'lime')
-2012-08-29 11:21:22.292 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_16
-2012-08-29 11:21:22.292 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_17: DELETE FROM dbd_pg_test WHERE id=1
-2012-08-29 11:21:22.293 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_17
-2012-08-29 11:21:22.293 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_18: UPDATE dbd_pg_test SET id=2 WHERE id=2
-2012-08-29 11:21:22.294 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_18
-2012-08-29 11:21:22.294 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_19: SELECT * FROM dbd_pg_test
-2012-08-29 11:21:22.295 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_19
-2012-08-29 11:21:22.296 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_20: SELECT 123 UNION SELECT 456
-2012-08-29 11:21:22.300 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_20
-2012-08-29 11:21:22.302 EDT [32345] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.302 EDT [32345] greg@space tower LOG:  execute dbdpg_p32331_1: SELECT 12345
-2012-08-29 11:21:22.305 EDT [32345] greg@space tower LOG:  statement: commit
-2012-08-29 11:21:22.306 EDT [32345] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.306 EDT [32345] greg@space tower LOG:  statement: SELECT 1234
-2012-08-29 11:21:22.307 EDT [32345] greg@space tower LOG:  statement: commit
-2012-08-29 11:21:22.309 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_21: SELECT 234
-2012-08-29 11:21:22.319 EDT [32343] greg@space tower LOG:  statement: SHOW client_min_messages
-2012-08-29 11:21:22.321 EDT [32343] greg@space tower LOG:  statement: rollback
-2012-08-29 11:21:22.327 EDT [32343] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.327 EDT [32343] greg@space tower ERROR:  syntax error at or near "Testing" at character 1
-2012-08-29 11:21:22.327 EDT [32343] greg@space tower STATEMENT:  Testing the ShowErrorStatement attribute
-2012-08-29 11:21:22.328 EDT [32343] greg@space tower ERROR:  syntax error at or near "Testing" at character 1
-2012-08-29 11:21:22.328 EDT [32343] greg@space tower STATEMENT:  Testing the ShowErrorStatement attribute
-2012-08-29 11:21:22.329 EDT [32343] greg@space tower ERROR:  current transaction is aborted, commands ignored until end of transaction block
-2012-08-29 11:21:22.329 EDT [32343] greg@space tower STATEMENT:  SELECT 'Another ShowErrorStatement Test' FROM pg_class WHERE relname = $1 AND reltuples = $2
-2012-08-29 11:21:22.329 EDT [32343] greg@space tower LOG:  statement: commit
-2012-08-29 11:21:22.330 EDT [32343] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.330 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_22: SELECT "CaseTest" FROM dbd_pg_test
-2012-08-29 11:21:22.331 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_22
-2012-08-29 11:21:22.331 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_23: SELECT "CaseTest" FROM dbd_pg_test
-2012-08-29 11:21:22.331 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_23
-2012-08-29 11:21:22.332 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_24: SELECT "CaseTest" FROM dbd_pg_test
-2012-08-29 11:21:22.332 EDT [32343] greg@space tower LOG:  statement: DELETE FROM dbd_pg_test
-2012-08-29 11:21:22.332 EDT [32343] greg@space tower LOG:  statement: INSERT INTO dbd_pg_test (id, fixed, val) VALUES (3, ' Fig', ' Raspberry ')
-2012-08-29 11:21:22.333 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_25: SELECT fixed FROM dbd_pg_test WHERE id = 3
-2012-08-29 11:21:22.333 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_25
-2012-08-29 11:21:22.334 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_26: SELECT val FROM dbd_pg_test WHERE id = 3
-2012-08-29 11:21:22.334 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_26
-2012-08-29 11:21:22.334 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_27: SELECT fixed FROM dbd_pg_test WHERE id = 3
-2012-08-29 11:21:22.334 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_27
-2012-08-29 11:21:22.335 EDT [32343] greg@space tower LOG:  execute dbdpg_p32331_28: SELECT val FROM dbd_pg_test WHERE id = 3
-2012-08-29 11:21:22.335 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_28
-2012-08-29 11:21:22.335 EDT [32343] greg@space tower LOG:  statement: DELETE from dbd_pg_test
-2012-08-29 11:21:22.338 EDT [32343] greg@space tower LOG:  statement: commit
-2012-08-29 11:21:22.350 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
-2012-08-29 11:21:22.350 EDT [32348] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
-2012-08-29 11:21:22.350 EDT [32348] greg@space tower LOG:  statement: SET LC_MESSAGES = 'C'
-2012-08-29 11:21:22.350 EDT [32348] greg@space tower LOG:  statement: SELECT 'DBD::Pg ping test'
-2012-08-29 11:21:22.351 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.351 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test5'
-2012-08-29 11:21:22.351 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.351 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test4'
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test1'
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test'
-2012-08-29 11:21:22.352 EDT [32348] greg@space tower LOG:  statement: DROP TABLE dbd_pg_testschema.dbd_pg_test
-2012-08-29 11:21:22.366 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.366 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test_geom'
-2012-08-29 11:21:22.367 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.367 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence'
-2012-08-29 11:21:22.367 EDT [32348] greg@space tower LOG:  statement: DROP SEQUENCE dbd_pg_testschema.dbd_pg_testsequence
-2012-08-29 11:21:22.376 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.376 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence2'
-2012-08-29 11:21:22.377 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:22.377 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence3'
-2012-08-29 11:21:22.377 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:22.377 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
-2012-08-29 11:21:22.378 EDT [32348] greg@space tower LOG:  statement: DROP SCHEMA dbd_pg_testschema CASCADE
-2012-08-29 11:21:22.387 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:22.387 EDT [32348] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
-2012-08-29 11:21:22.388 EDT [32348] greg@space tower LOG:  statement: CREATE SCHEMA dbd_pg_testschema
-2012-08-29 11:21:22.398 EDT [32348] greg@space tower LOG:  statement: SET search_path TO dbd_pg_testschema
-2012-08-29 11:21:22.398 EDT [32348] greg@space tower LOG:  statement: CREATE SEQUENCE dbd_pg_testsequence
-2012-08-29 11:21:22.409 EDT [32348] greg@space tower LOG:  statement: 
+2012-08-29 11:21:22.014 EDT [32344] greg@space-tower DEBUG:  building index "pg_toast_16897_index" on table "pg_toast_16897"
+2012-08-29 11:21:22.067 EDT [32344] greg@space-tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_pkey" for table "dbd_pg_test"
+2012-08-29 11:21:22.068 EDT [32344] greg@space-tower DEBUG:  building index "dbd_pg_test_pkey" on table "dbd_pg_test"
+2012-08-29 11:21:22.120 EDT [32344] greg@space-tower NOTICE:  CREATE TABLE / UNIQUE will create implicit index "dbd_pg_test_lii_key" for table "dbd_pg_test"
+2012-08-29 11:21:22.120 EDT [32344] greg@space-tower DEBUG:  building index "dbd_pg_test_lii_key" on table "dbd_pg_test"
+2012-08-29 11:21:22.176 EDT [32344] greg@space-tower LOG:  statement: COMMENT ON COLUMN dbd_pg_test.id IS 'Bob is your uncle'
+2012-08-29 11:21:22.187 EDT [32343] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.188 EDT [32343] greg@space-tower LOG:  statement: INSERT INTO dbd_pg_test (id, pname, val) VALUES (1, 'Coconut', 'Mango')
+2012-08-29 11:21:22.190 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT COUNT(*) FROM dbd_pg_test WHERE id = 1
+2012-08-29 11:21:22.190 EDT [32344] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_4
+2012-08-29 11:21:22.191 EDT [32343] greg@space-tower LOG:  statement: INSERT INTO dbd_pg_test (id, pname, val) VALUES (2, 'Grapefruit', 'Pomegranate')
+2012-08-29 11:21:22.193 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT COUNT(*) FROM dbd_pg_test WHERE id = 2
+2012-08-29 11:21:22.193 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_4
+2012-08-29 11:21:22.194 EDT [32343] greg@space-tower LOG:  statement: commit
+2012-08-29 11:21:22.199 EDT [32344] greg@space-tower LOG:  execute dbdpg_p32331_5: SELECT COUNT(*) FROM dbd_pg_test WHERE id = 1
+2012-08-29 11:21:22.199 EDT [32344] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_5
+2012-08-29 11:21:22.207 EDT [32343] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.208 EDT [32343] greg@space-tower LOG:  statement: SET client_min_messages = 'NOTICE'
+2012-08-29 11:21:22.208 EDT [32343] greg@space-tower LOG:  statement: CREATE TEMP TABLE dbd_pg_test_temp(id INT PRIMARY KEY)
+2012-08-29 11:21:22.209 EDT [32343] greg@space-tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_temp_pkey" for table "dbd_pg_test_temp"
+2012-08-29 11:21:22.210 EDT [32343] greg@space-tower DEBUG:  building index "dbd_pg_test_temp_pkey" on table "dbd_pg_test_temp"
+2012-08-29 11:21:22.212 EDT [32343] greg@space-tower LOG:  statement: rollback
+2012-08-29 11:21:22.212 EDT [32343] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.212 EDT [32343] greg@space-tower LOG:  statement: CREATE TEMP TABLE dbd_pg_test_temp(id INT PRIMARY KEY)
+2012-08-29 11:21:22.213 EDT [32343] greg@space-tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_temp_pkey" for table "dbd_pg_test_temp"
+2012-08-29 11:21:22.214 EDT [32343] greg@space-tower DEBUG:  building index "dbd_pg_test_temp_pkey" on table "dbd_pg_test_temp"
+2012-08-29 11:21:22.214 EDT [32343] greg@space-tower LOG:  statement: rollback
+2012-08-29 11:21:22.216 EDT [32343] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.217 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_5: SELECT $1::bool
+2012-08-29 11:21:22.217 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 't'
+2012-08-29 11:21:22.217 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_5: SELECT $1::bool
+2012-08-29 11:21:22.217 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'f'
+2012-08-29 11:21:22.218 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_5: SELECT $1::bool
+2012-08-29 11:21:22.218 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 't'
+2012-08-29 11:21:22.218 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_5: SELECT $1::bool
+2012-08-29 11:21:22.218 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = 'f'
+2012-08-29 11:21:22.221 EDT [32343] greg@space-tower LOG:  statement: SET standard_conforming_strings = on
+2012-08-29 11:21:22.221 EDT [32343] greg@space-tower LOG:  statement: SET standard_conforming_strings = off
+2012-08-29 11:21:22.221 EDT [32343] greg@space-tower LOG:  statement: SET standard_conforming_strings = on
+2012-08-29 11:21:22.222 EDT [32343] greg@space-tower LOG:  statement: SHOW client_encoding
+2012-08-29 11:21:22.231 EDT [32343] greg@space-tower LOG:  statement: SHOW server_encoding
+2012-08-29 11:21:22.231 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_5
+2012-08-29 11:21:22.232 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_6: SELECT id, pname FROM dbd_pg_test WHERE id = $1
+2012-08-29 11:21:22.232 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '1'
+2012-08-29 11:21:22.233 EDT [32343] greg@space-tower LOG:  statement: INSERT INTO dbd_pg_test (id, pname, val) VALUES (40, 'Ādam', 'Orange')
+2012-08-29 11:21:22.234 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_6: SELECT id, pname FROM dbd_pg_test WHERE id = $1
+2012-08-29 11:21:22.234 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '40'
+2012-08-29 11:21:22.235 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_6: SELECT id, pname FROM dbd_pg_test WHERE id = $1
+2012-08-29 11:21:22.235 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '1'
+2012-08-29 11:21:22.236 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_6
+2012-08-29 11:21:22.240 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_7: SELECT 123 AS "Sheep", CAST(id AS float) FROM dbd_pg_test WHERE id=$1
+2012-08-29 11:21:22.240 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '12'
+2012-08-29 11:21:22.248 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_7
+2012-08-29 11:21:22.248 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_8: UPDATE dbd_pg_test SET id = 99 WHERE id = $1
+2012-08-29 11:21:22.248 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '1'
+2012-08-29 11:21:22.250 EDT [32343] greg@space-tower LOG:  statement: UPDATE dbd_pg_test SET id = 1 WHERE id = 99
+2012-08-29 11:21:22.251 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_8
+2012-08-29 11:21:22.251 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_9: UPDATE dbd_pg_test SET id = 99 WHERE id = $1 RETURNING id, expo, "CaseTest"
+2012-08-29 11:21:22.251 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '1'
+2012-08-29 11:21:22.255 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=11
+2012-08-29 11:21:22.257 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=12
+2012-08-29 11:21:22.257 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=1
+2012-08-29 11:21:22.258 EDT [32343] greg@space-tower LOG:  statement: UPDATE dbd_pg_test SET id = 1 WHERE id = 99
+2012-08-29 11:21:22.258 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_9
+2012-08-29 11:21:22.259 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_10: INSERT INTO dbd_pg_test(id) VALUES($1) RETURNING id, lii, expo, "CaseTest"
+2012-08-29 11:21:22.259 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '88'
+2012-08-29 11:21:22.262 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=11
+2012-08-29 11:21:22.263 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=12
+2012-08-29 11:21:22.263 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=2
+2012-08-29 11:21:22.263 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=1
+2012-08-29 11:21:22.264 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_10
+2012-08-29 11:21:22.264 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_11: DELETE FROM dbd_pg_test WHERE id = 88 RETURNING id, lii, expo, "CaseTest"
+2012-08-29 11:21:22.268 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=11
+2012-08-29 11:21:22.268 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=12
+2012-08-29 11:21:22.269 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=2
+2012-08-29 11:21:22.269 EDT [32343] greg@space-tower LOG:  statement: SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid=16897 AND attnum=1
+2012-08-29 11:21:22.269 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_11
+2012-08-29 11:21:22.269 EDT [32343] greg@space-tower LOG:  statement: SHOW random_page_cost
+2012-08-29 11:21:22.278 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_12: SELECT id FROM dbd_pg_test WHERE id=$1 AND val=$2 AND pname=$3
+2012-08-29 11:21:22.278 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '99', $2 = NULL, $3 = 'Sparky'
+2012-08-29 11:21:22.279 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_12
+2012-08-29 11:21:22.287 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_13: SELECT id FROM dbd_pg_test WHERE id=$1 AND val=$2 AND lii=$3
+2012-08-29 11:21:22.287 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '1', $2 = 'TMW', $3 = '3'
+2012-08-29 11:21:22.288 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_13
+2012-08-29 11:21:22.289 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_14: SELECT id, pname, val, score, Fixed, pdate, "CaseTest" FROM dbd_pg_test
+2012-08-29 11:21:22.290 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_14: SELECT id, pname, val, score, Fixed, pdate, "CaseTest" FROM dbd_pg_test
+2012-08-29 11:21:22.290 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_14
+2012-08-29 11:21:22.291 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_15: INSERT INTO dbd_pg_test (id, val) VALUES ($1, 'lemon')
+2012-08-29 11:21:22.291 EDT [32343] greg@space-tower DETAIL:  parameters: $1 = '500'
+2012-08-29 11:21:22.291 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_15
+2012-08-29 11:21:22.291 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_16: INSERT INTO dbd_pg_test (id,val) VALUES (400, 'lime')
+2012-08-29 11:21:22.292 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_16
+2012-08-29 11:21:22.292 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_17: DELETE FROM dbd_pg_test WHERE id=1
+2012-08-29 11:21:22.293 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_17
+2012-08-29 11:21:22.293 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_18: UPDATE dbd_pg_test SET id=2 WHERE id=2
+2012-08-29 11:21:22.294 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_18
+2012-08-29 11:21:22.294 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_19: SELECT * FROM dbd_pg_test
+2012-08-29 11:21:22.295 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_19
+2012-08-29 11:21:22.296 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_20: SELECT 123 UNION SELECT 456
+2012-08-29 11:21:22.300 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_20
+2012-08-29 11:21:22.302 EDT [32345] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.302 EDT [32345] greg@space-tower LOG:  execute dbdpg_p32331_1: SELECT 12345
+2012-08-29 11:21:22.305 EDT [32345] greg@space-tower LOG:  statement: commit
+2012-08-29 11:21:22.306 EDT [32345] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.306 EDT [32345] greg@space-tower LOG:  statement: SELECT 1234
+2012-08-29 11:21:22.307 EDT [32345] greg@space-tower LOG:  statement: commit
+2012-08-29 11:21:22.309 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_21: SELECT 234
+2012-08-29 11:21:22.319 EDT [32343] greg@space-tower LOG:  statement: SHOW client_min_messages
+2012-08-29 11:21:22.321 EDT [32343] greg@space-tower LOG:  statement: rollback
+2012-08-29 11:21:22.327 EDT [32343] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.327 EDT [32343] greg@space-tower ERROR:  syntax error at or near "Testing" at character 1
+2012-08-29 11:21:22.327 EDT [32343] greg@space-tower STATEMENT:  Testing the ShowErrorStatement attribute
+2012-08-29 11:21:22.328 EDT [32343] greg@space-tower ERROR:  syntax error at or near "Testing" at character 1
+2012-08-29 11:21:22.328 EDT [32343] greg@space-tower STATEMENT:  Testing the ShowErrorStatement attribute
+2012-08-29 11:21:22.329 EDT [32343] greg@space-tower ERROR:  current transaction is aborted, commands ignored until end of transaction block
+2012-08-29 11:21:22.329 EDT [32343] greg@space-tower STATEMENT:  SELECT 'Another ShowErrorStatement Test' FROM pg_class WHERE relname = $1 AND reltuples = $2
+2012-08-29 11:21:22.329 EDT [32343] greg@space-tower LOG:  statement: commit
+2012-08-29 11:21:22.330 EDT [32343] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.330 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_22: SELECT "CaseTest" FROM dbd_pg_test
+2012-08-29 11:21:22.331 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_22
+2012-08-29 11:21:22.331 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_23: SELECT "CaseTest" FROM dbd_pg_test
+2012-08-29 11:21:22.331 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_23
+2012-08-29 11:21:22.332 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_24: SELECT "CaseTest" FROM dbd_pg_test
+2012-08-29 11:21:22.332 EDT [32343] greg@space-tower LOG:  statement: DELETE FROM dbd_pg_test
+2012-08-29 11:21:22.332 EDT [32343] greg@space-tower LOG:  statement: INSERT INTO dbd_pg_test (id, fixed, val) VALUES (3, ' Fig', ' Raspberry ')
+2012-08-29 11:21:22.333 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_25: SELECT fixed FROM dbd_pg_test WHERE id = 3
+2012-08-29 11:21:22.333 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_25
+2012-08-29 11:21:22.334 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_26: SELECT val FROM dbd_pg_test WHERE id = 3
+2012-08-29 11:21:22.334 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_26
+2012-08-29 11:21:22.334 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_27: SELECT fixed FROM dbd_pg_test WHERE id = 3
+2012-08-29 11:21:22.334 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_27
+2012-08-29 11:21:22.335 EDT [32343] greg@space-tower LOG:  execute dbdpg_p32331_28: SELECT val FROM dbd_pg_test WHERE id = 3
+2012-08-29 11:21:22.335 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_28
+2012-08-29 11:21:22.335 EDT [32343] greg@space-tower LOG:  statement: DELETE from dbd_pg_test
+2012-08-29 11:21:22.338 EDT [32343] greg@space-tower LOG:  statement: commit
+2012-08-29 11:21:22.350 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
+2012-08-29 11:21:22.350 EDT [32348] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
+2012-08-29 11:21:22.350 EDT [32348] greg@space-tower LOG:  statement: SET LC_MESSAGES = 'C'
+2012-08-29 11:21:22.350 EDT [32348] greg@space-tower LOG:  statement: SELECT 'DBD::Pg ping test'
+2012-08-29 11:21:22.351 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.351 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test5'
+2012-08-29 11:21:22.351 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.351 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test4'
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test1'
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test'
+2012-08-29 11:21:22.352 EDT [32348] greg@space-tower LOG:  statement: DROP TABLE dbd_pg_testschema.dbd_pg_test
+2012-08-29 11:21:22.366 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.366 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test_geom'
+2012-08-29 11:21:22.367 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.367 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence'
+2012-08-29 11:21:22.367 EDT [32348] greg@space-tower LOG:  statement: DROP SEQUENCE dbd_pg_testschema.dbd_pg_testsequence
+2012-08-29 11:21:22.376 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.376 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence2'
+2012-08-29 11:21:22.377 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:22.377 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence3'
+2012-08-29 11:21:22.377 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:22.377 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+2012-08-29 11:21:22.378 EDT [32348] greg@space-tower LOG:  statement: DROP SCHEMA dbd_pg_testschema CASCADE
+2012-08-29 11:21:22.387 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:22.387 EDT [32348] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
+2012-08-29 11:21:22.388 EDT [32348] greg@space-tower LOG:  statement: CREATE SCHEMA dbd_pg_testschema
+2012-08-29 11:21:22.398 EDT [32348] greg@space-tower LOG:  statement: SET search_path TO dbd_pg_testschema
+2012-08-29 11:21:22.398 EDT [32348] greg@space-tower LOG:  statement: CREATE SEQUENCE dbd_pg_testsequence
+2012-08-29 11:21:22.409 EDT [32348] greg@space-tower LOG:  statement: 
 	CREATE TABLE dbd_pg_test (
 	  id         integer not null primary key,
 	  lii        integer unique not null default nextval('dbd_pg_testsequence'),
@@ -313,94 +313,94 @@
 	  bytetest   bytea
 	)
 	
-2012-08-29 11:21:22.415 EDT [32348] greg@space tower DEBUG:  building index "pg_toast_16924_index" on table "pg_toast_16924"
-2012-08-29 11:21:22.461 EDT [32348] greg@space tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_pkey" for table "dbd_pg_test"
-2012-08-29 11:21:22.461 EDT [32348] greg@space tower DEBUG:  building index "dbd_pg_test_pkey" on table "dbd_pg_test"
-2012-08-29 11:21:22.495 EDT [32348] greg@space tower NOTICE:  CREATE TABLE / UNIQUE will create implicit index "dbd_pg_test_lii_key" for table "dbd_pg_test"
-2012-08-29 11:21:22.495 EDT [32348] greg@space tower DEBUG:  building index "dbd_pg_test_lii_key" on table "dbd_pg_test"
-2012-08-29 11:21:22.543 EDT [32348] greg@space tower LOG:  statement: COMMENT ON COLUMN dbd_pg_test.id IS 'Bob is your uncle'
-2012-08-29 11:21:22.555 EDT [32348] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.555 EDT [32348] greg@space tower LOG:  statement: set transaction read only
-2012-08-29 11:21:22.555 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 12345
-2012-08-29 11:21:22.555 EDT [32348] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_4
-2012-08-29 11:21:22.556 EDT [32348] greg@space tower LOG:  statement: INSERT INTO dbd_pg_test (id) VALUES (50)
-2012-08-29 11:21:22.556 EDT [32348] greg@space tower ERROR:  cannot execute INSERT in a read-only transaction
-2012-08-29 11:21:22.556 EDT [32348] greg@space tower STATEMENT:  INSERT INTO dbd_pg_test (id) VALUES (50)
-2012-08-29 11:21:22.557 EDT [32348] greg@space tower LOG:  statement: rollback
-2012-08-29 11:21:22.557 EDT [32343] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_24
-2012-08-29 11:21:22.558 EDT [32348] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.558 EDT [32348] greg@space tower LOG:  statement: set transaction read only
-2012-08-29 11:21:22.558 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_5: INSERT INTO dbd_pg_test (id) VALUES (50)
-2012-08-29 11:21:22.558 EDT [32348] greg@space tower ERROR:  cannot execute INSERT in a read-only transaction
-2012-08-29 11:21:22.558 EDT [32348] greg@space tower STATEMENT:  INSERT INTO dbd_pg_test (id) VALUES (50)
-2012-08-29 11:21:22.559 EDT [32348] greg@space tower LOG:  statement: rollback
-2012-08-29 11:21:22.559 EDT [32348] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.559 EDT [32348] greg@space tower LOG:  statement: INSERT INTO dbd_pg_test (id) VALUES (50)
-2012-08-29 11:21:22.560 EDT [32348] greg@space tower LOG:  statement: rollback
-2012-08-29 11:21:22.560 EDT [32348] greg@space tower LOG:  statement: begin
-2012-08-29 11:21:22.560 EDT [32348] greg@space tower LOG:  statement: INSERT INTO dbd_pg_test (id) VALUES (50)
-2012-08-29 11:21:22.561 EDT [32348] greg@space tower LOG:  statement: rollback
-2012-08-29 11:21:22.561 EDT [32348] greg@space tower LOG:  statement: INSERT INTO dbd_pg_test (id) VALUES (50)
-2012-08-29 11:21:22.566 EDT [32348] greg@space tower LOG:  statement: DELETE FROM dbd_pg_test WHERE id = 50
-2012-08-29 11:21:22.577 EDT [32348] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_5
-2012-08-29 11:21:22.577 EDT [32348] greg@space tower LOG:  execute dbdpg_p32331_6: INSERT INTO dbd_pg_test (id) VALUES (50)
-2012-08-29 11:21:22.599 EDT [32349] greg@space tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
-2012-08-29 11:21:22.600 EDT [32349] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
-2012-08-29 11:21:22.600 EDT [32349] greg@space tower LOG:  statement: SET LC_MESSAGES = 'C'
-2012-08-29 11:21:22.601 EDT [32349] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:22.601 EDT [32349] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
-2012-08-29 11:21:22.601 EDT [32349] greg@space tower LOG:  statement: SET search_path TO dbd_pg_testschema
-2012-08-29 11:21:22.602 EDT [32349] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
-2012-08-29 11:21:22.602 EDT [32349] greg@space tower DETAIL:  parameters: $1 = '1'
-2012-08-29 11:21:22.603 EDT [32349] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
-2012-08-29 11:21:22.603 EDT [32349] greg@space tower DETAIL:  parameters: $1 = '1'
-2012-08-29 11:21:22.706 EDT [32349] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_3
-2012-08-29 11:21:22.706 EDT [32349] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_2
-2012-08-29 11:21:22.914 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
-2012-08-29 11:21:22.914 EDT [32351] greg@space tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
-2012-08-29 11:21:22.914 EDT [32351] greg@space tower LOG:  statement: SET LC_MESSAGES = 'C'
-2012-08-29 11:21:22.914 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:22.914 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
-2012-08-29 11:21:22.914 EDT [32351] greg@space tower LOG:  statement: SET search_path TO dbd_pg_testschema
-2012-08-29 11:21:22.916 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
-2012-08-29 11:21:22.916 EDT [32351] greg@space tower DETAIL:  parameters: $1 = '1'
-2012-08-29 11:21:22.916 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
-2012-08-29 11:21:22.916 EDT [32351] greg@space tower DETAIL:  parameters: $1 = '1'
-2012-08-29 11:21:23.218 EDT [32351] greg@space tower LOG:  statement: SELECT 'DBD::Pg ping test'
-2012-08-29 11:21:23.218 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
-2012-08-29 11:21:23.218 EDT [32351] greg@space tower DETAIL:  parameters: $1 = '1'
-2012-08-29 11:21:23.219 EDT [32351] greg@space tower LOG:  statement: SELECT 'DBD::Pg ping test'
-2012-08-29 11:21:23.221 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.221 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test5'
-2012-08-29 11:21:23.221 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.221 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test4'
-2012-08-29 11:21:23.221 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.221 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
-2012-08-29 11:21:23.221 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.221 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
-2012-08-29 11:21:23.222 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.222 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
-2012-08-29 11:21:23.222 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.222 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
-2012-08-29 11:21:23.222 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.222 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test1'
-2012-08-29 11:21:23.222 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.222 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test'
-2012-08-29 11:21:23.223 EDT [32351] greg@space tower LOG:  statement: DROP TABLE dbd_pg_testschema.dbd_pg_test
-2012-08-29 11:21:23.244 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.244 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test_geom'
-2012-08-29 11:21:23.245 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.245 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence'
-2012-08-29 11:21:23.245 EDT [32351] greg@space tower LOG:  statement: DROP SEQUENCE dbd_pg_testschema.dbd_pg_testsequence
-2012-08-29 11:21:23.255 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.255 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence2'
-2012-08-29 11:21:23.255 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
-2012-08-29 11:21:23.255 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence3'
-2012-08-29 11:21:23.256 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:23.256 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
-2012-08-29 11:21:23.256 EDT [32351] greg@space tower LOG:  statement: DROP SCHEMA dbd_pg_testschema CASCADE
-2012-08-29 11:21:23.266 EDT [32351] greg@space tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
-2012-08-29 11:21:23.266 EDT [32351] greg@space tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
+2012-08-29 11:21:22.415 EDT [32348] greg@space-tower DEBUG:  building index "pg_toast_16924_index" on table "pg_toast_16924"
+2012-08-29 11:21:22.461 EDT [32348] greg@space-tower NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_pkey" for table "dbd_pg_test"
+2012-08-29 11:21:22.461 EDT [32348] greg@space-tower DEBUG:  building index "dbd_pg_test_pkey" on table "dbd_pg_test"
+2012-08-29 11:21:22.495 EDT [32348] greg@space-tower NOTICE:  CREATE TABLE / UNIQUE will create implicit index "dbd_pg_test_lii_key" for table "dbd_pg_test"
+2012-08-29 11:21:22.495 EDT [32348] greg@space-tower DEBUG:  building index "dbd_pg_test_lii_key" on table "dbd_pg_test"
+2012-08-29 11:21:22.543 EDT [32348] greg@space-tower LOG:  statement: COMMENT ON COLUMN dbd_pg_test.id IS 'Bob is your uncle'
+2012-08-29 11:21:22.555 EDT [32348] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.555 EDT [32348] greg@space-tower LOG:  statement: set transaction read only
+2012-08-29 11:21:22.555 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 12345
+2012-08-29 11:21:22.555 EDT [32348] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_4
+2012-08-29 11:21:22.556 EDT [32348] greg@space-tower LOG:  statement: INSERT INTO dbd_pg_test (id) VALUES (50)
+2012-08-29 11:21:22.556 EDT [32348] greg@space-tower ERROR:  cannot execute INSERT in a read-only transaction
+2012-08-29 11:21:22.556 EDT [32348] greg@space-tower STATEMENT:  INSERT INTO dbd_pg_test (id) VALUES (50)
+2012-08-29 11:21:22.557 EDT [32348] greg@space-tower LOG:  statement: rollback
+2012-08-29 11:21:22.557 EDT [32343] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_24
+2012-08-29 11:21:22.558 EDT [32348] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.558 EDT [32348] greg@space-tower LOG:  statement: set transaction read only
+2012-08-29 11:21:22.558 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_5: INSERT INTO dbd_pg_test (id) VALUES (50)
+2012-08-29 11:21:22.558 EDT [32348] greg@space-tower ERROR:  cannot execute INSERT in a read-only transaction
+2012-08-29 11:21:22.558 EDT [32348] greg@space-tower STATEMENT:  INSERT INTO dbd_pg_test (id) VALUES (50)
+2012-08-29 11:21:22.559 EDT [32348] greg@space-tower LOG:  statement: rollback
+2012-08-29 11:21:22.559 EDT [32348] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.559 EDT [32348] greg@space-tower LOG:  statement: INSERT INTO dbd_pg_test (id) VALUES (50)
+2012-08-29 11:21:22.560 EDT [32348] greg@space-tower LOG:  statement: rollback
+2012-08-29 11:21:22.560 EDT [32348] greg@space-tower LOG:  statement: begin
+2012-08-29 11:21:22.560 EDT [32348] greg@space-tower LOG:  statement: INSERT INTO dbd_pg_test (id) VALUES (50)
+2012-08-29 11:21:22.561 EDT [32348] greg@space-tower LOG:  statement: rollback
+2012-08-29 11:21:22.561 EDT [32348] greg@space-tower LOG:  statement: INSERT INTO dbd_pg_test (id) VALUES (50)
+2012-08-29 11:21:22.566 EDT [32348] greg@space-tower LOG:  statement: DELETE FROM dbd_pg_test WHERE id = 50
+2012-08-29 11:21:22.577 EDT [32348] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_5
+2012-08-29 11:21:22.577 EDT [32348] greg@space-tower LOG:  execute dbdpg_p32331_6: INSERT INTO dbd_pg_test (id) VALUES (50)
+2012-08-29 11:21:22.599 EDT [32349] greg@space-tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
+2012-08-29 11:21:22.600 EDT [32349] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
+2012-08-29 11:21:22.600 EDT [32349] greg@space-tower LOG:  statement: SET LC_MESSAGES = 'C'
+2012-08-29 11:21:22.601 EDT [32349] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:22.601 EDT [32349] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+2012-08-29 11:21:22.601 EDT [32349] greg@space-tower LOG:  statement: SET search_path TO dbd_pg_testschema
+2012-08-29 11:21:22.602 EDT [32349] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
+2012-08-29 11:21:22.602 EDT [32349] greg@space-tower DETAIL:  parameters: $1 = '1'
+2012-08-29 11:21:22.603 EDT [32349] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
+2012-08-29 11:21:22.603 EDT [32349] greg@space-tower DETAIL:  parameters: $1 = '1'
+2012-08-29 11:21:22.706 EDT [32349] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_3
+2012-08-29 11:21:22.706 EDT [32349] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_2
+2012-08-29 11:21:22.914 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_1: SELECT usesuper FROM pg_user WHERE usename = current_user
+2012-08-29 11:21:22.914 EDT [32351] greg@space-tower LOG:  statement: DEALLOCATE dbdpg_p32331_1
+2012-08-29 11:21:22.914 EDT [32351] greg@space-tower LOG:  statement: SET LC_MESSAGES = 'C'
+2012-08-29 11:21:22.914 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:22.914 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+2012-08-29 11:21:22.914 EDT [32351] greg@space-tower LOG:  statement: SET search_path TO dbd_pg_testschema
+2012-08-29 11:21:22.916 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
+2012-08-29 11:21:22.916 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = '1'
+2012-08-29 11:21:22.916 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
+2012-08-29 11:21:22.916 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = '1'
+2012-08-29 11:21:23.218 EDT [32351] greg@space-tower LOG:  statement: SELECT 'DBD::Pg ping test'
+2012-08-29 11:21:23.218 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_3: SELECT 42 FROM dbd_pg_test WHERE id > $1 LIMIT 1
+2012-08-29 11:21:23.218 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = '1'
+2012-08-29 11:21:23.219 EDT [32351] greg@space-tower LOG:  statement: SELECT 'DBD::Pg ping test'
+2012-08-29 11:21:23.221 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.221 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test5'
+2012-08-29 11:21:23.221 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.221 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test4'
+2012-08-29 11:21:23.221 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.221 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
+2012-08-29 11:21:23.221 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.221 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
+2012-08-29 11:21:23.222 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.222 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
+2012-08-29 11:21:23.222 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.222 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
+2012-08-29 11:21:23.222 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.222 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test1'
+2012-08-29 11:21:23.222 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.222 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test'
+2012-08-29 11:21:23.223 EDT [32351] greg@space-tower LOG:  statement: DROP TABLE dbd_pg_testschema.dbd_pg_test
+2012-08-29 11:21:23.244 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.244 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test_geom'
+2012-08-29 11:21:23.245 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.245 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence'
+2012-08-29 11:21:23.245 EDT [32351] greg@space-tower LOG:  statement: DROP SEQUENCE dbd_pg_testschema.dbd_pg_testsequence
+2012-08-29 11:21:23.255 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.255 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence2'
+2012-08-29 11:21:23.255 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_4: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2012-08-29 11:21:23.255 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence3'
+2012-08-29 11:21:23.256 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:23.256 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+2012-08-29 11:21:23.256 EDT [32351] greg@space-tower LOG:  statement: DROP SCHEMA dbd_pg_testschema CASCADE
+2012-08-29 11:21:23.266 EDT [32351] greg@space-tower LOG:  execute dbdpg_p32331_2: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2012-08-29 11:21:23.266 EDT [32351] greg@space-tower DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
 2012-08-29 11:22:21.319 EDT [32370] @ DEBUG:  autovacuum: processing database "postgres"
 2012-08-29 11:23:21.409 EDT [32382] @ DEBUG:  autovacuum: processing database "postgres"
 2012-08-29 11:24:21.430 EDT [32392] @ DEBUG:  autovacuum: processing database "postgres"

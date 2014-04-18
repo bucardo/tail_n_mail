@@ -5,9 +5,11 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 [ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
 
-Version 1.23.4
+Version 1.26.4
 
 * More minor improvements to similar-error-code squashing [GSM]
+
+* Allow hyphens in user and database names. (Github issue #12) [Jan Urbański]
 
 
 Version 1.26.3, released September 24, 2013

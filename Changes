@@ -2,12 +2,8 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-[ GSM is Greg Sabino Mullane <greg@endpoint.com> <greg@turnstep.com> ]
 
-
-Version 1.26.4
-
-* More minor improvements to similar-error-code squashing [GSM]
+Version 1.27.0
 
 * Allow dots in user and database names of log_line_prefix.
   (Github issue #9) [Markus Zimmermann]
@@ -15,22 +11,34 @@ Version 1.26.4
 * Allow hyphens in user and database names of log_line_prefix.
   (Github issue #12) [Jan Urbański]
 
+* Add new option EXCLUDE_NON_PARSED, so non-parsed lines (e.g. notices from 
+  the OS) can be excluded without the heavy hammer of skip_non_parsed.
+  (Github issue #15) [Stephen Frost]
+
+* Attempt to allow %q in log_line_prefix
+  [Greg Sabino Mullane]
+
+* More minor improvements to similar-error-code squashing
+  [Greg Sabino Mullane]
 
 
 Version 1.26.3, released September 24, 2013
 
-* Minor improvements to similar-error-code squashing [GSM]
+* Minor improvements to similar-error-code squashing
+  [Greg Sabino Mullane]
 
 
 Version 1.26.2, released September 3, 2013
 
 * Ignore duplicate config entries, as they can cause exponential 
-  comment growth, per bug #125. [GSM, reported by paulh@instructure.com]
+  comment growth, per bug #125.
+  [Greg Sabino Mullane, reported by paulh@instructure.com]
 
 
 Version 1.26.1, released August 29, 2012
 
-* Allow for spaces in the database name, per bug #110 [GSM]
+* Allow for spaces in the database name, per bug #110
+  [Greg Sabino Mullane]
 
 
 Version 1.26.0, released July 10, 2012
@@ -42,189 +50,235 @@ Version 1.26.0, released July 10, 2012
 
 Version 1.25.2, released May 23, 2012
 
-* Fix bug that prevented the --file argument from working [GSM]
+* Fix bug that prevented the --file argument from working
+  [Greg Sabino Mullane]
 
-* Handle new %a log_line_prefix escape, per bug #102 [GSM]
+* Handle new %a log_line_prefix escape, per bug #102
+  [Greg Sabino Mullane]
 
 
 Version 1.25.1, released May 12, 2012
 
-* Better spacing of the FILEx entries [GSM]
+* Better spacing of the FILEx entries
+  [Greg Sabino Mullane]
 
 
 Version 1.25.0, released April 30, 2012
 
-* Allow multiple FILE entries per configuration file! [GSM]
+* Allow multiple FILE entries per configuration file!
+  [Greg Sabino Mullane]
 
 
 Version 1.24.0, released March 19, 2012
 
-* Allow LOG_LINE_PREFIX in config files [Arsen Stasic]
+* Allow LOG_LINE_PREFIX in config files
+  [Arsen Stasic]
 
 * Handle cases in which something is in the middle of writing a 
-log file line, and thus it does not end with a newline. [GSM]
+  log file line, and thus it does not end with a newline.
+  [Greg Sabino Mullane]
 
 
 Version 1.23.0, released February 1, 2012
 
-* Add new EXCLUDE_PREFIX option [Bryan Montgomery]
+* Add new EXCLUDE_PREFIX option
+  [Bryan Montgomery]
 
-* Add mailsig option to append signatures from one or more files 
-  to the emailed reports. Per idea from D. Joseph Creighton
+* Add mailing option to append signatures from one or more files 
+  to the emailed reports.
+  [Greg Sabino Mullane, per idea from D. Joseph Creighton]
 
-* Fix error in prefix parsing. [GSM]
+* Fix error in prefix parsing.
+  [Greg Sabino Mullane]
 
 
 Version 1.22.1, released November 10, 2011
 
-* Add grand totals and better displays to tempfile output. [GSM]
+* Add grand totals and better displays to tempfile output.
+  [Greg Sabino Mullane]
 
 
 Version 1.21.1, released October 26, 2011
 
-* Show the total tempfile size per statement at top of page. [GSM]
+* Show the total tempfile size per statement at top of page.
+  [Greg Sabino Mullane]
 
 
 Version 1.21.0, released October 19, 2011
 
-* Added tempfile mode [GSM]
+* Added tempfile mode
+  [Greg Sabino Mullane]
 
-* Fixed a bug where non-existent files still reports 0 matches. [GSM]
+* Fixed a bug where non-existent files still reports 0 matches.
+  [Greg Sabino Mullane]
 
 
 Version 1.20.2, released August 31, 2011
 
-* Make the %r escape like %h [Keith Fiske]
+* Make the %r escape like %h
+  [Keith Fiske]
 
 
 Version 1.20.1, released August 26, 2011
 
-* Switch from sysread to read [David Christensen]
+* Switch from sysread to read
+  [David Christensen]
 
 
 Version 1.20.0, released July 21, 2011
 
-* Allow statement_size to be changed via config file [GSM]
+* Allow statement_size to be changed via config file
+  [Greg Sabino Mullane]
 
 
 Version 1.19.4, released July 18, 2011
 
-* Make sure we unlink the temporary file when done [GSM]
+* Make sure we unlink the temporary file when done
+  [Greg Sabino Mullane]
 
 
 Version 1.19.3, released July 17, 2011
 
-* Check for LOG: files with nothing but a leading timestamp [GSM]
+* Check for LOG: files with nothing but a leading timestamp
+  [Greg Sabino Mullane]
 
 
 Version 1.19.2, released July 7, 2011
 
-* Do not assume the host in log_line_prefix will always have a length [GSM]
+* Do not assume the host in log_line_prefix will always have a length
+  [Greg Sabino Mullane]
 
-* More minor improvements to the SQL 'flattening' process [GSM]
+* More minor improvements to the SQL 'flattening' process
+  [Greg Sabino Mullane]
 
 
 Version 1.19.1, released June 16, 2011
 
-* Minor improvements to the SQL 'flattening' process [GSM]
+* Minor improvements to the SQL 'flattening' process
+  [Greg Sabino Mullane]
 
 
 Version 1.19.0, released May 12, 2011
 
-* Allow log_line_prefix to be specified in include files. [GSM]
+* Allow log_line_prefix to be specified in include files.
+  [Greg Sabino Mullane]
 
-* Fix problem with --debug output. [GSM]
+* Fix problem with --debug output.
+  [Greg Sabino Mullane]
 
 
 Version 1.18.1, released April 15, 2011
 
-* Try harder to find inherited file, using the base of the config file [GSM]
+* Try harder to find inherited file, using the base of the config file
+  [Greg Sabino Mullane]
 
-* Allow large files to be chunked so as not to overload outgoing mail programs. [GSM]
+* Allow large files to be chunked so as not to overload outgoing mail programs.
+  [Greg Sabino Mullane]
 
-* Add 'skip_non_parsed' option, to ignore non-standard log lines. [GSM]
+* Add 'skip_non_parsed' option, to ignore non-standard log lines.
+  [Greg Sabino Mullane]
 
 
 Version 1.17.6, released March 17, 2011
 
 * Expand tildes to ENV{HOME} for the 'file' argument.
 
-* Make main regex .* not .+ to accommodate syslog entries better. [GSM]
+* Make main regex .* not .+ to accommodate syslog entries better.
+  [Greg Sabino Mullane]
 
 
 Version 1.17.5, released January 25, 2011
 
-* Added check for MAXSIZE setting in configuration file [Selena Deckelmann]
+* Added check for MAXSIZE setting in configuration file
+  [Selena Deckelmann]
 
-* Better flattening of single-quoted constants [GSM]
+* Better flattening of single-quoted constants
+  [Greg Sabino Mullane]
 
-* Added the 'hideflatten' argument (primarily for debugging) [GSM]
+* Added the 'hideflatten' argument (primarily for debugging)
+  [Greg Sabino Mullane]
 
 
 Version 1.17.4, released December 28, 2010
 
-* Added more tests. [GSM]
+* Added more tests.
+  [Greg Sabino Mullane]
 
-* Major fixes for CSV mode. [GSM]
+* Major fixes for CSV mode.
+  [Greg Sabino Mullane]
 
 
 Version 1.17.3, released December 21, 2010
 
-* Fixed non-functioning --file argument. [GSM]
+* Fixed non-functioning --file argument.
+  [Greg Sabino Mullane]
 
-* Better syslog matching: fixed error in prefix number detection. [GSM]
+* Better syslog matching: fixed error in prefix number detection.
+  [Greg Sabino Mullane]
 
-* Do not set a default log_line_prefix for syslog. [GSM]
+* Do not set a default log_line_prefix for syslog.
+  [Greg Sabino Mullane]
 
 
 Version 1.17.2, released November 12, 2010
 
-* Better flattening: ignore empty () and count(*) [GSM]
+* Better flattening: ignore empty () and count(*)
+  [Greg Sabino Mullane]
 
 * Handle all OS-generated entries as a match: allows catching of things 
-  like out of disk space errors when archiving. [GSM]
+  like out of disk space errors when archiving.
+  [Greg Sabino Mullane]
 
 
 Version 1.17.1, released November 11, 2010
 
-* Allow FILE, MAILSUBJECT, and DURATION_LIMIT inside of inherited config files. [GSM]
+* Allow FILE, MAILSUBJECT, and DURATION_LIMIT inside of inherited config files.
+  [Greg Sabino Mullane]
 
-* Various improvements to syslog output handling. [GSM]
+* Various improvements to syslog output handling.
+  [Greg Sabino Mullane]
 
-* Add 'nolastfile' argument for rare case of changing log_filename [GSM]
+* Add 'nolastfile' argument for rare case of changing log_filename
+  [Greg Sabino Mullane]
 
 
 Version 1.16.7, released September 30, 2010
 
-* Add QUERY to list of continuation key words. [GSM]
+* Add QUERY to list of continuation key words.
+  [Greg Sabino Mullane]
 
 
 Version 1.16.6, released September 29, 2010
 
-* Allow null and '[unknown]' for %u and %d in log_line_prefix. [GSM]
+* Allow null and '[unknown]' for %u and %d in log_line_prefix.
+  [Greg Sabino Mullane]
 
 
 Version 1.16.5, released September 17, 2010
 
-* Allow %c as a surrogate PID, cleanup the havetimestamp and havepid logic. [GSM]
+* Allow %c as a surrogate PID, cleanup the havetimestamp and havepid logic.
+  [Greg Sabino Mullane]
 
 
 Version 1.16.4, released September 16, 2010
 
-* Show generated pgpidre in verbose mode, other minor fixes. [GSM]
+* Show generated pgpidre in verbose mode, other minor fixes.
+  [Greg Sabino Mullane]
 
 
 Version 1.16.3, released August 11, 2010
 
-* Allow for four character time zones in header. [GSM]
-  Thanks to Johan for spotting this.
+* Allow for four character time zones in header.
+  [Greg Sabino Mullane, spotted by Johan]
 
-* Skip cluster-wide log entries (e.g. autovacuum) [GSM]
+* Skip cluster-wide log entries (e.g. autovacuum)
+  [Greg Sabino Mullane]
 
 
 Version 1.16.2 of tail_n_mail, released August 5, 2010
 
-* Strip opening whitespace so we can effectively anchor user regexes [GSM]
+* Strip opening whitespace so we can effectively anchor user regexes
+  [Greg Sabino Mullane]
 
 
 Version 1.16.1 of tail_n_mail, released August 5, 2010
@@ -249,35 +303,50 @@ Version 1.15.1 of tail_n_mail, released July 23, 2010
 
 Version 1.15.0 of tail_n_mail, released July 23, 2010
 
-* Remove the old pgformat system, parse a log_line_prefix variable instead. [GSM]
+* Remove the old pgformat system, parse a log_line_prefix variable instead.
+  [Greg Sabino Mullane]
 
-* Major rewrite of the regex code. Display the prefix better. [GSM]
+* Major rewrite of the regex code. Display the prefix better.
+  [Greg Sabino Mullane]
 
-* Show an example query when outputting flattened examples. [GSM]
+* Show an example query when outputting flattened examples.
+  [Greg Sabino Mullane]
 
-* Always show non-flattened version when a single item. [GSM]
+* Always show non-flattened version when a single item.
+  [Greg Sabino Mullane]
 
-* Make POSIX a requirement [GSM]
+* Make POSIX a requirement
+  [Greg Sabino Mullane]
 
-* Never flatten in duration mode. [GSM]
+* Never flatten in duration mode.
+  [Greg Sabino Mullane]
 
-* Show the timezone in the Date output [GSM]
+* Show the timezone in the Date output
+  [Greg Sabino Mullane]
 
-* Never offset when using a custom file [GSM]
+* Never offset when using a custom file
+  [Greg Sabino Mullane]
 
 
 Version 1.14.0 of tail_n_mail, not officially released
 
-* Change the name from tail_n_mail.pl to simply tail_n_mail [GSM]
+* Change the name from tail_n_mail.pl to simply tail_n_mail
+  [Greg Sabino Mullane]
 
-* Add new pgformat to support microsecond logging [GSM]
+* Add new pgformat to support microsecond logging
+  [Greg Sabino Mullane]
 
-* Add statement_size option (defaults to 1000 characters) [GSM]
+* Add statement_size option (defaults to 1000 characters)
+  [Greg Sabino Mullane]
 
-* Change the default subject line to have UNIQUE : NUMBER [GSM]
+* Change the default subject line to have UNIQUE : NUMBER
+  [Greg Sabino Mullane]
 
-* Make all numbers "pretty" [GSM]
+* Make all numbers "pretty"
+  [Greg Sabino Mullane]
 
 
 Version 1.13.0 of tail_n_mail, released June 26, 2010
+
+* Initial public release
 

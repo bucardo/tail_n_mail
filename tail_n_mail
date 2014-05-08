@@ -260,6 +260,7 @@ $llp =~ s/%d/[\\[\\w\\-\\.\\]]*/;
 $llp =~ s/%r/\\S*/;
 $llp =~ s/%h/\\S*/;
 $llp =~ s/%a/\\S*/;
+$llp =~ s/%e/[0-9A-Z]{5}/;
 $llp =~ s/%q//;
 
 if ($arg{pglog} eq 'syslog') {

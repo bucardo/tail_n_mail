@@ -862,6 +862,8 @@ sub parse_config_file {
             }
         }
         $opt{$k} = $localopt{$k};
+        ## Remove any double quotes around the whole thing, which allows whitespace in
+        $opt{$k} =~ s/^"(.+)"$/$1/;
     }
 
     if ($arg{debug}) {
@@ -2749,7 +2751,13 @@ sub final_cleanup {
             }
         }
         else {
-            printf "%s: %s\n", uc $item, $opt{$item};
+            ## If it has leading or trailing whitespace, quote it
+            if ($opt{$item} =~ /^\s/ or $opt{$item} =~ /\s$/) {
+                printf qq{%s: "%s"\n}, uc $item, $opt{$item};
+            }
+            else {
+                printf "%s: %s\n", uc $item, $opt{$item};
+            }
         }
     }
 

@@ -224,6 +224,12 @@ parse_config_file();
 ## Read in any inherited config files and merge their information in
 parse_inherited_files();
 
+## Allow whitespace in configurable items by wrapping in double quotes
+## Here, we remove them
+for my $k (keys %opt) {
+    $opt{$k} =~ s/^"(.+)"$/$1/;
+}
+
 ## Figure out the log_line_prefix, then create a regex for it
 my $default_llp = '%t [%p]';
 
@@ -566,6 +572,8 @@ sub parse_rc_files {
             next if /^\s*#/;
             next if ! /^\s*([\w\_\-]+)\s*[=:]\s*(.+?)\s*$/o;
             my ($name,$value) = (lc $1,$2);
+            ## Special case for leading and trailing whitespace
+            $value =~ s/^"(.+)"$/$1/;
             $opt{$name} = $value;
             $arg{$name} = $value;
             ## If we are disabled, simply exit quietly
@@ -862,8 +870,6 @@ sub parse_config_file {
             }
         }
         $opt{$k} = $localopt{$k};
-        ## Remove any double quotes around the whole thing, which allows whitespace in
-        $opt{$k} =~ s/^"(.+)"$/$1/;
     }
 
     if ($arg{debug}) {

@@ -404,7 +404,8 @@ my $fileinfo = $opt{file}[$filenumber];
 }
 
 ## We're done parsing the message, send an email if needed
-process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero};
+#process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero};
+invoke_process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero};
 final_cleanup();
 
 exit 0;
@@ -614,6 +615,8 @@ sub parse_config_file {
     ## Store locally so we can easily populate %opt at the end
     my %localopt;
 
+    my $mail; 			# variable to keep the email for each section, parse from EMAIL: (mailid)
+    my %seen_mailid; 		# to avoid duplicate (mailid + entry)  
     open my $c, '<', $configfile or die qq{Could not open "$configfile": $!\n};
     $arg{debug} and warn qq{Opened config file "$configfile"\n};
     while (<$c>) {
@@ -629,6 +632,8 @@ sub parse_config_file {
             $in_standard_comments = 0;
         }
 
+        $mail = $1 if (/^EMAIL: (.+)/); # parsing mailid whenever we read a new section
+
         ## Found a user comment; store it away until we have context for it
         if (/^\s*#/) {
             push @comment => $_;
@@ -637,7 +642,8 @@ sub parse_config_file {
 
         ## If the exact same line shows up more than once ignore it.
         ## Failing to do so will confuse the comment hash
-        if (/^[\w]/ and $seenit{$_}++) {
+        $seen_mailid{$mail}++ if $mail;
+        if (/^[\w]/ and $seenit{$_}++ and !$seen_mailid{$mail}++) {
             warn "Duplicate entry will be ignored at line $.: $_\n";
             next;
         }
@@ -718,7 +724,11 @@ sub parse_config_file {
         }
         ## Who to send emails to for this file
         elsif (/^EMAIL:\s*(.+?)\s*$/) {
-            push @{$localopt{email}}, $1;
+        #    push @{$localopt{email}}, $1;
+                my $m = $1;
+            $localopt{email_hash}{$m} = {};
+                @{$localopt{include}} = ();
+                @{$localopt{exclude}} = ();
         }
         ## Who to send emails from
         elsif (/^FROM:\s*(.+?)\s*$/) {
@@ -774,7 +784,8 @@ sub parse_config_file {
         }
         ## Which lines to exclude from the report
         elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
-            push @{$localopt{exclude}}, $1;
+            #push @{$localopt{exclude}}, $1;
+            push @{$localopt{email_hash}{$mail}->{exclude}}, $1 if $mail;		# global exclude --> mailid based exclude
         }
         ## Which prefix lines to exclude from the report
         elsif (/^EXCLUDE_PREFIX:\s*(.+?)\s*$/) {
@@ -786,7 +797,8 @@ sub parse_config_file {
         }
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
-            push @{$localopt{include}}, $1;
+            #push @{$localopt{include}}, $1;
+            push @{$localopt{email_hash}{$mail}->{include}}, $1 if $mail;		# global include --> mailid based include
         }
         ## The current offset into a file
         elsif (/^OFFSET(\d*):\s*(\d+)/) {
@@ -1981,6 +1993,22 @@ sub process_line {
 
 } ## end of process_line
 
+# Invoke_process_report
+# invoking process_report subroutine for each sections separately
+# ie: looping through email_hash and get each emailids and corresponding includes and excludes,
+# make a call to the original process_report after overriding global include/exclude with mailid specific include/exclude
+sub invoke_process_report {
+        foreach my $e(keys %{$opt{email_hash}}) {
+
+                @{$opt{include}} = @{$opt{email_hash}{$e}->{include}};
+                @{$opt{exclude}} = @{$opt{email_hash}{$e}->{exclude}};
+
+                $opt{email} = [];
+                push @{$opt{email}}, split(/,/,$e);
+                process_report();
+        }
+        return;
+}
 
 sub process_report {
 
@@ -2034,6 +2062,9 @@ sub process_report {
 
     ## Some minor help with debugging
     push @header => "X-TNM-VERSION: $VERSION";
+
+use Data::Dumper;
+print Dumper \%opt;
 
     ## Allow no specific email for dryruns
     if (! exists $opt{email} or ! @{$opt{email}}) {
@@ -2248,12 +2279,14 @@ sub process_report {
 
         $arg{verbose} and warn "  Sending mail to: $emails\n";
         my $COM = qq{$mailcom '$emails' < $emailfile};
+#	`cat  $emailfile >> /tmp/oo.txt`;
         if ($arg{dryrun} or $arg{nomail}) {
             $arg{quiet} or warn "  DRYRUN: $COM\n";
         }
         else {
             my $mailmode = $opt{mailmode} || $arg{mailmode};
             if ($arg{mailmode} eq 'sendmail') {
+                print "Sending mail (system cmd: $COM)\n";
                 system $COM;
             }
             elsif ($arg{mailmode} eq 'smtp') {
@@ -2414,10 +2447,10 @@ sub lines_of_interest {
                     || ($a->{line} <=> $b->{line});
         }
         elsif ($sorttype eq 'count') {
-            return ($b->{count} <=> $a->{count})
-                    || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
-                    || ($a->{line} <=> $b->{line});
-        }
+                    return ($b->{count} cmp $a->{count})
+                            || ($fileorder{$a->{filename}} cmp $fileorder{$b->{filename}})
+                            || ($a->{line} cmp $b->{line});
+                }
         elsif ($sorttype eq 'date') {
             return ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
                 || ($a->{line} <=> $b->{line});
@@ -2780,16 +2813,29 @@ sub final_cleanup {
         add_comments("INHERIT: $inherit");
         print "INHERIT: $inherit\n";
     }
-    for my $include (@{$opt{include}}) {
-        next if ! exists $opt{configfile}{"include.$include"};
-        add_comments("INCLUDE: $include");
-        print "INCLUDE: $include\n";
+
+    for my $m (keys %{$opt{email_hash}}) {
+        add_comments("EMAIL: $m");
+        print "\nEMAIL: $m\n";
+        for my $include (@{$opt{email_hash}->{$m}->{include}}) {
+                add_comments("INCLUDE: $include");
+                print "INCLUDE: $include\n";
+        }
+        for my $exclude (@{$opt{email_hash}->{$m}->{exclude}}) {
+                add_comments("EXCLUDE: $exclude");
+                print "EXCLUDE: $exclude\n";
+        }
     }
-    for my $exclude (@{$opt{exclude}}) {
-        next if ! exists $opt{configfile}{"exclude.$exclude"};
-        add_comments("EXCLUDE: $exclude");
-        print "EXCLUDE: $exclude\n";
-    }
+#    for my $include (@{$opt{include}}) {
+#        next if ! exists $opt{configfile}{"include.$include"};
+#        add_comments("INCLUDE: $include");
+#        print "INCLUDE: $include\n";
+#    }
+#    for my $exclude (@{$opt{exclude}}) {
+#        next if ! exists $opt{configfile}{"exclude.$exclude"};
+#        add_comments("EXCLUDE: $exclude");
+#        print "EXCLUDE: $exclude\n";
+#    }
     for my $exclude_prefix (@{$opt{exclude_prefix}}) {
         next if ! exists $opt{configfile}{"exclude_prefix.$exclude_prefix"};
         add_comments("EXCLUDE_PREFIX: $exclude_prefix");

@@ -217,10 +217,49 @@ chomp $hostname;
 ## Global option variables
 my (%opt, %itemcomment);
 
+my $default_llp = '%t [%p]';
+my $llp = $arg{log_line_prefix}
+    || $opt{log_line_prefix}
+    ||($arg{pglog} eq 'syslog' ? '' : $default_llp);
+$llp =~ s{^'(.+)'$}{$1};
+my $original_llp = $llp;
+my ($havetime,$havepid) = (0,0);
+my $pgpidre;
+## And a separate one for cluster-wide notices
+my $llp2;
+
+my $pgpidre2;
+## And one more for things that throw out everything except the timestamp
+## May not work on against all log_line_prefixes
+my $llp3;
+
+my $pgpidre3;
+
+
+my $changes = 0;
+my ($exclude, $include, $exclude_prefix, $exclude_non_parsed);
+my (%toolarge);
+my %find;
+my %similar;
+my %fab;
+my $rotatedfile = 0;
+my $multifile = 0;
+my (%fileorder, $filenum);
+my ($string,$time,$csv);
+my @files_parsed;
+
+my @emails = `grep ^EMAIL: $configfile`;		## To Identify EMIALs from Config file
+my %opt_last;
+my @changes_per_email;
+
+## Loop to fetch emails  
+foreach my $m(@emails) {
+        $m =~ s/EMAIL: //;
+	chomp($m);
 ## Read in any rc files
 parse_rc_files();
 ## Read in and parse the config file
-parse_config_file();
+parse_config_file($m);			## parsing email to this subroutine
 ## Read in any inherited config files and merge their information in
 parse_inherited_files();
 
@@ -229,25 +268,6 @@ parse_inherited_files();
 for my $k (keys %opt) {
     $opt{$k} =~ s/^"(.+)"$/$1/;
 }
-
-## Figure out the log_line_prefix, then create a regex for it
-my $default_llp = '%t [%p]';
-
-my $llp = $arg{log_line_prefix}
-    || $opt{log_line_prefix}
-    ||($arg{pglog} eq 'syslog' ? '' : $default_llp);
-
-## Remove any quotes around it
-$llp =~ s{^'(.+)'$}{$1};
-
-## Save a copy for later on
-my $original_llp = $llp;
-
-## Process the log_line_prefix and change it into a regex
-my ($havetime,$havepid) = (0,0);
-
-## Escape certain things that may confuse the regex parser
-$llp =~ s/([\-\[\]\(\)])/\\$1/g;
 
 ## This assumes timestamp comes before the pid!
 $llp =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?)/ and $havetime=1;
@@ -278,8 +298,7 @@ if ($arg{pglog} eq 'syslog') {
     $llp = "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\-\\d+\\] $llp";
     $havetime = $havepid = 1;
 }
-my $pgpidre = qr{^($llp)(.*)};
-
+$pgpidre = qr{^($llp)(.*)};
 $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex: $pgpidre\n";
 
 ## And a separate one for cluster-wide notices
@@ -294,13 +313,14 @@ $llp2 =~ s/%p/\\d+/;
 for my $char (qw/ u d r h i c l s v x/) {
     $llp2 =~ s/%$char//g;
 }
-my $pgpidre2 = qr{^$llp2};
+$pgpidre2 = qr{^$llp2};
+#my $pgpidre2 = qr{^$llp2};
 
 $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex2: $pgpidre2\n";
 
 ## And one more for things that throw out everything except the timestamp
 ## May not work on against all log_line_prefixes
-my $llp3 = $original_llp;
+$llp3 = $original_llp;
 
 ## Strip out everything past the first setting
 $llp3 =~ s/(.*?%\w).+/$1/;
@@ -309,42 +329,15 @@ $llp3 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?/;
 $llp3 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?/;
 ## Remove any other escapes
 $llp3 =~ s/%\w//g;
-my $pgpidre3 = qr{^$llp3};
+$pgpidre3 = qr{^$llp3};
 
 $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex3: $pgpidre3\n";
 
 ## Keep track of changes to know if we need to rewrite the config file or not
-my $changes = 0;
-
-## Global regex: may change per file
-my ($exclude, $include, $exclude_prefix, $exclude_non_parsed);
-
-## Note if we bumped into maxsize when trying to read a file
-my (%toolarge);
-
-# Actual matching strings are stored here
-my %find;
-
-## Keep track of which entries are similar to the ones we've seen before for possible flattening
-my %similar;
-
-## Map filenames to "A", "B", etc. for clean output of multiple matches
-my %fab;
-
-## Are we viewing the older version of the file because it was rotated?
-my $rotatedfile = 0;
-
-## Did we handle more than one file this round?
-my $multifile = 0;
+$changes = 0;
 
 ## Total matches across all files
 $opt{grand_total} = 0;
-
-## For help in sorting later on
-my (%fileorder, $filenum);
-
-## Generic globals
-my ($string,$time,$csv);
 
 ## If they requested no lastfile, remove it now
 if ($arg{nolastfile}) {
@@ -370,7 +363,6 @@ if (defined $arg{mailsig}->[0]) {
 
 ## Parse each file returned by pick_log_file until we start looping
 my $last_logfile = '';
-my @files_parsed;
 my $filenumber = 0;
 my $fileinfo = $opt{file}[$filenumber];
 
@@ -403,8 +395,15 @@ my $fileinfo = $opt{file}[$filenumber];
     redo;
 }
 
+## Preserving Include/Exclude for each EMAIL entry and keeps them in changes_per_email as an array
+## This will later be used in final_cleanup while recreating the config file with the include/exclude entries for its corresponding emails
+push @changes_per_email, { "$m" => {"include" => \@{$opt{include}}, "exclude" => \@{$opt{exclude}}}};
 ## We're done parsing the message, send an email if needed
 process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero};
+%opt_last = %opt;			## Stores the current parsed Include/Exclude with its EMAIL
+%opt = ();				## Nullifing opt for next run
+}
+%opt = %opt_last;			##  opt_last now contains the previously parsed Include/Exclude with its EMAIL
 final_cleanup();
 
 exit 0;
@@ -599,6 +598,7 @@ sub parse_rc_files {
 
 
 sub parse_config_file {
+        my $mail = shift;		
 
     ## Read in a configuration file and populate the global %opt
 
@@ -610,6 +610,8 @@ sub parse_config_file {
 
     ## Keep track of duplicate lines: ignore any but the first
     my %seenit;
+        my $mail_seen;
+        my $next_mail;
 
     ## Store locally so we can easily populate %opt at the end
     my %localopt;
@@ -634,6 +636,19 @@ sub parse_config_file {
             push @comment => $_;
             next;
         }
+
+	## Logic to parse everything concerned to the Key $mail (passed as a param to this subroutine)
+	## Only need INCLUDE/EXCLUDE lines which lies between the current $mail entry and its next $mail entry (this applies only for INCLUDE and EXCLUDE entries)
+	## Rest of the lines are common for every $mail
+        $next_mail++ if (/^EMAIL:\s/ and  $mail_seen);
+	next if (/^EMAIL:/ and $mail_seen);
+        $mail_seen++ if (/^EMAIL:\s$mail/);
+	next if (/^EMAIL:/ and !$mail_seen);
+
+        next if (!$mail_seen and  /^INCLUDE/);
+        next if (!$mail_seen and  /^EXCLUDE/);
+        next if ($next_mail and  /^INCLUDE/);
+        next if ($next_mail and  /^EXCLUDE/);
 
         ## If the exact same line shows up more than once ignore it.
         ## Failing to do so will confuse the comment hash
@@ -2034,7 +2049,6 @@ sub process_report {
 
     ## Some minor help with debugging
     push @header => "X-TNM-VERSION: $VERSION";
-
     ## Allow no specific email for dryruns
     if (! exists $opt{email} or ! @{$opt{email}}) {
         if ($arg{dryrun} or $arg{nomail}) {
@@ -2248,6 +2262,7 @@ sub process_report {
 
         $arg{verbose} and warn "  Sending mail to: $emails\n";
         my $COM = qq{$mailcom '$emails' < $emailfile};
+`cat $emailfile >> /tmp/oo.txt`;
         if ($arg{dryrun} or $arg{nomail}) {
             $arg{quiet} or warn "  DRYRUN: $COM\n";
         }
@@ -2738,7 +2753,8 @@ sub final_cleanup {
 ## Last updated: $now
 };
 
-    for my $item (qw/ log_line_prefix email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
+    #for my $item (qw/ log_line_prefix email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
+    for my $item (qw/ log_line_prefix from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
         next if ! exists $opt{$item};
 
         next if $item eq 'duration' and $arg{duration} < 0;
@@ -2780,16 +2796,36 @@ sub final_cleanup {
         add_comments("INHERIT: $inherit");
         print "INHERIT: $inherit\n";
     }
-    for my $include (@{$opt{include}}) {
-        next if ! exists $opt{configfile}{"include.$include"};
-        add_comments("INCLUDE: $include");
-        print "INCLUDE: $include\n";
-    }
-    for my $exclude (@{$opt{exclude}}) {
-        next if ! exists $opt{configfile}{"exclude.$exclude"};
-        add_comments("EXCLUDE: $exclude");
-        print "EXCLUDE: $exclude\n";
-    }
+
+	## Looping through the array changes_per_email to re-write the config for all email with its corresponding include/exlude
+	if (scalar(@changes_per_email)) {
+ 		foreach (0 .. $#changes_per_email) {
+			my $href = $changes_per_email[$_];
+			my ($m) = keys %$href;
+			print "EMAIL: $m\n";
+			foreach my $e(@{$href->{$m}->{include}}) {
+				print "INCLUDE: $e\n";
+			}
+
+			foreach my $e(@{$href->{$m}->{exclude}}) {
+				print "EXCLUDE: $e\n";
+			}
+ 			print "\n";
+ 		}
+	}
+
+#    printf "%s: %s\n", uc "email", $opt{email};
+#    for my $include (@{$opt{include}}) {
+#        next if ! exists $opt{configfile}{"include.$include"};
+#        add_comments("INCLUDE: $include");
+#        print "INCLUDE: $include\n";
+#    }
+#    for my $exclude (@{$opt{exclude}}) {
+#        next if ! exists $opt{configfile}{"exclude.$exclude"};
+#        add_comments("EXCLUDE: $exclude");
+#        print "EXCLUDE: $exclude\n";
+#    }
+
     for my $exclude_prefix (@{$opt{exclude_prefix}}) {
         next if ! exists $opt{configfile}{"exclude_prefix.$exclude_prefix"};
         add_comments("EXCLUDE_PREFIX: $exclude_prefix");
@@ -2906,6 +2942,6 @@ EMAIL: someone@example.com
 MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
 
 FILE: /var/log/postgres-%Y-%m-%d.log
-INCLUDE: ERROR:  
-INCLUDE: FATAL:  
-INCLUDE: PANIC:  
+INCLUDE: ERROR:
+INCLUDE: FATAL:
+INCLUDE: PANIC:

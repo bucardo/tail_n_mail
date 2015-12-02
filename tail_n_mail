@@ -1850,7 +1850,6 @@ sub process_line {
         if ($string =~ /deadlock detected/i) {
             $string =~ s{\b([Pp]rocess) \d+}{$1 ?}go;
             $string =~ s{ transaction \d+;}{ transaction ?;}go;
-#Process 26751 waits for ShareLock on transaction 1485201107; blocked by process 26753. Process 26753 waits for ShareLock on transaction 1485201108;
         }
 
     } ## end of flatten

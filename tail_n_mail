@@ -104,7 +104,7 @@ my %arg = (
               mailsig          => [],
 ## Perform some final prettification of queries
               pretty_query     => 1,
-## Handling of cancelled autovacuum entries. 0=normal, 1=summary at end, 2=ignore completely
+## Handling of canceled autovacuum entries. 0=normal, 1=summary at end, 2=ignore completely
               canceled_autovac => 1,
 ## Set the minimum number of matching duration entries that we care about
               duration_limit   => 0,
@@ -1845,6 +1845,13 @@ sub process_line {
 
         ## Timestamps as values
         $string =~ s{\s*=\s*'\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d\.\d\d\d\d\d\d'}{=?}go;
+
+        ## Deadlocks - don't worry about process ids to help flattening
+        if ($string =~ /deadlock detected/i) {
+            $string =~ s{\b([Pp]rocess) \d+}{$1 ?}go;
+            $string =~ s{ transaction \d+;}{ transaction ?;}go;
+#Process 26751 waits for ShareLock on transaction 1485201107; blocked by process 26753. Process 26753 waits for ShareLock on transaction 1485201108;
+        }
 
     } ## end of flatten
 

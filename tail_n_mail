@@ -25,7 +25,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.27.0';
+our $VERSION = '1.28.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -104,6 +104,8 @@ my %arg = (
               mailsig          => [],
 ## Perform some final prettification of queries
               pretty_query     => 1,
+## Handling of cancelled autovacuum entries. 0=normal, 1=summary at end, 2=ignore completely
+              canceled_autovac => 1,
 ## Set the minimum number of matching duration entries that we care about
               duration_limit   => 0,
 ## Set the minimum number of matching tempfile entries that we care about
@@ -165,6 +167,7 @@ my $result = GetOptions
    'tsepnosub',
    'nolastfile',
    'pretty_query',
+   'canceled_autovac=i',
    'duration_limit=i',
    'tempfile_limit=i',
    'statement_size=i',
@@ -327,6 +330,9 @@ my %find;
 
 ## Keep track of which entries are similar to the ones we've seen before for possible flattening
 my %similar;
+
+## Things that do not fit smoothly into the above categories
+my %fancyoutput;
 
 ## Map filenames to "A", "B", etc. for clean output of multiple matches
 my %fab;
@@ -1924,6 +1930,14 @@ sub process_line {
 
     } ## end of tempfile mode
 
+    if ($arg{'canceled_autovac'}) {
+        if ($string =~ /^\s*ERROR:\s+canceling autovacuum task\s*CONTEXT: automatic vacuum of table (.+)/) {
+            if (1 == $arg{'canceled_autovac'}) {
+                $fancyoutput{'canceled_autovac'}{$1}++;
+            }
+            return 1;
+        }
+    }
 
   PGPREFIX:
     ## If we have a prefix, check for similar entries
@@ -2236,6 +2250,24 @@ sub process_report {
             print {$efh} $_;
             next if ! $stop_point;
             last if tell $bigfh >= $stop_point;
+        }
+
+        ## Add any fancy output
+        for my $fotype (sort keys %fancyoutput) {
+            if ('canceled_autovac' eq $fotype) {
+                print {$efh} "Number of times autovacuum was cancelled:\n";
+                my $max_table_length = 1;
+                for my $tablename (keys %{$fancyoutput{$fotype}}) {
+                    $max_table_length = length $tablename if length $tablename > $max_table_length;
+                }
+                for my $tablename (sort { 
+                    $fancyoutput{$fotype}{$b} <=> $fancyoutput{$fotype}{$a}
+                        or $a cmp $b
+                    } keys %{$fancyoutput{$fotype}}) {
+                    printf {$efh} "%-*s : %d\n", $max_table_length, $tablename, $fancyoutput{$fotype}{$tablename};
+                }
+                print {$efh} "\n\n";
+            }
         }
 
         ## If we have a signature, add it

@@ -16,6 +16,7 @@
 ## Run: perl tail_n_mail tail_n_mail.config
 ## Once working, put the above into a cron job
 
+use 5.10.1;
 use strict;
 use warnings;
 use Data::Dumper   qw( Dumper              );
@@ -1310,7 +1311,19 @@ sub parse_file {
         my $lastline = '';
         my $syslognum = 0; ## used by syslog only
         my $bailout = 0; ## emergency bail out in case we end up sleep seeking
+
+	my $processed = 1;
+	my $prev_line = '';
+
       LOGLINE: while (<$fh>) {
+
+# DEBUG!
+	    if(! $processed ) {
+		$count += process_line($prev_line, $. + $newlines, $filename);
+	    }
+	    $processed = 0;			
+	    $prev_line = $_;
+# !DEBUG
 
             ## We ran into a truncated line last time, so we are most likely done
             last if $bailout;
@@ -1354,6 +1367,9 @@ sub parse_file {
                             if ($syslognum and $syslognum != $pgnum) {
                                 ## Got a new statement, so process the old
                                 $count += process_line(delete $pidline{$pgpid}, 0, $filename);
+# DEBUG!
+				$processed++;
+# !DEBUG
                             }
                         }
                         else {
@@ -1366,6 +1382,9 @@ sub parse_file {
                                 ## Process the old one
                                 ## Delete it so it gets recreated afresh below
                                 $count += process_line(delete $pidline{$pgpid}, 0, $filename);
+# DEBUG!
+				$processed++;
+# !DEBUG
                             }
                         }
                     }
@@ -1433,6 +1452,9 @@ sub parse_file {
                     ## Simply parse it right away, force it to match
                     if (! $arg{skip_non_parsed}) {
                         $count += process_line($_, $. + $newlines, $filename, 1);
+# DEBUG!
+			$processed--;
+# !DEBUG
                     }
                 }
 
@@ -1443,6 +1465,9 @@ sub parse_file {
 
             ## Just a bare entry, so process it right away
             $count += process_line($_, $. + $newlines, $filename);
+# DEBUG!
+	    $processed++;
+# !DEBUG
 
         } ## end of each line in the file
 

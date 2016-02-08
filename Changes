@@ -2,6 +2,22 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
+Version 1.28.0
+
+* Better flattening of "deadlock detected" and duplicate key detail strings
+  [Greg Sabino Mullane]
+
+* Add new "canceled_autovac" option to summarize those noisy events
+  [Greg Sabino Mullane]
+
+* Teach about %e in log_line_prefix
+  [Greg Sabino Mullane]
+
+* Better whitespace handling
+  [Greg Sabino Mullane]
+
+* Walk backwards 60 days max, not 30, when trying to find last restart point.
+  [Greg Sabino Mullane]
 
 Version 1.27.0, released April 18, 2014 (commit 493418bc95f878cf2de2349082c5fe3abc214c5e)
 

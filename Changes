@@ -7,6 +7,14 @@ Version 1.29.0, released August 10, 2017
 * Add new pglog argument, syslog2, to account for syslogs that use [\d+] instead of [\d+\-\d+]
   [Greg Sabino Mullane]
 
+* Add 'statement_size' to items we rewrite in config file
+  (Github issue #20)
+  [Greg Sabino Mullane]
+
+* Make the escaping of regex metacharacters happen earlier on
+  [Greg Sabino Mullane]
+
+
 Version 1.28.0, released February 8, 2016
 
 * Better flattening of "deadlock detected" and duplicate key detail strings

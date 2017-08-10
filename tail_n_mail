@@ -25,7 +25,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.28.0';
+our $VERSION = '1.29.0';
 
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
@@ -64,7 +64,7 @@ my %arg = (
               mailport         => 465,
 ## Are we parsing Postgres logs?
               pgmode           => 1,
-## What type of Postgres log we are parsing. Can be log, csv, or syslog
+## What type of Postgres log we are parsing. Can be log, csv, or syslog/syslog2
               pglog            => 'pg',
 ## What is Postgres's log_line_prefix
               log_line_prefix  => '',
@@ -238,7 +238,7 @@ my $default_llp = '%t [%p]';
 
 my $llp = $arg{log_line_prefix}
     || $opt{log_line_prefix}
-    ||($arg{pglog} eq 'syslog' ? '' : $default_llp);
+    ||($arg{pglog} =~ /syslog/ ? '' : $default_llp);
 
 ## Remove any quotes around it
 $llp =~ s{^'(.+)'$}{$1};
@@ -255,12 +255,12 @@ $llp =~ s/([\-\[\]\(\)])/\\$1/g;
 ## This assumes timestamp comes before the pid!
 $llp =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?)/ and $havetime=1;
 $llp =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?)/ and $havetime=1;
-if (!$havetime and $arg{pglog} ne 'syslog') {
+if (!$havetime and $arg{pglog} !~ /syslog/) {
     $llp = "()$llp";
 }
 $llp =~ s/%p/(\\d+)/ and $havepid = 1;
 $llp =~ s/%c/(\\S+)/ and $havepid = 1;
-if (!$havepid and $arg{pglog} ne 'syslog') {
+if (!$havepid and $arg{pglog} !~ /syslog/) {
     $llp = "()$llp";
 }
 $llp =~ s/%l/\\d+/;
@@ -272,13 +272,15 @@ $llp =~ s/%a/\\S*/;
 $llp =~ s/%e/[0-9A-Z]{5}/;
 $llp =~ s/%q//;
 
-if ($arg{pglog} eq 'syslog') {
+if ($arg{pglog} =~ /syslog/) {
     ## Syslog is a little more specific
     ## It's not standard, but usually standard 'enough' to build a working regex
     ## Add in timestamp, host, process name, pid, and number
     ## This will probably break if your log_line_prefix has a timestamp,
     ## but why would you do that if using syslog? :)
-    $llp = "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\-\\d+\\] $llp";
+    $llp = $arg{pglog} eq 'syslog'
+      ? "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\-\\d+\\] $llp"
+        : "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\] $llp";
     $havetime = $havepid = 1;
 }
 my $pgpidre = qr{^($llp)(.*)};
@@ -1346,18 +1348,17 @@ sub parse_file {
                     ($pgprefix,$pgts,$pgpid,$pgnum) = ($1, $2||'', $3||1, 1);
 
                     $pgprefix =~ s/\s+$//o;
-                    if ($arg{pglog} eq 'syslog') {
-                        if ($pgprefix =~ /\[(\d+)\-\d+/) {
+                    if ($arg{pglog} =~ /syslog/) {
+                        if ($pgprefix =~ /: \[(\d+)/) {
                             $pgnum = $1;
                         }
                     }
-
                     $lastpid = $pgpid;
 
                     ## Have we seen this PID before?
                     if (exists $pidline{$pgpid}) {
-                        if ($arg{pglog} eq 'syslog') {
-                            if ($syslognum and $syslognum != $pgnum) {
+                        if ($arg{pglog} =~ /syslog/) {
+                            if ($arg{pglog} eq 'syslog' and $syslognum and $syslognum != $pgnum) {
                                 ## Got a new statement, so process the old
                                 $count += process_line(delete $pidline{$pgpid}, 0, $filename);
                             }
@@ -1376,7 +1377,7 @@ sub parse_file {
                         }
                     }
 
-                    if ($arg{pglog} eq 'syslog') {
+                    if ($arg{pglog} =~ /syslog/) {
                         $syslognum = $pgnum;
                         ## Increment our arbitrary internal number
                         $current_pid_num{$pgpid} ||= 0;

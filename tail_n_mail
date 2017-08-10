@@ -2777,7 +2777,7 @@ sub final_cleanup {
 ## Last updated: $now
 };
 
-    for my $item (qw/ log_line_prefix email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit/) {
+    for my $item (qw/ log_line_prefix email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit statement_size /) {
         next if ! exists $opt{$item};
 
         next if $item eq 'duration' and $arg{duration} < 0;

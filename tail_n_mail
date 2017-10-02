@@ -780,7 +780,7 @@ sub parse_config_file {
         }
         ## What type of Postgres log file
         elsif (/^PGLOG:\s*(\w+)/) {
-            push @{$localopt{pglog}}, $1;
+            $localopt{pglog} = $1;
         }
         ## Any inheritance files to look at
         elsif (/^INHERIT:\s*(.+)/) {

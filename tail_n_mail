@@ -562,7 +562,7 @@ sub parse_rc_files {
     my $file;
     if (! $arg{'no-tailnmailrc'}) {
         if ($arg{tailnmailrc}) {
-            -e $arg{tailnmailrc} or die "Could not find the file ", $arg{tailnmailrc}, "\n";
+            -e $arg{tailnmailrc} or die "Could not find the file $arg{tailnmailrc}\n";
             $file = $arg{tailnmailrc};
         }
         elsif (-e '.tailnmailrc') {
@@ -1048,7 +1048,7 @@ sub parse_inherit_file {
         elsif (/^FILE(\d*):\s*(.+)/) {
 
             my $suffix = $1 || 0;
-            my $filename = $2;
+            my $lfilename = $2;
 
             ## Skip entirely if we have a command-line file request
             ## This is handled in the main config parsing
@@ -1058,7 +1058,7 @@ sub parse_inherit_file {
             ## Save to the local list, storing the original filename for config rewriting
             push @{ $opt{tempifile} } =>
                 {
-                 original => $filename,
+                 original => $lfilename,
                  suffix => $suffix,
                  };
         }
@@ -1149,13 +1149,13 @@ sub parse_file {
     ## Returns the number of matches
 
     my $filename = shift;
-    my $fileinfo = shift;
+    my $lfileinfo = shift;
 
     ## The file we scanned last time we ran
-    my $lastfile = $fileinfo->{lastfile} || '';
+    my $lastfile = $lfileinfo->{lastfile} || '';
 
     ## Set this as the latest (but not the lastfile)
-    $fileinfo->{latest} = $filename;
+    $lfileinfo->{latest} = $filename;
 
     ## Touch the hash so we know we've been here
     $find{$filename} = {};
@@ -1195,7 +1195,7 @@ sub parse_file {
             }
         }
         else{
-            $offset = $fileinfo->{offset} || 0;
+            $offset = $lfileinfo->{offset} || 0;
         }
     }
 
@@ -1214,7 +1214,7 @@ sub parse_file {
     ## Store the offset if it is truly new and significant
     if ($offset >= $size) {
         $offset = $size;
-        if ($offset and $fileinfo->{offset} != $offset) {
+        if ($offset and $lfileinfo->{offset} != $offset) {
             $opt{newoffset}{$filename} = $offset;
         }
         return 0;
@@ -1467,7 +1467,7 @@ sub parse_file {
     ## Get the new offset and store it
     seek $fh, 0, 1;
     $offset = tell $fh;
-    if ($fileinfo->{offset} != $offset and $offset) {
+    if ($lfileinfo->{offset} != $offset and $offset) {
         $opt{newoffset}{$filename} = $offset;
     }
 
@@ -2276,7 +2276,7 @@ sub process_report {
                 for my $tablename (keys %{$fancyoutput{$fotype}}) {
                     $max_table_length = length $tablename if length $tablename > $max_table_length;
                 }
-                for my $tablename (sort { 
+                for my $tablename (sort {
                     $fancyoutput{$fotype}{$b} <=> $fancyoutput{$fotype}{$a}
                         or $a cmp $b
                     } keys %{$fancyoutput{$fotype}}) {

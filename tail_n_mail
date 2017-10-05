@@ -293,7 +293,6 @@ $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex: $pgpidre\n";
 my $llp2 = $original_llp;
 
 ## Items set clusterwide: %t %m %p
-$llp2 =~ s/([\-\[\]])/\\$1/g;
 $llp2 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?/;
 $llp2 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?/;
 $llp2 =~ s/%p/\\d+/;

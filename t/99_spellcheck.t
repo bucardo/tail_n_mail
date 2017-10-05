@@ -6,6 +6,8 @@ use 5.006;
 use strict;
 use warnings;
 use Test::More;
+use utf8;
+use open qw/ :std :utf8/;
 select(($|=1,select(STDERR),$|=1)[1]);
 
 my (@testfiles, $fh);
@@ -118,6 +120,7 @@ env
 hideflatten
 perl
 txt
+whitespace
 
 ## Changes:
 
@@ -126,14 +129,18 @@ CSV
 ENV
 FILEx
 Fiske
+Github
 GSM
 Johan
 MAILSUBJECT
+Markus
 Mullane
 PID
 POSIX
 Sabino
 SQL
+Urbański
+Zimmermann
 args
 autovacuum
 chunked
@@ -146,8 +153,10 @@ havetimestamp
 http
 lookahead
 mailsig
+metacharacters
 nolastfile
 pgformat
+pglog
 pgpidre
 regex
 regexes
@@ -155,6 +164,7 @@ SQLSTATE
 sqlstate
 Stasic
 syslog
+syslogs
 sysread
 tempfile
 timestamp

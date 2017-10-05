@@ -55,7 +55,7 @@ $t = qq{Test config $num gives a 'DRYRUN' line};
 like ($info, qr{DRYRUN: }, $t);
 
 $t = qq{Test config $num gives correct first item match};
-$start = substr($info,0,600);
+$start = substr($info,0,700);
 like ($start, qr{\n\Q[1] (between lines 8,450 and 8,486, occurs 5 times)}, $t);
 
 $t = qq{Test config $num gives correct first item "First" timestamp};

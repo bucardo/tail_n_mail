@@ -127,7 +127,7 @@ chomp $host;
 like ($start, qr{^Subject: Acme $host Postgres errors 3 : 5\n}, $t);
 
 $t = q{Test config 3 gives correct first item match};
-$start = substr($info,0,600);
+$start = substr($info,0,800);
 like ($start, qr{\n\Q[1] (between lines 236 and 238, occurs 2 times)}, $t);
 
 my $who = 'greg@space-tower.com';

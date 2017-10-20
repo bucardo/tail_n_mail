@@ -27,6 +27,8 @@ use 5.008003;
 
 our $VERSION = '1.30.0';
 
+my $UNIQSTRING = "TAILNMAIL$VERSION";
+
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
 
@@ -1819,7 +1821,14 @@ sub process_line {
         $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)'.+?'}{$1'?')}gio;
         $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)\d+}{$1'?')}gio;
         $string =~ s{(,\s*)'.+?'(\s*AS\s*\w+\b)}{$1'?'$2)}gio;
-        $string =~ s{(UPDATE\s+\w+\s+SET\s+\w+\s*=\s*)'[^']*'}{$1'?'}go;
+
+        if ($string =~ s{(UPDATE\s+[\w\.]+\s+SET\s+)(.+?)(\s+WHERE)}{${1}$UNIQSTRING${3}}) {
+            my $sets = $2;
+            $sets =~ s{([\w\.]+\s*=\s*)\d+}{$1?}g;
+            $sets =~ s{([\w\.]+\s*=\s*)'[^']*?'}{$1?}g;
+            $string =~ s/$UNIQSTRING/$sets/e;
+        }
+
         $string =~ s/(invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
         $string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
         $string =~ s{(DETAIL: Key \(.+?\))=\(.+?\)}{$1=(?)}go;

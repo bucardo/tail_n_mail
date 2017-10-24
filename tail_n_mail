@@ -1834,7 +1834,7 @@ sub process_line {
         $string =~ s{(DETAIL: Key \(.+?\))=\(.+?\)}{$1=(?)}go;
         $string =~ s{Failed on request of size \d+}{Failed on request of size ?}go;
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
-        $string =~ s{(invalid input syntax for integer:) ".+?"}{$1: "?"}o;
+        $string =~ s{(invalid input syntax for [\w ]+): ".*?"(?: at character \d+)*}{$1: "?"}o;
         $string =~ s{value ".+?" (is out of range for type)}{value "?" $1}o;
         $string =~ s{(Failing row contains) \(.+?\)\.}{$1 \(?\)\.}go;
 

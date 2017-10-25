@@ -38,7 +38,7 @@ my $start = substr($info,0,300);
 $t = q{Test config 1 gives correct subject line};
 my $host = qx{hostname};
 chomp $host;
-like ($start, qr{^Subject: Acme $host Postgres errors 50 : 60\n}, $t);
+like ($start, qr{^Subject: Acme $host Postgres errors 45 : 60\n}, $t);
 
 $t = q{Test config 1 gives correct bulk email headers};
 like ($start, qr{\nAuto-Submitted: auto-generated\nPrecedence: bulk\n}, $t);
@@ -56,7 +56,7 @@ $t = q{Test config 1 inserts a 'Host' line};
 like ($start, qr{\nHost: \w}, $t);
 
 $t = q{Test config 1 inserts a 'Unique items' line};
-like ($start, qr{\nUnique items: 50\n}, $t);
+like ($start, qr{\nUnique items: 45\n}, $t);
 
 $t = q{Test config 1 inserts a 'Matches from' line};
 like ($start, qr{\nMatches from t/logs/testlog1.txt: 60\n}, $t);
@@ -65,8 +65,8 @@ $t = q{Test config 1 gives a 'DRYRUN' line};
 like ($info, qr{DRYRUN: }, $t);
 
 $t = q{Test config 1 gives correct first item match};
-$start = substr($info,0,600);
-like ($start, qr{\n\Q[1] (between lines 9,603 and 9,647, occurs 5 times)}, $t);
+$start = substr($info,0,9000);
+like ($start, qr{\n\Q[1] (between lines 9,542 and 9,586, occurs 5 times)}, $t);
 
 $t = q{Test config 1 gives correct first item "First" timestamp};
 like ($start, qr{\n\QFirst: 2010-12-22 19:17:53 EST [29929]\E\n}, $t);
@@ -86,7 +86,7 @@ like ($start, qr{\n\-\nERROR: type "line" not yet implemented
 $t = q{Test config 1 gives correct second match};
 $start = substr($info,500,800);
 like ($start, qr{\Q
-[2] (between lines 8,187 and 8,200, occurs 3 times)
+[3] (between lines 8,187 and 8,200, occurs 3 times)
 First: 2010-12-22 19:17:41 EST [29896]
 Last:  2010-12-22 19:17:41 EST [29896]
 ERROR: COPY from stdin failed: COPY terminated by new PQexec
@@ -96,9 +96,9 @@ STATEMENT: COPY dbd_pg_test4 FROM STDIN
 
 ## Third match has a "character X" substitution
 $t = q{Test config 1 gives correct third match};
-$start = substr($info,500,1000);
+$start = substr($info,600,1000);
 like ($start, qr{\Q
-[3] (between lines 1,013 and 1,015, occurs 2 times)
+[4] (between lines 1,013 and 1,015, occurs 2 times)
 First: 2010-12-22 19:17:38 EST [29867]
 Last:  2010-12-22 19:17:38 EST [29867]
 ERROR: syntax error at or near "?" at character ?
@@ -110,9 +110,9 @@ STATEMENT: Testing the ShowErrorStatement attribute
 
 ## Fifth match has no normalization
 $t = q{Test config 1 gives correct fifth match};
-$start = substr($info,1500,300);
+$start = substr($info,1300,900);
 like ($start, qr{\Q
-[5] (between lines 7,093 and 7,526, occurs 2 times)
+[6] (between lines 7,093 and 7,526, occurs 2 times)
 First: 2010-12-22 19:17:40 EST [29878]
 Last:  2010-12-22 19:17:40 EST [29882]
 ERROR: column "dbdpg_throws_an_error" does not exist at character 8

@@ -2,6 +2,15 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
+Version 1.31.2, released October 25, 2017
+
+* Turn the %a parsing in the log_line_prefix into a "non-greedy dot" regex when 
+  possible, which fixes the problem of whitespace inside of application names. 
+  Note: this requires some other constant string after the %a in your log_line_prefix.
+  (Github issues #22 and #23)
+  [Greg Sabino Mullane]
+
+
 Version 1.31.1, released October 24, 2017
 
 * Fix bug where LOG_LINE_PREFIX can get "quoted" on config rewrite, but the 
@@ -400,4 +409,3 @@ Version 1.14.0 of tail_n_mail, not officially released
 Version 1.13.0 of tail_n_mail, released June 26, 2010
 
 * Initial public release
-

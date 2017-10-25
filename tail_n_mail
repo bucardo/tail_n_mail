@@ -246,6 +246,7 @@ my $llp = $arg{log_line_prefix}
 
 ## Remove any quotes around it
 $llp =~ s{^'(.+)'$}{$1};
+$llp =~ s{^"(.+)"$}{$1};
 
 ## Escape certain things that may confuse the regex parser
 $llp =~ s/([\-\[\]\(\)])/\\$1/g;

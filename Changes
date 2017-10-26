@@ -2,6 +2,14 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
+Version 1.31.3
+
+* When logrotate makes a file we are watching zero-size, make sure we 
+  store the new offset, even if it is zero.
+  (Github issue #21)
+  [Greg Sabino Mullane]
+
+
 Version 1.31.2, released October 25, 2017
 
 * Turn the %a parsing in the log_line_prefix into a "non-greedy dot" regex when 

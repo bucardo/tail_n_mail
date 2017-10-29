@@ -7,8 +7,8 @@ It was developed at End Point Corporation by Greg Sabino Mullane.
 
 The latest version, 1.31.3, can be downloaded here:
 
--   [tail_n_mail](http://bucardo.org/downloads/tail_n_mail)
--   [tail_n_mail.asc](http://bucardo.org/downloads/tail_n_mail.asc)
+-   [tail_n_mail](https://bucardo.org/downloads/tail_n_mail)
+-   [tail_n_mail.asc](https://bucardo.org/downloads/tail_n_mail.asc)
 
-Full documentation can be found at (https://bucardo.org/tail_n_mail/)
+Full documentation can be found at [https://bucardo.org/tail_n_mail/](https://bucardo.org/tail_n_mail/)
 

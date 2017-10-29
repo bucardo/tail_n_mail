@@ -5,7 +5,3 @@ do an opendir/readdir instead, so LATEST will work on Windows
 * While the POSIX-based log file strings are capable of being scanned backwards
 until the last one we processed is found, the "LATEST" version is not
 
-* Fix the problem that things like application_name (%a in log_line_prefix) are 
-very free-form, and thus cannot be distinguished from the rest of the log_line_prefix.
-
-* Make a README file for display on the github page

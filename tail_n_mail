@@ -25,7 +25,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.008003;
 
-our $VERSION = '1.31.3';
+our $VERSION = '1.32.0';
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
 
@@ -256,6 +256,10 @@ my $original_llp = $llp;
 
 ## Process the log_line_prefix and change it into a regex
 my ($havetime,$havepid) = (0,0);
+
+## Some non-Postgres timestamps
+## Example: Sun Oct 29 08:50:53.691196 2017
+$llp =~ s/%ts/(\\w\\w\\w \\w\\w\\w\\s+\\d+ \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\d\\d\\d\\d)/ and $havetime=1;
 
 ## This assumes timestamp comes before the pid!
 $llp =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?)/ and $havetime=1;

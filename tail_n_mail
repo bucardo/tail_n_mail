@@ -182,8 +182,8 @@ my $result = GetOptions
    'no-tailnmailrc',
    'maxemailsize=i',
    'skip_non_parsed',
-   'warning',
-   'critical',
+   'warning=i',
+   'critical=i',
   ) or help();
 ++$arg{verbose} if $arg{debug};
 

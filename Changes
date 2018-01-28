@@ -4,7 +4,15 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 Version 1.32.0
 
-* Add support for more custom timestamps, especially for non-Postgres logs
+* Support Nagios-like exit statuses with new arguments --critical=# and --warning=#.
+  If the number of matches found is greater than equal to the number given, then 
+  the program will exit with a 2 (for a critical match) or 1 (for a warning match).
+  Otherwise, it will exit with 0.
+  [Github issue #26]
+  [Joshua Tolley]
+
+* Add support for more custom timestamps, especially for non-Postgres logs.
+  Add %ts in the log_line_prefix to match thinkgs like: Sun Oct 29 08:50:53.691196 2017
   [Greg Sabino Mullane]
 
 

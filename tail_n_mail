@@ -1470,8 +1470,6 @@ sub parse_file {
                     if ($arg{debug}) {
                         warn "Skipping line $_\n";
                     }
-                    ## Skip any subsequent indented lines
-                    $ignore_indent = 1;
                     next LOGLINE;
                 }
 
@@ -1490,6 +1488,8 @@ sub parse_file {
                 ## May be a special LOG entry with no %u@%d etc.
                 ## We simply skip these ones if they go into a LOG:
                 elsif ($_ =~ m{$pgpidre3\s+LOG:}) {
+                    ## Skip any subsequent indented lines
+                    $ignore_indent = 1;
                     next LOGLINE;
                 }
                 else {

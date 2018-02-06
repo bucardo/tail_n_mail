@@ -1366,10 +1366,17 @@ sub parse_file {
         my $lastline = '';
         my $syslognum = 0; ## used by syslog only
         my $bailout = 0; ## emergency bail out in case we end up sleep seeking
+        my $ignore_indent = 0; ## ignore indented lines, e.g. continuations after a skipped LOG
       LOGLINE: while (<$fh>) {
 
             ## We ran into a truncated line last time, so we are most likely done
             last if $bailout;
+
+            ## If we are ignoring indented lines, keep slurping until there are no more
+            if ($ignore_indent and /^\t/) {
+              next LOGLINE;
+            }
+            $ignore_indent = 0;
 
             ## Easiest to just remove the newline here and now
             if (! chomp) {
@@ -1463,6 +1470,8 @@ sub parse_file {
                     if ($arg{debug}) {
                         warn "Skipping line $_\n";
                     }
+                    ## Skip any subsequent indented lines
+                    $ignore_indent = 1;
                     next LOGLINE;
                 }
 

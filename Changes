@@ -15,6 +15,11 @@ Version 1.32.0
   Add %ts in the log_line_prefix to match thinkgs like: Sun Oct 29 08:50:53.691196 2017
   [Greg Sabino Mullane]
 
+* Better handling of continuation lines after an ignored LOG: line
+  [Greg Sabino Mullane]
+
+* Improve log_line_prefix parsing, especially those using %q
+  [Greg Sabino Mullane]
 
 Version 1.31.3, released October 27, 2017
 

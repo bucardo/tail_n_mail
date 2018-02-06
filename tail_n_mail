@@ -7,7 +7,7 @@
 ## Selena Deckelmann <selena@chesnok.com>
 ## See more contributors in the 'Changes' file
 ## BSD licensed
-## For full documentation, please see: http://bucardo.org/wiki/Tail_n_mail
+## For full documentation, please see: https://bucardo.org/tail_n_mail/
 
 ##
 ## Quick usage:
@@ -195,7 +195,7 @@ if ($arg{version}) {
 sub help {
     print "Usage: $0 configfile [options]\n";
     print "For full documentation, please visit:\n";
-    print "http://bucardo.org/wiki/Tail_n_mail\n";
+    print "https://bucardo.org/tail_n_mail/\n";
     exit 0;
 }
 $arg{help} and help();

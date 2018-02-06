@@ -323,7 +323,7 @@ $llp2 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?/;
 $llp2 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?/;
 $llp2 =~ s/%p/\\d+/;
 ## Items not set clusterwide: %u %d %r %h %i %c %l %s %v %x
-for my $char (qw/ u d r h i c l s v x/) {
+for my $char (qw/ u d r h i c l s v x q /) {
     $llp2 =~ s/%$char//g;
 }
 my $pgpidre2 = qr{^$llp2};

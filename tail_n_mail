@@ -334,13 +334,22 @@ $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex2: $pgpidre2\n";
 ## May not work on against all log_line_prefixes
 my $llp3 = $original_llp;
 
-## Strip out everything past the first setting
-$llp3 =~ s/(.*?%\w).+/$1/;
-## Convert %t and %m
+## If there is a %q, simply strip everything after it
+## Otherwise, strip everything past the first escape
+$llp3 =~ s/\%q.*// or $llp3 =~ s/(.*?%\w).+/$1/;
+
+## Convert %t and %m and %l and %p
 $llp3 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?/;
 $llp3 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?/;
+$llp3 =~ s/%l/\\d+/;
+$llp3 =~ s/%p/\\d+/;
+
 ## Remove any other escapes
 $llp3 =~ s/%\w//g;
+
+## We do a \s* later on, so keep this short
+$llp3 =~ s/\s$//;
+
 my $pgpidre3 = qr{^$llp3};
 
 $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex3: $pgpidre3\n";

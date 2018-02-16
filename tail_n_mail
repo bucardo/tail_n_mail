@@ -1330,7 +1330,7 @@ sub parse_file {
     ## Needed to track postgres PIDs
     my %pidline;
 
-    ## Switch to CSV mode if required of if the file ends in '.csv'
+    ## Switch to CSV mode if required or if the file ends in '.csv'
     if (lc $pglog eq 'csv' or $filename =~ /\.csv$/) {
         if (! defined $csv) {
             eval {

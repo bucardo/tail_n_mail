@@ -1725,8 +1725,8 @@ sub process_line {
     ## Make some adjustments to attempt to compress similar entries
     if ($arg{flatten} and $arg{type} ne 'duration') {
 
-        ## Simplistic SELECT func(arg1,arg2,...) replacement
-        $string =~ s{(SELECT\s*\w+\s*\()([^*].*?)\)}{
+        ## Simplistic SELECT func(arg1,arg2,...) or SELECT * FROM func(arg1,arg2,...) replacement
+        $string =~ s{(SELECT\s*(?:\*\s+FROM\s*)?\w+\s*\()([^*].*?)\)}{
             my ($select,$args) = ($1,$2);
             my @arg;
             for my $arg (split /,/ => $args) {

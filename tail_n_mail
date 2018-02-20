@@ -846,6 +846,11 @@ sub parse_config_file {
             my $suffix = $1 || 1;
             $localopt{offset}{$suffix} = $2;
         }
+        ## The last modification time for this file
+        elsif (/^MODTIME(\d*):\s*(.+)/) {
+            my $suffix = $1 || 1;
+            $localopt{modtime}{$suffix} = $2;
+        }
         ## The custom maxsize for all files
         elsif (/^MAXSIZE:\s*(\d+)/) {
             $localopt{maxsize} = $1;
@@ -873,7 +878,7 @@ sub parse_config_file {
 
     ## Adjust the file suffixes as needed
     ## This allows us to simply add multiple bare 'FILE:' entries before the first rewrite
-    ## We also plug in the LASTFILE AND OFFSET values now
+    ## We also plug in the LASTFILE, OFFSET, and MODTIME values now
     my %numused;
     for my $file (@{ $localopt{file} }) {
         $file->{suffix} ||= 0;
@@ -909,6 +914,9 @@ sub parse_config_file {
 
         ## Put the offset into place if it exists
         $file->{offset} = $localopt{offset}{$file->{suffix}} || 0;
+
+        ## Put the modtime into place if it exists
+        $file->{modtime} = $localopt{modtime}{$file->{suffix}} || '';
 
     }
 
@@ -1421,7 +1429,8 @@ sub parse_file {
 
     my $fh;
 
-    my $newoffset;
+    my $newoffset = 0;
+    my $newmodtime = '';
 
     ## Handle alternate ways of reading in a file
     ## At the end of the day, we want to provide a pseudo-filehandle
@@ -1456,9 +1465,11 @@ sub parse_file {
             exit 2;
         }
         close $efh;
-        my %fileinfo = map { chomp; split /\|/, $_, 2 } @info;
+        my %remotefileinfo = map { chomp; split /\|/, $_, 2 } @info;
 
-        my $filesize = $fileinfo{size} or die qq{Could not determine file size!};
+        $newmodtime = $remotefileinfo{modification} || '';
+
+        my $filesize = $remotefileinfo{size} or die qq{Could not determine file size!};
 
         my $offset = $lfileinfo->{offset} || 0;
 
@@ -1647,11 +1658,14 @@ sub parse_file {
 
     } ## end NORMAL file mode
 
+    close $fh or die qq{Could not close "$filename": $!\n};
+
     if ($lfileinfo->{offset} != $newoffset and $newoffset) {
         $opt{newoffset}{$filename} = $newoffset;
     }
-
-    close $fh or die qq{Could not close "$filename": $!\n};
+    if ($lfileinfo->{modtime} ne $newmodtime and $newmodtime) {
+        $opt{newmodtime}{$filename} = $newmodtime;
+    }
 
     ## Now add in any pids that have not been processed yet
     for my $pid (sort { $pidline{$a}{line} <=> $pidline{$b}{line} } keys %pidline) {
@@ -2965,7 +2979,7 @@ sub final_cleanup {
     ## Need to walk through and see if anything has changed so we can rewrite the config
     ## For the moment, that only means the offset and the lastfile
 
-    ## Have we got new lastfiles or offsets?
+    ## Have we got new lastfiles, offsets, or modtimes?
     for my $t (@{ $opt{file} }) {
         if ($t->{latest} ne $t->{lastfile}) {
             $changes++;
@@ -2978,8 +2992,14 @@ sub final_cleanup {
                 $t->{offset} = $newoffset;
             }
         }
+        if (exists $opt{newmodtime}{$t->{lastfile}}) {
+            my $newmodtime = $opt{newmodtime}{$t->{lastfile}};
+            if ($t->{modtime} ne $newmodtime) {
+                $changes++;
+                $t->{modtime} = $newmodtime;
+            }
+        }
     }
-
     ## No rewriting if in dryrun mode, but reset always trumps dryrun
     ## Otherwise, do nothing if there have been no changes
     return if (!$changes or $arg{dryrun}) and !$arg{reset};
@@ -3076,6 +3096,10 @@ sub final_cleanup {
         }
         elsif ($f->{offset}) {
             printf "OFFSET%d: %d\n", $f->{suffix}, $f->{offset};
+        }
+        ## May have a modtime
+        if ($f->{modtime}) {
+            printf "MODTIME%d: %s\n", $f->{suffix}, $f->{modtime};
         }
     }
     print "\n";

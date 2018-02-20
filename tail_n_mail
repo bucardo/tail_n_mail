@@ -2119,10 +2119,28 @@ sub process_report {
 
     ## Some minor help with debugging
     push @header => "X-TNM-VERSION: $VERSION";
+    ## Sometimes we go dryrun for this section only!
+    my $dryrun = $arg{dryrun};
+
+    ## If our email field is all caps or has example.com, force to dryrun mode
+    if (! $dryrun) {
+        for my $email (@{ $opt{email} }) {
+            if ($email =~ /\@example.com/i) {
+                $opt{verbose} and print "Switching to dry-run mode because email is 'example.com'\n";
+                $dryrun = 1;
+                last;
+            }
+            if ($email =~ /^[A-Z]+$/) { ## e.g. no '@' sign
+                $opt{verbose} and print "Switching to dry-run mode because email is only all-caps\n";
+                $dryrun = 1;
+                last;
+            }
+        }
+    }
 
     ## Allow no specific email for dryruns
     if (! exists $opt{email} or ! @{$opt{email}}) {
-        if ($arg{dryrun} or $arg{nomail}) {
+        if ($dryrun or $arg{nomail}) {
             push @{$opt{email}} => 'dryrun@example.com'; ## no critic (RequireInterpolationOfMetachars)
         }
     }
@@ -2224,7 +2242,7 @@ sub process_report {
     ## Are we going to need to chunk it up?
     my $filesize = -s $bigfile;
     my $split = 0;
-    if ($filesize > $arg{maxemailsize} and ! $arg{dryrun}) {
+    if ($filesize > $arg{maxemailsize} and ! $dryrun) {
         $split = 1;
         $arg{verbose} and print qq{File $bigfile too big ($filesize > $arg{maxemailsize})\n};
     }
@@ -2295,7 +2313,7 @@ sub process_report {
 
         ## Prepend the header info to our new data file
         my ($efh, $emailfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm2');
-        if ($arg{dryrun}) {
+        if ($dryrun) {
             close $efh or warn 'Could not close filehandle';
             $efh = \*STDOUT;
         }
@@ -2351,7 +2369,7 @@ sub process_report {
 
         $arg{verbose} and warn "  Sending mail to: $emails\n";
         my $COM = qq{$mailcom '$emails' < $emailfile};
-        if ($arg{dryrun} or $arg{nomail}) {
+        if ($dryrun or $arg{nomail}) {
             $arg{quiet} or warn "  DRYRUN: $COM\n";
         }
         else {

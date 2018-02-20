@@ -124,7 +124,6 @@ my %arg = (
               critical => 0,
 ## Number of found errors resulting in a Nagios "WARNING" exit status
               warning => 0,
-## 
 );
 
 ## Quick check for help items
@@ -292,9 +291,9 @@ $llp =~ s/%q//;
 ## For example, your application_name is "foo bar" and the log_line_prefix has %a %d
 ## Does "foo bar baz" indicate an application_name of 'foo' and a db of 'bar',
 ## or does it indicate an application_name of 'foo bar' and a db of 'baz'?
-## One workaround is to assume that a non-greedy regex can be used as long as there 
+## One workaround is to assume that a non-greedy regex can be used as long as there
 ## is some constant string after the application_name in the log_line_prefix.
-## This is actually a fairly safe assumption, as it is not common to have competely 
+## This is actually a fairly safe assumption, as it is not common to have completely
 ## bare escapes at the end of the log_line_prefix
 $llp =~ s/%a([^%])/.*?$1/;
 ## Fall back to the older version:

@@ -125,7 +125,6 @@ my %arg = (
               critical => 0,
 ## Number of found errors resulting in a Nagios "WARNING" exit status
               warning => 0,
-## 
 );
 
 ## Quick check for help items
@@ -293,9 +292,9 @@ $llp =~ s/%q//;
 ## For example, your application_name is "foo bar" and the log_line_prefix has %a %d
 ## Does "foo bar baz" indicate an application_name of 'foo' and a db of 'bar',
 ## or does it indicate an application_name of 'foo bar' and a db of 'baz'?
-## One workaround is to assume that a non-greedy regex can be used as long as there 
+## One workaround is to assume that a non-greedy regex can be used as long as there
 ## is some constant string after the application_name in the log_line_prefix.
-## This is actually a fairly safe assumption, as it is not common to have competely 
+## This is actually a fairly safe assumption, as it is not common to have completely
 ## bare escapes at the end of the log_line_prefix
 $llp =~ s/%a([^%])/.*?$1/;
 ## Fall back to the older version:
@@ -1177,7 +1176,6 @@ sub parse_inherit_file {
 } ## end of parse_inherited_file
 
 
-
 sub parse_filehandle {
 
     my $fh = shift or die;
@@ -1185,7 +1183,7 @@ sub parse_filehandle {
     my $pidline = shift;
 
     my $newlines = 0;
-    my $count = 0; ## return at end
+    my $count = 0;
 
     ## Switch to CSV mode if required or if the file ends in '.csv'
     if (lc $pglog eq 'csv' or $filename =~ /\.csv$/) {
@@ -1462,11 +1460,6 @@ sub parse_file {
 
         my $filesize = $fileinfo{size} or die qq{Could not determine file size!};
 
-        ## TODO: If the creation time has changed, we start from the beginning of the file
-        ## If the offset is equal to the size, the file has not changed?
-        ## We can also check the modification time
-        ## Otherwise, we use the same offset
-
         my $offset = $lfileinfo->{offset} || 0;
 
         ## Allow the offset to equal the size via --reset
@@ -1478,7 +1471,7 @@ sub parse_file {
         elsif ($arg{file}[0]) {
             $offset = 0;
         }
-        ## If the offset was set o the command line, use that
+        ## If the offset was set from the command line, use that
         elsif ($arg{offset} != -1) {
             if ($arg{offset} >= 0) {
                 $offset = $arg{offset};
@@ -1489,6 +1482,11 @@ sub parse_file {
                 ## But obviously don't walk too far back!
                 $offset = 0 if $offset < 0;
             }
+        }
+        ## If the file is now smaller than our offset, assume it's a new file
+        elsif ($filesize < $offset) {
+            $arg{debug} and print "File has shrunk, so resetting offset to 0\n";
+            $offset = 0;
         }
 
         ## Attempt to read in the actual file data
@@ -1513,141 +1511,141 @@ sub parse_file {
 
         $newoffset = $filesize;
 
-    } ## END SERVICE
+    } ## end SERVICE file mode
     else {
 
-    ## Make sure the file exists and is readable
-    if (! -e $filename) {
-        $arg{quiet} or warn qq{WARNING! Skipping non-existent file "$filename"\n};
-        return -1;
-    }
-    if (! -f $filename) {
-        $arg{quiet} or warn qq{WARNING! Skipping non-file "$filename"\n};
-        return -1;
-    }
+        ## Make sure the file exists and is readable
+        if (! -e $filename) {
+            $arg{quiet} or warn qq{WARNING! Skipping non-existent file "$filename"\n};
+            return -1;
+        }
+        if (! -f $filename) {
+            $arg{quiet} or warn qq{WARNING! Skipping non-file "$filename"\n};
+            return -1;
+        }
 
-    ## Figure out where in the file we want to start scanning from
-    my $size = -s $filename;
-    my $offset = 0;
-    my $maxsize = $opt{maxsize} ? $opt{maxsize} : $arg{maxsize};
+        ## Figure out where in the file we want to start scanning from
+        my $size = -s $filename;
+        my $offset = 0;
+        my $maxsize = $opt{maxsize} ? $opt{maxsize} : $arg{maxsize};
 
-    ## Is the offset significant?
-    if (!$arg{file}[0]               ## ...not if we passed in filenames manually
-        and $lastfile eq $filename   ## ...not if this is not the same file we got the offset for last time
+        ## Is the offset significant?
+        if (!$arg{file}[0]               ## ...not if we passed in filenames manually
+                and $lastfile eq $filename   ## ...not if this is not the same file we got the offset for last time
         ) {
-        ## Allow the offset to equal the size via --reset
-        if ($arg{reset}) {
-            $offset = $size;
-            $arg{verbose} and warn "  Resetting offset to $offset\n";
-        }
-        ## Allow the offset to be changed on the command line
-        elsif ($arg{offset} != -1) {
-            if ($arg{offset} >= 0) {
-                $offset = $arg{offset};
+            ## Allow the offset to equal the size via --reset
+            if ($arg{reset}) {
+                $offset = $size;
+                $arg{verbose} and warn "  Resetting offset to $offset\n";
             }
-            elsif ($arg{offset} < -1) {
-                $offset = $size + $arg{offset};
-                $offset = 0 if $offset < 0;
-            }
-        }
-        else{
-            $offset = $lfileinfo->{offset} || 0;
-        }
-    }
-
-    my $psize = pretty_number($size);
-    my $pmaxs = pretty_number($maxsize);
-    my $poffset = pretty_number($offset);
-    $arg{verbose} and warn "  File: $filename Offset: $poffset Size: $psize Maxsize: $pmaxs\n";
-
-    ## The file may have shrunk due to a logrotate
-    if ($offset > $size) {
-        $arg{verbose} and warn "  File has shrunk - resetting offset to 0\n";
-        $offset = 0;
-    }
-
-    ## If the offset is equal to the size, we're done!
-    ## Store the offset if it is truly new and significant
-    if ($offset >= $size) {
-        $offset = $size;
-        if ($lfileinfo->{offset} != $offset) {
-            $opt{newoffset}{$filename} = $offset;
-        }
-        return 0;
-    }
-
-    ## Store the original offset
-    my $original_offset = $offset;
-
-    ## This can happen quite a bit on busy files!
-    if ($maxsize and ($size - $offset > $maxsize) and $arg{offset} < 0) {
-        $arg{quiet} or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
-        $toolarge{$filename} = qq{File "$filename" too large:\n  only read last $maxsize bytes (size=$size, offset=$offset)};
-        $offset = $size - $maxsize;
-    }
-
-    open $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
-
-    ## Seek the right spot as needed
-    if ($offset and $offset < $size) {
-
-        ## Because we go back by 10 characters below, always offset at least 10
-        $offset = 10 if $offset < 10;
-
-        ## We go back 10 characters to get us before the newlines we (probably) ended with
-        seek $fh, $offset-10, 0;
-
-        ## If a manual rewind request has been given, process it (inverse)
-        if ($arg{rewind}) {
-            seek $fh, -$arg{rewind}, 1;
-        }
-    }
-
-    ## Optionally figure out what approximate line we are on
-    my $newlines = 0;
-    if ($arg{find_line_number}) {
-        my $pos = tell $fh;
-
-        ## No sense in counting if we're at the start of the file!
-        if ($pos > 1) {
-
-            seek $fh, 0, 0;
-            ## Need to sysread up to $pos
-            my $blocksize = 100_000;
-            my $current = 0;
-            {
-                my $chunksize = $blocksize;
-                if ($current + $chunksize > $pos) {
-                    $chunksize = $pos - $current;
+            ## Allow the offset to be changed on the command line
+            elsif ($arg{offset} != -1) {
+                if ($arg{offset} >= 0) {
+                    $offset = $arg{offset};
                 }
-                my $foobar;
-                my $res = read $fh, $foobar, $chunksize;
-                ## How many newlines in there?
-                $newlines += $foobar =~ y/\n/\n/;
-                $current += $chunksize;
-                redo if $current < $pos;
+                elsif ($arg{offset} < -1) {
+                    $offset = $size + $arg{offset};
+                    $offset = 0 if $offset < 0;
+                }
             }
+            else {
+                $offset = $lfileinfo->{offset} || 0;
+            }
+        }
 
-            ## Return to the original position
-            seek $fh, 0, $pos;
+        my $psize = pretty_number($size);
+        my $pmaxs = pretty_number($maxsize);
+        my $poffset = pretty_number($offset);
+        $arg{verbose} and warn "  File: $filename Offset: $poffset Size: $psize Maxsize: $pmaxs\n";
 
-        } ## end pos > 1
+        ## The file may have shrunk due to a logrotate
+        if ($offset > $size) {
+            $arg{verbose} and warn "  File has shrunk - resetting offset to 0\n";
+            $offset = 0;
+        }
 
-    } ## end find_line_number
+        ## If the offset is equal to the size, we're done!
+        ## Store the offset if it is truly new and significant
+        if ($offset >= $size) {
+            $offset = $size;
+            if ($lfileinfo->{offset} != $offset) {
+                $opt{newoffset}{$filename} = $offset;
+            }
+            return 0;
+        }
 
-    ## Get exclusion and inclusion regexes for this file
-    ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
+        ## Store the original offset
+        my $original_offset = $offset;
 
-    ## Discard the previous line if needed (we rewound by 10 characters above)
-    $original_offset and <$fh>;
+        ## This can happen quite a bit on busy files!
+        if ($maxsize and ($size - $offset > $maxsize) and $arg{offset} < 0) {
+            $arg{quiet} or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
+            $toolarge{$filename} = qq{File "$filename" too large:\n  only read last $maxsize bytes (size=$size, offset=$offset)};
+            $offset = $size - $maxsize;
+        }
 
-    $count += parse_filehandle($fh, $filename, \%pidline);
+        open $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
 
-    ## Get the new offset and store it
-    seek $fh, 0, 1;
-    $newoffset = tell $fh;
+        ## Seek the right spot as needed
+        if ($offset and $offset < $size) {
 
-}
+            ## Because we go back by 10 characters below, always offset at least 10
+            $offset = 10 if $offset < 10;
+
+            ## We go back 10 characters to get us before the newlines we (probably) ended with
+            seek $fh, $offset-10, 0;
+
+            ## If a manual rewind request has been given, process it (inverse)
+            if ($arg{rewind}) {
+                seek $fh, -$arg{rewind}, 1;
+            }
+        }
+
+        ## Optionally figure out what approximate line we are on
+        my $newlines = 0;
+        if ($arg{find_line_number}) {
+            my $pos = tell $fh;
+
+            ## No sense in counting if we're at the start of the file!
+            if ($pos > 1) {
+
+                seek $fh, 0, 0;
+                ## Need to sysread up to $pos
+                my $blocksize = 100_000;
+                my $current = 0;
+                {
+                    my $chunksize = $blocksize;
+                    if ($current + $chunksize > $pos) {
+                        $chunksize = $pos - $current;
+                    }
+                    my $foobar;
+                    my $res = read $fh, $foobar, $chunksize;
+                    ## How many newlines in there?
+                    $newlines += $foobar =~ y/\n/\n/;
+                    $current += $chunksize;
+                    redo if $current < $pos;
+                }
+
+                ## Return to the original position
+                seek $fh, 0, $pos;
+
+            } ## end pos > 1
+
+        } ## end find_line_number
+
+        ## Get exclusion and inclusion regexes for this file
+        ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
+
+        ## Discard the previous line if needed (we rewound by 10 characters above)
+        $original_offset and <$fh>;
+
+        $count += parse_filehandle($fh, $filename, \%pidline);
+
+        ## Get the new offset and store it
+        seek $fh, 0, 1;
+        $newoffset = tell $fh;
+
+    } ## end NORMAL file mode
 
     if ($lfileinfo->{offset} != $newoffset and $newoffset) {
         $opt{newoffset}{$filename} = $newoffset;

@@ -23,9 +23,10 @@ use Getopt::Long   qw( GetOptions          );
 use File::Temp     qw( tempfile            );
 use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
+use IO::Scalar;
 use 5.008003;
 
-our $VERSION = '1.32.0';
+our $VERSION = '2.0.0';
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
 
@@ -448,6 +449,7 @@ my $found_errors = 0;
 
     redo;
 }
+
 
 ## We're done parsing the message, send an email if needed
 process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero};
@@ -1175,6 +1177,220 @@ sub parse_inherit_file {
 } ## end of parse_inherited_file
 
 
+
+sub parse_filehandle {
+
+    my $fh = shift or die;
+    my $filename = shift;
+    my $pidline = shift;
+
+    my $newlines = 0;
+    my $count = 0; ## return at end
+
+    ## Switch to CSV mode if required or if the file ends in '.csv'
+    if (lc $pglog eq 'csv' or $filename =~ /\.csv$/) {
+        if (! defined $csv) {
+            eval {
+                require Text::CSV;
+            };
+            if (!$@) {
+                $csv = Text::CSV->new({ binary => 1, eol => $/ });
+            }
+            else {
+                ## Assume it failed because it doesn't exist, so try another version
+                eval {
+                    require Text::CSV_XS;
+                };
+                if ($@) {
+                    die qq{Cannot parse CSV logs unless Text::CSV or Text::CSV_XS is available\n};
+                }
+                $csv = Text::CSV_XS->new({ binary => 1, eol => $/ });
+            }
+        }
+        my $linenumber = 1;
+        while (my $line = $csv->getline($fh)) {
+            my @cols = @$line;
+            my $prefix = "$line->[0] \[$line->[3]\]";
+            my $context = length $line->[18] ? "CONTEXT: $line->[18] " : '';
+            my $raw = "$line->[11]:  $line->[13] ${context}STATEMENT:  $line->[19]";
+            $count += process_line({pgprefix => $prefix, rawstring => $raw, line => $linenumber++}, $., $filename);
+        }
+
+    } ## end of PG CSV mode
+    else {
+        ## Postgres-specific multi-line grabbing stuff:
+        my ($pgts, $pgpid, %current_pid_num, $lastpid, $pgprefix);
+        my $pgnum = 1;
+        my $lastline = '';
+        my $syslognum = 0; ## used by syslog only
+        my $bailout = 0; ## emergency bail out in case we end up sleep seeking
+        my $ignore_indent = 0; ## ignore indented lines, e.g. continuations after a skipped LOG
+        my $linenumber = 0;
+      LOGLINE: while (<$fh>) {
+            $linenumber++;
+
+            ## We ran into a truncated line last time, so we are most likely done
+            last if $bailout;
+
+            ## If we are ignoring indented lines, keep slurping until there are no more
+            if ($ignore_indent and /^\t/) {
+              next LOGLINE;
+            }
+            $ignore_indent = 0;
+
+            ## Easiest to just remove the newline here and now
+            if (! chomp) {
+                ## If this is a static string we are parsing, just give up now
+                if (ref $fh eq 'IO::Scalar') {
+                    $bailout = 1;
+                }
+                else {
+                    ## There was no newline, so it's possible some other process is in
+                    ## the middle of writing this line. Just in case this is so, sleep and
+                    ## let it finish, then try again. Because we don't want to turn this
+                    ## into a tail -f situation, bail out of the loop once done
+                    sleep 1;
+                    ## Rewind just far enough to try this line again
+                    seek $fh, - (length $_), 1;
+                    $_ = <$fh>;
+                    if (! chomp) {
+                        ## Still no go! Let's just leave and abandon this line
+                        last LOGLINE;
+                    }
+                    ## Success! Finish up this line, but then abandon any further slurping
+                    $bailout = 1;
+                }
+            }
+
+            ## Skip quietly if this is the last line of a scalar
+            if (!length $_ and ref $fh eq 'IO::Scalar' and $fh->eof) {
+                $arg{debug} and print "Skipping empty line at end of scalar\n";
+                next LOGLINE;
+            }
+
+            if ($arg{pgmode}) {
+
+                ## 1=prefix 2=timestamp 3=PID 4=rest
+                if ($_ =~ s/$pgpidre/$4/) {
+
+                    ## We want the timestamp and the pid, even if we have to fake it
+                    ($pgprefix,$pgts,$pgpid,$pgnum) = ($1, $2||'', $3||1, 1);
+
+                    $pgprefix =~ s/\s+$//o;
+                    if ($pglog =~ /syslog/) {
+                        if ($pgprefix =~ /: \[(\d+)/) {
+                            $pgnum = $1;
+                        }
+                    }
+                    $lastpid = $pgpid;
+
+                    ## Have we seen this PID before?
+                    if (exists $pidline->{$pgpid}) {
+                        if ($pglog =~ /syslog/) {
+                            if ($pglog eq 'syslog' and $syslognum and $syslognum != $pgnum) {
+                                ## Got a new statement, so process the old
+                                $count += process_line(delete $pidline->{$pgpid}, 0, $filename);
+                            }
+                        }
+                        else {
+                            ## Append to the string for this PID
+                            if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT|QUERY):  /o) {
+                                ## Increment the pgnum by one
+                                $pgnum = $current_pid_num{$pgpid} + 1;
+                            }
+                            else {
+                                ## Process the old one
+                                ## Delete it so it gets recreated afresh below
+                                $count += process_line(delete $pidline->{$pgpid}, 0, $filename);
+                            }
+                        }
+                    }
+
+                    if ($pglog =~ /syslog/) {
+                        $syslognum = $pgnum;
+                        ## Increment our arbitrary internal number
+                        $current_pid_num{$pgpid} ||= 0;
+                        $pgnum = $current_pid_num{$pgpid} + 1;
+                    }
+
+                    ## Optionally strip out SQLSTATE codes
+                    if ($arg{sqlstate}) {
+                        $_ =~ s/^(?:FATAL|ERROR):  ([0-9A-Z]{5}): /ERROR:  /o;
+                    }
+
+                    ## Assign this string to the current pgnum slot
+                    $pidline->{$pgpid}{string}{$pgnum} = $_;
+                    $current_pid_num{$pgpid} = $pgnum;
+
+                    ## If we don't yet have a line, store it, plus the prefix and timestamp
+                    if (! $pidline->{$pgpid}{line}) {
+                        $pidline->{$pgpid}{line} = ($linenumber + $newlines);
+                        $pidline->{$pgpid}{pgprefix} = $pgprefix;
+                        $pidline->{$pgpid}{pgtime} = $pgts;
+                    }
+
+                    ## Remember this line
+                    $lastline = $_;
+
+                    ## We are done: go the next line
+                    next LOGLINE;
+                }
+
+                ## We did not match the log_line_prefix
+
+                ## May be a continuation or a special LOG line (e.g. autovacuum)
+                ## If it is, we'll simply ignore it
+                if ($_ =~ m{$pgpidre2}) {
+                    if ($arg{debug}) {
+                        warn "Skipping line $_\n";
+                    }
+                    next LOGLINE;
+                }
+
+                ## If we do not have a PID yet, skip this line
+                next LOGLINE if ! $lastpid;
+
+                ## If there is a leading tab, remove it and treat as a continuation
+                if (s{^\t}{ }) {
+                    ## Increment the pgnum
+                    $pgnum = $current_pid_num{$lastpid} + 1;
+                    $current_pid_num{$lastpid} = $pgnum;
+
+                    ## Store this string
+                    $pidline->{$lastpid}{string}{$pgnum} = $_;
+                }
+                ## May be a special LOG entry with no %u@%d etc.
+                ## We simply skip these ones if they go into a LOG:
+                elsif ($_ =~ m{$pgpidre3\s+LOG:}) {
+                    ## Skip any subsequent indented lines
+                    $ignore_indent = 1;
+                    next LOGLINE;
+                }
+                else {
+                    ## Not a continuation, so probably an error from the OS
+                    ## Simply parse it right away, force it to match
+                    if (! $arg{skip_non_parsed}) {
+                        $count += process_line($_, $linenumber + $newlines, $filename, 1);
+                    }
+                }
+
+                ## No need to do anything more right now if in pgmode
+                next LOGLINE;
+
+            } ## end of normal pgmode
+
+            ## Just a bare entry, so process it right away
+            $count += process_line($_, $linenumber + $newlines, $filename);
+
+        } ## end of each line in the file
+
+    } ## end of non-CSV mode
+
+    return $count;
+
+} ## end of parse_filehandle
+
+
 sub parse_file {
 
     ## Parse a file - this is the workhorse
@@ -1198,6 +1414,107 @@ sub parse_file {
 
     ## Touch the hash so we know we've been here
     $find{$filename} = {};
+
+    ## Keep track of matches for this file
+    my $count = 0;
+
+    ## Needed to track postgres PIDs
+    my %pidline;
+
+    my $fh;
+
+    my $newoffset;
+
+    ## Handle alternate ways of reading in a file
+    ## At the end of the day, we want to provide a pseudo-filehandle
+    if ($filename =~ /SERVICE=/) {
+        (my $newfilename = $filename) =~ s/SERVICE=(\w+)\s*//;
+        my $service = $1;
+
+        ## Make sure the service is reachable and grab all files in the given directory
+        my $remotedir = dirname($newfilename);
+        my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+        my $COM = qq{psql service="$service" -AX -qt -c "select pg_ls_dir('$remotedir')" 2>$errorfile};
+        my @remote_files =  qx/ $COM /;
+        ## If the error file was written to, we bail and report the error
+        if (-s $errorfile) {
+            seek $efh, 0, 0;
+            my $errline = <$efh>;
+            chomp $errline;
+            warn "Unable to use SERVICE=$service ($errline)\n";
+            exit 2;
+        }
+        close $efh;
+
+        ## Now open the file in question
+        ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+        $COM = qq{psql service="$service" -AX -qt -x -c "select * from pg_stat_file('$newfilename')" 2>$errorfile};
+        my @info = qx/ $COM /;
+        if (-s $errorfile) {
+            seek $efh, 0, 0;
+            my $errline = <$efh>;
+            chomp $errline;
+            warn "Call to pg_stat_file failed for service $service and file $newfilename ($errline)\n";
+            exit 2;
+        }
+        close $efh;
+        my %fileinfo = map { chomp; split /\|/, $_, 2 } @info;
+
+        my $filesize = $fileinfo{size} or die qq{Could not determine file size!};
+
+        ## TODO: If the creation time has changed, we start from the beginning of the file
+        ## If the offset is equal to the size, the file has not changed?
+        ## We can also check the modification time
+        ## Otherwise, we use the same offset
+
+        my $offset = $lfileinfo->{offset} || 0;
+
+        ## Allow the offset to equal the size via --reset
+        if ($arg{reset}) {
+            $offset = $filesize;
+            $arg{verbose} and warn "  Resetting offset to $offset\n";
+        }
+        ## If we passed in files manually, they start at 0
+        elsif ($arg{file}[0]) {
+            $offset = 0;
+        }
+        ## If the offset was set o the command line, use that
+        elsif ($arg{offset} != -1) {
+            if ($arg{offset} >= 0) {
+                $offset = $arg{offset};
+            }
+            ## Negative offset means we walk back from end of the file
+            elsif ($arg{offset} < -1) {
+                $offset = $filesize + $arg{offset};
+                ## But obviously don't walk too far back!
+                $offset = 0 if $offset < 0;
+            }
+        }
+
+        ## Attempt to read in the actual file data
+        ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+        $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename',$offset,$filesize)" 2>$errorfile};
+        my $slurp = qx/ $COM /;
+        if (-s $errorfile) {
+            seek $efh, 0, 0;
+            my $errline = <$efh>;
+            chomp $errline;
+            warn "Call to pg_read_file failed for service $service and file $newfilename ($errline)\n";
+            exit 2;
+        }
+        close $efh;
+
+        ## Get exclusion and inclusion regexes for this file
+        ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
+
+        $fh = new IO::Scalar \$slurp;
+        $count += parse_filehandle($fh, $filename, \%pidline);
+        ## Send to main, then come back and do more rounds as needed
+
+        $newoffset = $filesize;
+
+    } ## END SERVICE
+    else {
 
     ## Make sure the file exists and is readable
     if (! -e $filename) {
@@ -1269,7 +1586,7 @@ sub parse_file {
         $offset = $size - $maxsize;
     }
 
-    open my $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
+    open $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
 
     ## Seek the right spot as needed
     if ($offset and $offset < $size) {
@@ -1324,199 +1641,16 @@ sub parse_file {
     ## Discard the previous line if needed (we rewound by 10 characters above)
     $original_offset and <$fh>;
 
-    ## Keep track of matches for this file
-    my $count = 0;
-
-    ## Needed to track postgres PIDs
-    my %pidline;
-
-    ## Switch to CSV mode if required or if the file ends in '.csv'
-    if (lc $pglog eq 'csv' or $filename =~ /\.csv$/) {
-        if (! defined $csv) {
-            eval {
-                require Text::CSV;
-            };
-            if (!$@) {
-                $csv = Text::CSV->new({ binary => 1, eol => $/ });
-            }
-            else {
-                ## Assume it failed because it doesn't exist, so try another version
-                eval {
-                    require Text::CSV_XS;
-                };
-                if ($@) {
-                    die qq{Cannot parse CSV logs unless Text::CSV or Text::CSV_XS is available\n};
-                }
-                $csv = Text::CSV_XS->new({ binary => 1, eol => $/ });
-            }
-        }
-        while (my $line = $csv->getline($fh)) {
-            my @cols = @$line;
-            my $prefix = "$line->[0] \[$line->[3]\]";
-            my $context = length $line->[18] ? "CONTEXT: $line->[18] " : '';
-            my $raw = "$line->[11]:  $line->[13] ${context}STATEMENT:  $line->[19]";
-            $count += process_line({pgprefix => $prefix, rawstring => $raw, line => $.}, $., $filename);
-        }
-
-    } ## end of PG CSV mode
-    else {
-        ## Postgres-specific multi-line grabbing stuff:
-        my ($pgts, $pgpid, %current_pid_num, $lastpid, $pgprefix);
-        my $pgnum = 1;
-        my $lastline = '';
-        my $syslognum = 0; ## used by syslog only
-        my $bailout = 0; ## emergency bail out in case we end up sleep seeking
-        my $ignore_indent = 0; ## ignore indented lines, e.g. continuations after a skipped LOG
-      LOGLINE: while (<$fh>) {
-
-            ## We ran into a truncated line last time, so we are most likely done
-            last if $bailout;
-
-            ## If we are ignoring indented lines, keep slurping until there are no more
-            if ($ignore_indent and /^\t/) {
-              next LOGLINE;
-            }
-            $ignore_indent = 0;
-
-            ## Easiest to just remove the newline here and now
-            if (! chomp) {
-                ## There was no newline, so it's possible some other process is in
-                ## the middle of writing this line. Just in case this is so, sleep and
-                ## let it finish, then try again. Because we don't want to turn this
-                ## into a tail -f situation, bail out of the loop once done
-                sleep 1;
-                ## Rewind just far enough to try this line again
-                seek $fh, - (length $_), 1;
-                $_ = <$fh>;
-                if (! chomp) {
-                    ## Still no go! Let's just leave and abandon this line
-                    last LOGLINE;
-                }
-                ## Success! Finish up this line, but then abandon any further slurping
-                $bailout = 1;
-            }
-            if ($arg{pgmode}) {
-                ## 1=prefix 2=timestamp 3=PID 4=rest
-                if ($_ =~ s/$pgpidre/$4/) {
-
-                    ## We want the timestamp and the pid, even if we have to fake it
-                    ($pgprefix,$pgts,$pgpid,$pgnum) = ($1, $2||'', $3||1, 1);
-
-                    $pgprefix =~ s/\s+$//o;
-                    if ($pglog =~ /syslog/) {
-                        if ($pgprefix =~ /: \[(\d+)/) {
-                            $pgnum = $1;
-                        }
-                    }
-                    $lastpid = $pgpid;
-
-                    ## Have we seen this PID before?
-                    if (exists $pidline{$pgpid}) {
-                        if ($pglog =~ /syslog/) {
-                            if ($pglog eq 'syslog' and $syslognum and $syslognum != $pgnum) {
-                                ## Got a new statement, so process the old
-                                $count += process_line(delete $pidline{$pgpid}, 0, $filename);
-                            }
-                        }
-                        else {
-                            ## Append to the string for this PID
-                            if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT|QUERY):  /o) {
-                                ## Increment the pgnum by one
-                                $pgnum = $current_pid_num{$pgpid} + 1;
-                            }
-                            else {
-                                ## Process the old one
-                                ## Delete it so it gets recreated afresh below
-                                $count += process_line(delete $pidline{$pgpid}, 0, $filename);
-                            }
-                        }
-                    }
-
-                    if ($pglog =~ /syslog/) {
-                        $syslognum = $pgnum;
-                        ## Increment our arbitrary internal number
-                        $current_pid_num{$pgpid} ||= 0;
-                        $pgnum = $current_pid_num{$pgpid} + 1;
-                    }
-
-                    ## Optionally strip out SQLSTATE codes
-                    if ($arg{sqlstate}) {
-                        $_ =~ s/^(?:FATAL|ERROR):  ([0-9A-Z]{5}): /ERROR:  /o;
-                    }
-
-                    ## Assign this string to the current pgnum slot
-                    $pidline{$pgpid}{string}{$pgnum} = $_;
-                    $current_pid_num{$pgpid} = $pgnum;
-
-                    ## If we don't yet have a line, store it, plus the prefix and timestamp
-                    if (! $pidline{$pgpid}{line}) {
-                        $pidline{$pgpid}{line} = ($. + $newlines);
-                        $pidline{$pgpid}{pgprefix} = $pgprefix;
-                        $pidline{$pgpid}{pgtime} = $pgts;
-                    }
-
-                    ## Remember this line
-                    $lastline = $_;
-
-                    ## We are done: go the next line
-                    next LOGLINE;
-                }
-
-                ## We did not match the log_line_prefix
-
-                ## May be a continuation or a special LOG line (e.g. autovacuum)
-                ## If it is, we'll simply ignore it
-                if ($_ =~ m{$pgpidre2}) {
-                    if ($arg{debug}) {
-                        warn "Skipping line $_\n";
-                    }
-                    next LOGLINE;
-                }
-
-                ## If we do not have a PID yet, skip this line
-                next LOGLINE if ! $lastpid;
-
-                ## If there is a leading tab, remove it and treat as a continuation
-                if (s{^\t}{ }) {
-                    ## Increment the pgnum
-                    $pgnum = $current_pid_num{$lastpid} + 1;
-                    $current_pid_num{$lastpid} = $pgnum;
-
-                    ## Store this string
-                    $pidline{$lastpid}{string}{$pgnum} = $_;
-                }
-                ## May be a special LOG entry with no %u@%d etc.
-                ## We simply skip these ones if they go into a LOG:
-                elsif ($_ =~ m{$pgpidre3\s+LOG:}) {
-                    ## Skip any subsequent indented lines
-                    $ignore_indent = 1;
-                    next LOGLINE;
-                }
-                else {
-                    ## Not a continuation, so probably an error from the OS
-                    ## Simply parse it right away, force it to match
-                    if (! $arg{skip_non_parsed}) {
-                        $count += process_line($_, $. + $newlines, $filename, 1);
-                    }
-                }
-
-                ## No need to do anything more right now if in pgmode
-                next LOGLINE;
-
-            } ## end of normal pgmode
-
-            ## Just a bare entry, so process it right away
-            $count += process_line($_, $. + $newlines, $filename);
-
-        } ## end of each line in the file
-
-    } ## end of non-CSV mode
+    $count += parse_filehandle($fh, $filename, \%pidline);
 
     ## Get the new offset and store it
     seek $fh, 0, 1;
-    $offset = tell $fh;
-    if ($lfileinfo->{offset} != $offset and $offset) {
-        $opt{newoffset}{$filename} = $offset;
+    $newoffset = tell $fh;
+
+}
+
+    if ($lfileinfo->{offset} != $newoffset and $newoffset) {
+        $opt{newoffset}{$filename} = $newoffset;
     }
 
     close $fh or die qq{Could not close "$filename": $!\n};
@@ -1657,6 +1791,7 @@ sub process_line {
 
     ## Special handling for forced checks, e.g. OS errors
     if (defined $forcematch) {
+
         $pgprefix = '?';
 
         ## Bail if it matches the exclusion non-parsed regex
@@ -1725,8 +1860,8 @@ sub process_line {
     ## Make some adjustments to attempt to compress similar entries
     if ($arg{flatten} and $arg{type} ne 'duration') {
 
-        ## Simplistic SELECT func(arg1,arg2,...) replacement
-        $string =~ s{(SELECT\s*\w+\s*\()([^*].*?)\)}{
+        ## Simplistic SELECT func(arg1,arg2,...) or SELECT * FROM func(arg1,arg2,...) replacement
+        $string =~ s{(SELECT\s*(?:\*\s+FROM\s*)?\w+\s*\()([^*].*?)\)}{
             my ($select,$args) = ($1,$2);
             my @arg;
             for my $arg (split /,/ => $args) {
@@ -2120,9 +2255,28 @@ sub process_report {
     ## Some minor help with debugging
     push @header => "X-TNM-VERSION: $VERSION";
 
+    ## Sometimes we go dryrun for this section only!
+    my $dryrun = $arg{dryrun};
+
+    ## If our email field is all caps or has example.com, force to dryrun mode
+    if (! $dryrun) {
+        for my $email (@{ $opt{email} }) {
+            if ($email =~ /\@example.com/i) {
+                $opt{verbose} and print "Switching to dry-run mode because email is 'example.com'\n";
+                $dryrun = 1;
+                last;
+            }
+            if ($email =~ /^[A-Z]+$/) { ## e.g. no '@' sign
+                $opt{verbose} and print "Switching to dry-run mode because email is only all-caps\n";
+                $dryrun = 1;
+                last;
+            }
+        }
+    }
+
     ## Allow no specific email for dryruns
     if (! exists $opt{email} or ! @{$opt{email}}) {
-        if ($arg{dryrun} or $arg{nomail}) {
+        if ($dryrun or $arg{nomail}) {
             push @{$opt{email}} => 'dryrun@example.com'; ## no critic (RequireInterpolationOfMetachars)
         }
     }
@@ -2224,7 +2378,7 @@ sub process_report {
     ## Are we going to need to chunk it up?
     my $filesize = -s $bigfile;
     my $split = 0;
-    if ($filesize > $arg{maxemailsize} and ! $arg{dryrun}) {
+    if ($filesize > $arg{maxemailsize} and ! $dryrun) {
         $split = 1;
         $arg{verbose} and print qq{File $bigfile too big ($filesize > $arg{maxemailsize})\n};
     }
@@ -2295,7 +2449,7 @@ sub process_report {
 
         ## Prepend the header info to our new data file
         my ($efh, $emailfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm2');
-        if ($arg{dryrun}) {
+        if ($dryrun) {
             close $efh or warn 'Could not close filehandle';
             $efh = \*STDOUT;
         }
@@ -2351,7 +2505,7 @@ sub process_report {
 
         $arg{verbose} and warn "  Sending mail to: $emails\n";
         my $COM = qq{$mailcom '$emails' < $emailfile};
-        if ($arg{dryrun} or $arg{nomail}) {
+        if ($dryrun or $arg{nomail}) {
             $arg{quiet} or warn "  DRYRUN: $COM\n";
         }
         else {

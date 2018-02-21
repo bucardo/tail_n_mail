@@ -1469,6 +1469,7 @@ sub parse_file {
                     if ($arg{debug}) {
                         warn "Skipping line $_\n";
                     }
+                    $ignore_indent = 1;
                     next LOGLINE;
                 }
 

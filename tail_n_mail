@@ -3026,7 +3026,7 @@ sub final_cleanup {
 
     ## Have we got new lastfiles, offsets, or modtimes?
     for my $t (@{ $opt{file} }) {
-        if ($t->{latest} ne $t->{lastfile}) {
+        if (exists $t->{latest} and $t->{latest} ne $t->{lastfile}) {
             $changes++;
             $t->{lastfile} = delete $t->{latest};
         }

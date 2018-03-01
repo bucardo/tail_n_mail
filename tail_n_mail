@@ -1505,7 +1505,7 @@ sub parse_file {
 
         $newmodtime = $remotefileinfo{modification} || '';
 
-        my $filesize = $remotefileinfo{size} or die qq{Could not determine file size!};
+        my $filesize = $remotefileinfo{size};
 
         my $offset = $lfileinfo->{offset} || 0;
 

@@ -23,9 +23,10 @@ use Getopt::Long   qw( GetOptions          );
 use File::Temp     qw( tempfile            );
 use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
+use IO::Scalar;
 use 5.008003;
 
-our $VERSION = '1.32.0';
+our $VERSION = '2.1.0';
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
 
@@ -243,117 +244,127 @@ for my $k (keys %opt) {
 
 my $pglog = $opt{pglog} || $arg{pglog};
 
-## Figure out the log_line_prefix, then create a regex for it
+## Figure out each log_line_prefix, then create regexes for it
 my $default_llp = '%t [%p]';
 
-my $llp = $arg{log_line_prefix}
-    || $opt{log_line_prefix}
+my $llprefix = $opt{log_line_prefix}
+    || $arg{log_line_prefix}
     ||($pglog =~ /syslog/ ? '' : $default_llp);
 
-## Remove any quotes around it
-$llp =~ s{^'(.+)'$}{$1};
-$llp =~ s{^"(.+)"$}{$1};
-
-## Escape certain things that may confuse the regex parser
-$llp =~ s/([\-\[\]\(\)])/\\$1/g;
-
-## Save a copy for later on
-my $original_llp = $llp;
-
-## Process the log_line_prefix and change it into a regex
-my ($havetime,$havepid) = (0,0);
-
-## Some non-Postgres timestamps
-## Example: Sun Oct 29 08:50:53.691196 2017
-$llp =~ s/%ts/(\\w\\w\\w \\w\\w\\w\\s+\\d+ \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\d\\d\\d\\d)/ and $havetime=1;
-
-## This assumes timestamp comes before the pid!
-$llp =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?)/ and $havetime=1;
-$llp =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?)/ and $havetime=1;
-if (!$havetime and $pglog !~ /syslog/) {
-    $llp = "()$llp";
+## This may be a collection. Number "0" becomes the global default
+if (! ref $llprefix) {
+  my $val = $llprefix;
+  $llprefix = {};
+  $llprefix->{0} = $val;
 }
-$llp =~ s/%p/(\\d+)/ and $havepid = 1;
-$llp =~ s/%c/(\\S+)/ and $havepid = 1;
-if (!$havepid and $pglog !~ /syslog/) {
-    $llp = "()$llp";
-}
-$llp =~ s/%l/\\d+/;
-$llp =~ s/%u/[\\[\\w\\-\\.\\]]*/;
-$llp =~ s/%d/[\\[\\w\\-\\.\\]]*/;
-$llp =~ s/%r/\\S*/;
-$llp =~ s/%h/\\S*/;
-$llp =~ s/%e/[0-9A-Z]{5}/;
-$llp =~ s/%q//;
 
-## The application_name is quite a pain, because it often has whitespace inside of it.
-## There is no way to easily tell where the app name ends and the next item begins.
-## For example, your application_name is "foo bar" and the log_line_prefix has %a %d
-## Does "foo bar baz" indicate an application_name of 'foo' and a db of 'bar',
-## or does it indicate an application_name of 'foo bar' and a db of 'baz'?
-## One workaround is to assume that a non-greedy regex can be used as long as there
-## is some constant string after the application_name in the log_line_prefix.
-## This is actually a fairly safe assumption, as it is not common to have completely
-## bare escapes at the end of the log_line_prefix
-$llp =~ s/%a([^%])/.*?$1/;
-## Fall back to the older version:
-$llp =~ s/%a/\\S*/;
+my ($llp_num, $llp1, %pgpidre);
+while (($llp_num,$llp1) = each %$llprefix) {
 
-if ($pglog =~ /syslog/) {
+  ## Remove any quotes around it
+  $llp1 =~ s{^'(.+)'$}{$1};
+  $llp1 =~ s{^"(.+)"$}{$1};
+
+  ## Escape certain things that may confuse the regex parser
+  $llp1 =~ s/([\-\[\]\(\)])/\\$1/g;
+
+  ## Future use:
+  my $llp2 = $llp1;
+  my $llp3 = $llp1;
+
+  ## Process the log_line_prefix and change it into a regex
+  my ($havetime,$havepid) = (0,0);
+
+  ## Some non-Postgres timestamps
+  ## Example: Sun Oct 29 08:50:53.691196 2017
+  $llp1 =~ s/%ts/(\\w\\w\\w \\w\\w\\w\\s+\\d+ \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\d\\d\\d\\d)/ and $havetime=1;
+
+  ## This assumes timestamp comes before the pid!
+  $llp1 =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?)/ and $havetime=1;
+  $llp1 =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?)/ and $havetime=1;
+  if (!$havetime and $pglog !~ /syslog/) {
+    $llp1 = "()$llp1";
+  }
+  $llp1 =~ s/%p/(\\d+)/ and $havepid = 1;
+  $llp1 =~ s/%c/(\\S+)/ and $havepid = 1;
+  if (!$havepid and $pglog !~ /syslog/) {
+    $llp1 = "()$llp1";
+  }
+  $llp1 =~ s/%l/\\d+/;
+  $llp1 =~ s/%u/[\\[\\w\\-\\.\\]]*/;
+  $llp1 =~ s/%d/[\\[\\w\\-\\.\\]]*/;
+  $llp1 =~ s/%r/\\S*/;
+  $llp1 =~ s/%h/\\S*/;
+  $llp1 =~ s/%e/[0-9A-Z]{5}/;
+  $llp1 =~ s/%q//;
+
+  ## The application_name is quite a pain, because it often has whitespace inside of it.
+  ## There is no way to easily tell where the app name ends and the next item begins.
+  ## For example, your application_name is "foo bar" and the log_line_prefix has %a %d
+  ## Does "foo bar baz" indicate an application_name of 'foo' and a db of 'bar',
+  ## or does it indicate an application_name of 'foo bar' and a db of 'baz'?
+  ## One workaround is to assume that a non-greedy regex can be used as long as there
+  ## is some constant string after the application_name in the log_line_prefix.
+  ## This is actually a fairly safe assumption, as it is not common to have completely
+  ## bare escapes at the end of the log_line_prefix
+  $llp1 =~ s/%a([^%])/.*?$1/;
+  ## Fall back to the older version:
+  $llp1 =~ s/%a/\\S*/;
+
+  if ($pglog =~ /syslog/) {
     ## Syslog is a little more specific
     ## It's not standard, but usually standard 'enough' to build a working regex
     ## Add in timestamp, host, process name, pid, and number
     ## This will probably break if your log_line_prefix has a timestamp,
     ## but why would you do that if using syslog? :)
-    $llp = $pglog eq 'syslog'
-      ? "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\-\\d+\\] $llp"
-        : "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\] $llp";
+    $llp1 = $pglog eq 'syslog'
+      ? "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\-\\d+\\] $llp1"
+        : "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\] $llp1";
     $havetime = $havepid = 1;
-}
-my $pgpidre = qr{^($llp)(.*)};
+  }
 
-$arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex: $pgpidre\n";
+  $pgpidre{$llp_num}{1} = qr{^($llp1)(.*)};
+  $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex $llp_num/1: $pgpidre{$llp_num}{1}\n";
 
-## And a separate one for cluster-wide notices
-my $llp2 = $original_llp;
+  ## And a separate one for cluster-wide notices
 
-## Items set clusterwide: %t %m %p
-$llp2 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?/;
-$llp2 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?/;
-$llp2 =~ s/%p/\\d+/;
-$llp2 =~ s/%l/\\d+/;
-$llp2 =~ s/%q.*//;
-## Items not set clusterwide: %u %d %r %h %i %c %s %v %x
-for my $char (qw/ u d r h i c s v x /) {
+  ## Items set clusterwide: %t %m %p
+  $llp2 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?/;
+  $llp2 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?/;
+  $llp2 =~ s/%p/\\d+/;
+  $llp2 =~ s/%l/\\d+/;
+  $llp2 =~ s/%q.*//;
+  ## Items not set clusterwide: %u %d %r %h %i %c %s %v %x
+  for my $char (qw/ u d r h i cs v x /) {
     $llp2 =~ s/%$char//g;
+  }
+
+  $pgpidre{$llp_num}{2} = qr{^$llp2};
+  $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex $llp_num/2: $pgpidre{$llp_num}{2}\n";
+
+  ## And one more for things that throw out everything except the timestamp
+  ## May not work on against all log_line_prefixes
+
+  ## If there is a %q, simply strip everything after it
+  ## Otherwise, strip everything past the first escape
+  $llp3 =~ s/\%q.*// or $llp3 =~ s/(.*?%\w).+/$1/;
+
+  ## Convert %t and %m and %l and %p
+  $llp3 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?/;
+  $llp3 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?/;
+  $llp3 =~ s/%l/\\d+/;
+  $llp3 =~ s/%p/\\d+/;
+
+  ## Remove any other escapes
+  $llp3 =~ s/%\w//g;
+
+  ## We do a \s* later on, so keep this short
+  $llp3 =~ s/\s$//;
+
+  $pgpidre{$llp_num}{3} = qr{^$llp3};
+  $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex $llp_num/3: $pgpidre{$llp_num}{2}\n";
+
 }
-my $pgpidre2 = qr{^$llp2};
-
-$arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex2: $pgpidre2\n";
-
-## And one more for things that throw out everything except the timestamp
-## May not work on against all log_line_prefixes
-my $llp3 = $original_llp;
-
-## If there is a %q, simply strip everything after it
-## Otherwise, strip everything past the first escape
-$llp3 =~ s/\%q.*// or $llp3 =~ s/(.*?%\w).+/$1/;
-
-## Convert %t and %m and %l and %p
-$llp3 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?/;
-$llp3 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\w\\w\\w\\w?/;
-$llp3 =~ s/%l/\\d+/;
-$llp3 =~ s/%p/\\d+/;
-
-## Remove any other escapes
-$llp3 =~ s/%\w//g;
-
-## We do a \s* later on, so keep this short
-$llp3 =~ s/\s$//;
-
-my $pgpidre3 = qr{^$llp3};
-
-$arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex3: $pgpidre3\n";
 
 ## Keep track of changes to know if we need to rewrite the config file or not
 my $changes = 0;
@@ -449,6 +460,7 @@ my $found_errors = 0;
 
     redo;
 }
+
 
 ## We're done parsing the message, send an email if needed
 process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero};
@@ -805,9 +817,11 @@ sub parse_config_file {
                 $arg{tempfile_limit} = $localopt{tempfile_limit} = $1;
             }
         }
-        ## Allow a very local log_line_prefix
-        elsif (/^LOG_LINE_PREFIX:\s*(.+)/) {
-            $arg{log_line_prefix} = $localopt{log_line_prefix} = $1;
+        elsif (/^LOG_LINE_PREFIX(\d*):\s*(.+)/) {
+          my $suffix = $1 || 0;
+          ## Force arg to new style if needed
+          $arg{log_line_prefix} = {};
+          $arg{log_line_prefix}{$suffix} = $localopt{log_line_prefix}{$suffix} = $2;
         }
         ## How to sort the output
         elsif (/^SORTBY:\s*(\w+)/) {
@@ -846,6 +860,11 @@ sub parse_config_file {
             my $suffix = $1 || 1;
             $localopt{offset}{$suffix} = $2;
         }
+        ## The last modification time for this file
+        elsif (/^MODTIME(\d*):\s*(.+)/) {
+            my $suffix = $1 || 1;
+            $localopt{modtime}{$suffix} = $2;
+        }
         ## The custom maxsize for all files
         elsif (/^MAXSIZE:\s*(\d+)/) {
             $localopt{maxsize} = $1;
@@ -873,7 +892,7 @@ sub parse_config_file {
 
     ## Adjust the file suffixes as needed
     ## This allows us to simply add multiple bare 'FILE:' entries before the first rewrite
-    ## We also plug in the LASTFILE AND OFFSET values now
+    ## We also plug in the LASTFILE, OFFSET, and MODTIME values now
     my %numused;
     for my $file (@{ $localopt{file} }) {
         $file->{suffix} ||= 0;
@@ -909,6 +928,9 @@ sub parse_config_file {
 
         ## Put the offset into place if it exists
         $file->{offset} = $localopt{offset}{$file->{suffix}} || 0;
+
+        ## Put the modtime into place if it exists
+        $file->{modtime} = $localopt{modtime}{$file->{suffix}} || '';
 
     }
 
@@ -1112,8 +1134,10 @@ sub parse_inherit_file {
             push @{$opt{mailsig}}, $1;
         }
         ## The log line prefix
-        elsif (/^LOG.LINE.PREFIX:\s*(.+)/o) {
-            $opt{log_line_prefix} = $1;
+        elsif (/^LOG.LINE.PREFIX(\d*):\s*(.+)/o) {
+          my $suffix = $1 || 0;
+          $opt{log_line_prefix} = {};
+          $opt{log_line_prefix}{$suffix} = $2;
         }
         ## Size at which we cutoff long statements
         elsif (/^STATEMENT_SIZE:\s*(.+)/) {
@@ -1176,160 +1200,15 @@ sub parse_inherit_file {
 } ## end of parse_inherited_file
 
 
-sub parse_file {
+sub parse_filehandle {
 
-    ## Parse a file - this is the workhorse
-    ## Arguments: two
-    ## 1. Exact filename we are parsing
-    ## 2. Hashref of file information:
-    ##   name: logfile to open
-    ##   original: original name
-    ##   lastfile: we scanned last time this ran. May be an empty string or not exist
-    ##   offset: where in the file we stopped at last time
-    ## Returns the number of matches
-
+    my $fh = shift or die;
     my $filename = shift;
+    my $pidline = shift;
     my $lfileinfo = shift;
 
-    ## The file we scanned last time we ran
-    my $lastfile = $lfileinfo->{lastfile} || '';
-
-    ## Set this as the latest (but not the lastfile)
-    $lfileinfo->{latest} = $filename;
-
-    ## Touch the hash so we know we've been here
-    $find{$filename} = {};
-
-    ## Make sure the file exists and is readable
-    if (! -e $filename) {
-        $arg{quiet} or warn qq{WARNING! Skipping non-existent file "$filename"\n};
-        return -1;
-    }
-    if (! -f $filename) {
-        $arg{quiet} or warn qq{WARNING! Skipping non-file "$filename"\n};
-        return -1;
-    }
-
-    ## Figure out where in the file we want to start scanning from
-    my $size = -s $filename;
-    my $offset = 0;
-    my $maxsize = $opt{maxsize} ? $opt{maxsize} : $arg{maxsize};
-
-    ## Is the offset significant?
-    if (!$arg{file}[0]               ## ...not if we passed in filenames manually
-        and $lastfile eq $filename   ## ...not if this is not the same file we got the offset for last time
-        ) {
-        ## Allow the offset to equal the size via --reset
-        if ($arg{reset}) {
-            $offset = $size;
-            $arg{verbose} and warn "  Resetting offset to $offset\n";
-        }
-        ## Allow the offset to be changed on the command line
-        elsif ($arg{offset} != -1) {
-            if ($arg{offset} >= 0) {
-                $offset = $arg{offset};
-            }
-            elsif ($arg{offset} < -1) {
-                $offset = $size + $arg{offset};
-                $offset = 0 if $offset < 0;
-            }
-        }
-        else{
-            $offset = $lfileinfo->{offset} || 0;
-        }
-    }
-
-    my $psize = pretty_number($size);
-    my $pmaxs = pretty_number($maxsize);
-    my $poffset = pretty_number($offset);
-    $arg{verbose} and warn "  File: $filename Offset: $poffset Size: $psize Maxsize: $pmaxs\n";
-
-    ## The file may have shrunk due to a logrotate
-    if ($offset > $size) {
-        $arg{verbose} and warn "  File has shrunk - resetting offset to 0\n";
-        $offset = 0;
-    }
-
-    ## If the offset is equal to the size, we're done!
-    ## Store the offset if it is truly new and significant
-    if ($offset >= $size) {
-        $offset = $size;
-        if ($lfileinfo->{offset} != $offset) {
-            $opt{newoffset}{$filename} = $offset;
-        }
-        return 0;
-    }
-
-    ## Store the original offset
-    my $original_offset = $offset;
-
-    ## This can happen quite a bit on busy files!
-    if ($maxsize and ($size - $offset > $maxsize) and $arg{offset} < 0) {
-        $arg{quiet} or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
-        $toolarge{$filename} = qq{File "$filename" too large:\n  only read last $maxsize bytes (size=$size, offset=$offset)};
-        $offset = $size - $maxsize;
-    }
-
-    open my $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
-
-    ## Seek the right spot as needed
-    if ($offset and $offset < $size) {
-
-        ## Because we go back by 10 characters below, always offset at least 10
-        $offset = 10 if $offset < 10;
-
-        ## We go back 10 characters to get us before the newlines we (probably) ended with
-        seek $fh, $offset-10, 0;
-
-        ## If a manual rewind request has been given, process it (inverse)
-        if ($arg{rewind}) {
-            seek $fh, -$arg{rewind}, 1;
-        }
-    }
-
-    ## Optionally figure out what approximate line we are on
     my $newlines = 0;
-    if ($arg{find_line_number}) {
-        my $pos = tell $fh;
-
-        ## No sense in counting if we're at the start of the file!
-        if ($pos > 1) {
-
-            seek $fh, 0, 0;
-            ## Need to sysread up to $pos
-            my $blocksize = 100_000;
-            my $current = 0;
-            {
-                my $chunksize = $blocksize;
-                if ($current + $chunksize > $pos) {
-                    $chunksize = $pos - $current;
-                }
-                my $foobar;
-                my $res = read $fh, $foobar, $chunksize;
-                ## How many newlines in there?
-                $newlines += $foobar =~ y/\n/\n/;
-                $current += $chunksize;
-                redo if $current < $pos;
-            }
-
-            ## Return to the original position
-            seek $fh, 0, $pos;
-
-        } ## end pos > 1
-
-    } ## end find_line_number
-
-    ## Get exclusion and inclusion regexes for this file
-    ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
-
-    ## Discard the previous line if needed (we rewound by 10 characters above)
-    $original_offset and <$fh>;
-
-    ## Keep track of matches for this file
     my $count = 0;
-
-    ## Needed to track postgres PIDs
-    my %pidline;
 
     ## Switch to CSV mode if required or if the file ends in '.csv'
     if (lc $pglog eq 'csv' or $filename =~ /\.csv$/) {
@@ -1351,12 +1230,13 @@ sub parse_file {
                 $csv = Text::CSV_XS->new({ binary => 1, eol => $/ });
             }
         }
+        my $linenumber = 1;
         while (my $line = $csv->getline($fh)) {
             my @cols = @$line;
             my $prefix = "$line->[0] \[$line->[3]\]";
             my $context = length $line->[18] ? "CONTEXT: $line->[18] " : '';
             my $raw = "$line->[11]:  $line->[13] ${context}STATEMENT:  $line->[19]";
-            $count += process_line({pgprefix => $prefix, rawstring => $raw, line => $.}, $., $filename);
+            $count += process_line({pgprefix => $prefix, rawstring => $raw, line => $linenumber++}, $., $filename);
         }
 
     } ## end of PG CSV mode
@@ -1368,7 +1248,17 @@ sub parse_file {
         my $syslognum = 0; ## used by syslog only
         my $bailout = 0; ## emergency bail out in case we end up sleep seeking
         my $ignore_indent = 0; ## ignore indented lines, e.g. continuations after a skipped LOG
+        my $linenumber = 0;
+
+        my $prefixnumber = $lfileinfo->{suffix};
+        $prefixnumber = 0 if ! exists $pgpidre{$prefixnumber};
+
+        my $pgpidre1 = $pgpidre{$prefixnumber}{1};
+        my $pgpidre2 = $pgpidre{$prefixnumber}{2};
+        my $pgpidre3 = $pgpidre{$prefixnumber}{3};
+
       LOGLINE: while (<$fh>) {
+            $linenumber++;
 
             ## We ran into a truncated line last time, so we are most likely done
             last if $bailout;
@@ -1381,25 +1271,38 @@ sub parse_file {
 
             ## Easiest to just remove the newline here and now
             if (! chomp) {
-                ## There was no newline, so it's possible some other process is in
-                ## the middle of writing this line. Just in case this is so, sleep and
-                ## let it finish, then try again. Because we don't want to turn this
-                ## into a tail -f situation, bail out of the loop once done
-                sleep 1;
-                ## Rewind just far enough to try this line again
-                seek $fh, - (length $_), 1;
-                $_ = <$fh>;
-                if (! chomp) {
-                    ## Still no go! Let's just leave and abandon this line
-                    last LOGLINE;
+                ## If this is a static string we are parsing, just give up now
+                if (ref $fh eq 'IO::Scalar') {
+                    $bailout = 1;
                 }
-                ## Success! Finish up this line, but then abandon any further slurping
-                $bailout = 1;
+                else {
+                    ## There was no newline, so it's possible some other process is in
+                    ## the middle of writing this line. Just in case this is so, sleep and
+                    ## let it finish, then try again. Because we don't want to turn this
+                    ## into a tail -f situation, bail out of the loop once done
+                    sleep 1;
+                    ## Rewind just far enough to try this line again
+                    seek $fh, - (length $_), 1;
+                    $_ = <$fh>;
+                    if (! chomp) {
+                        ## Still no go! Let's just leave and abandon this line
+                        last LOGLINE;
+                    }
+                    ## Success! Finish up this line, but then abandon any further slurping
+                    $bailout = 1;
+                }
             }
-            if ($arg{pgmode}) {
-                ## 1=prefix 2=timestamp 3=PID 4=rest
-                if ($_ =~ s/$pgpidre/$4/) {
 
+            ## Skip quietly if this is the last line of a scalar
+            if (!length $_ and ref $fh eq 'IO::Scalar' and $fh->eof) {
+                $arg{debug} and print "Skipping empty line at end of scalar\n";
+                next LOGLINE;
+            }
+
+            if ($arg{pgmode}) {
+
+                ## 1=prefix 2=timestamp 3=PID 4=rest
+                if ($_ =~ s/$pgpidre1/$4/) {
                     ## We want the timestamp and the pid, even if we have to fake it
                     ($pgprefix,$pgts,$pgpid,$pgnum) = ($1, $2||'', $3||1, 1);
 
@@ -1412,11 +1315,11 @@ sub parse_file {
                     $lastpid = $pgpid;
 
                     ## Have we seen this PID before?
-                    if (exists $pidline{$pgpid}) {
+                    if (exists $pidline->{$pgpid}) {
                         if ($pglog =~ /syslog/) {
                             if ($pglog eq 'syslog' and $syslognum and $syslognum != $pgnum) {
                                 ## Got a new statement, so process the old
-                                $count += process_line(delete $pidline{$pgpid}, 0, $filename);
+                                $count += process_line(delete $pidline->{$pgpid}, 0, $filename);
                             }
                         }
                         else {
@@ -1428,7 +1331,7 @@ sub parse_file {
                             else {
                                 ## Process the old one
                                 ## Delete it so it gets recreated afresh below
-                                $count += process_line(delete $pidline{$pgpid}, 0, $filename);
+                                $count += process_line(delete $pidline->{$pgpid}, 0, $filename);
                             }
                         }
                     }
@@ -1446,14 +1349,14 @@ sub parse_file {
                     }
 
                     ## Assign this string to the current pgnum slot
-                    $pidline{$pgpid}{string}{$pgnum} = $_;
+                    $pidline->{$pgpid}{string}{$pgnum} = $_;
                     $current_pid_num{$pgpid} = $pgnum;
 
                     ## If we don't yet have a line, store it, plus the prefix and timestamp
-                    if (! $pidline{$pgpid}{line}) {
-                        $pidline{$pgpid}{line} = ($. + $newlines);
-                        $pidline{$pgpid}{pgprefix} = $pgprefix;
-                        $pidline{$pgpid}{pgtime} = $pgts;
+                    if (! $pidline->{$pgpid}{line}) {
+                        $pidline->{$pgpid}{line} = ($linenumber + $newlines);
+                        $pidline->{$pgpid}{pgprefix} = $pgprefix;
+                        $pidline->{$pgpid}{pgtime} = $pgts;
                     }
 
                     ## Remember this line
@@ -1485,7 +1388,7 @@ sub parse_file {
                     $current_pid_num{$lastpid} = $pgnum;
 
                     ## Store this string
-                    $pidline{$lastpid}{string}{$pgnum} = $_;
+                    $pidline->{$lastpid}{string}{$pgnum} = $_;
                 }
                 ## May be a special LOG entry with no %u@%d etc.
                 ## We simply skip these ones if they go into a LOG:
@@ -1498,7 +1401,7 @@ sub parse_file {
                     ## Not a continuation, so probably an error from the OS
                     ## Simply parse it right away, force it to match
                     if (! $arg{skip_non_parsed}) {
-                        $count += process_line($_, $. + $newlines, $filename, 1);
+                        $count += process_line($_, $linenumber + $newlines, $filename, 1);
                     }
                 }
 
@@ -1508,20 +1411,302 @@ sub parse_file {
             } ## end of normal pgmode
 
             ## Just a bare entry, so process it right away
-            $count += process_line($_, $. + $newlines, $filename);
+            $count += process_line($_, $linenumber + $newlines, $filename);
 
         } ## end of each line in the file
 
     } ## end of non-CSV mode
 
-    ## Get the new offset and store it
-    seek $fh, 0, 1;
-    $offset = tell $fh;
-    if ($lfileinfo->{offset} != $offset and $offset) {
-        $opt{newoffset}{$filename} = $offset;
+    return $count;
+
+} ## end of parse_filehandle
+
+
+sub parse_file {
+
+    ## Parse a file - this is the workhorse
+    ## Arguments: two
+    ## 1. Exact filename we are parsing
+    ## 2. Hashref of file information:
+    ##   name: logfile to open
+    ##   original: original name
+    ##   lastfile: we scanned last time this ran. May be an empty string or not exist
+    ##   offset: where in the file we stopped at last time
+    ## Returns the number of matches
+
+    my $filename = shift;
+    my $lfileinfo = shift;
+
+    ## The file we scanned last time we ran
+    my $lastfile = $lfileinfo->{lastfile} || '';
+
+    ## Set this as the latest (but not the lastfile)
+    $lfileinfo->{latest} = $filename;
+
+    ## Touch the hash so we know we've been here
+    $find{$filename} = {};
+
+    ## Keep track of matches for this file
+    my $count = 0;
+
+    ## Needed to track postgres PIDs
+    my %pidline;
+
+    my $fh;
+
+    my $newoffset = 0;
+    my $newmodtime = '';
+
+    ## Allow for alternate service and password files
+    my $basedir = dirname($0);
+    my $tnm_service_file = 'tnm.service.conf';
+    if (-e "$basedir/$tnm_service_file") {
+      $ENV{PGSERVICEFILE} = "$basedir/$tnm_service_file";
+    }
+    my $tnm_pgpass_file = 'tnm.pgpass';
+    if (-e "$basedir/$tnm_pgpass_file") {
+      $ENV{PGPASSFILE} = "$basedir/$tnm_pgpass_file";
     }
 
+    ## Handle alternate ways of reading in a file
+    ## At the end of the day, we want to provide a pseudo-filehandle
+    if ($filename =~ /SERVICE=/) {
+        (my $newfilename = $filename) =~ s/SERVICE=(\w+)\s*//;
+        my $service = $1;
+
+        ## Make sure the service is reachable and grab all files in the given directory
+        my $remotedir = dirname($newfilename);
+        my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+        my $COM = qq{psql service="$service" -AX -qt -c "select pg_ls_dir('$remotedir')" 2>$errorfile};
+        my @remote_files =  qx/ $COM /;
+        ## If the error file was written to, we bail and report the error
+        if (-s $errorfile) {
+            seek $efh, 0, 0;
+            my $errline = <$efh>;
+            chomp $errline;
+            warn "Unable to use SERVICE=$service ($errline)\n";
+            exit 2;
+        }
+        close $efh;
+
+        ## Now open the file in question
+        ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+        $COM = qq{psql service="$service" -AX -qt -x -c "select * from pg_stat_file('$newfilename')" 2>$errorfile};
+        my @info = qx/ $COM /;
+        if (-s $errorfile) {
+            seek $efh, 0, 0;
+            my $errline = <$efh>;
+            chomp $errline;
+            warn "Call to pg_stat_file failed for service $service and file $newfilename ($errline)\n";
+            exit 2;
+        }
+        close $efh;
+        my %remotefileinfo = map { chomp; split /\|/, $_, 2 } @info;
+
+        $newmodtime = $remotefileinfo{modification} || '';
+
+        my $filesize = $remotefileinfo{size} or die qq{Could not determine file size!};
+
+        my $offset = $lfileinfo->{offset} || 0;
+
+        ## Allow the offset to equal the size via --reset
+        if ($arg{reset}) {
+            $offset = $filesize;
+            $arg{verbose} and warn "  Resetting offset to $offset\n";
+        }
+        ## If we passed in files manually, they start at 0
+        elsif ($arg{file}[0]) {
+            $offset = 0;
+        }
+        ## If the offset was set from the command line, use that
+        elsif ($arg{offset} != -1) {
+            if ($arg{offset} >= 0) {
+                $offset = $arg{offset};
+            }
+            ## Negative offset means we walk back from end of the file
+            elsif ($arg{offset} < -1) {
+                $offset = $filesize + $arg{offset};
+                ## But obviously don't walk too far back!
+                $offset = 0 if $offset < 0;
+            }
+        }
+        ## If the file is now smaller than our offset, assume it's a new file
+        elsif ($filesize < $offset) {
+            $arg{debug} and print "File has shrunk, so resetting offset to 0\n";
+            $offset = 0;
+        }
+
+        ## If the modification time is the same, and the size is the same, skip it
+        if ($lfileinfo->{modtime} and $lfileinfo->{modtime} eq $newmodtime and $offset == $filesize) {
+            $arg{verbose} and print "Skipping file '$filename', as modtime is still $newmodtime and size is still $filesize\n";
+            return 0;
+        }
+
+        ## Attempt to read in the actual file data
+        ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+        $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename',$offset,$filesize)" 2>$errorfile};
+        my $slurp = qx/ $COM /;
+        if (-s $errorfile) {
+            seek $efh, 0, 0;
+            my $errline = <$efh>;
+            chomp $errline;
+            warn "Call to pg_read_file failed for service $service and file $newfilename ($errline)\n";
+            exit 2;
+        }
+        close $efh;
+
+        ## Get exclusion and inclusion regexes for this file
+        ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
+
+        $fh = new IO::Scalar \$slurp;
+        $count += parse_filehandle($fh, $filename, \%pidline, $lfileinfo);
+
+        $newoffset = $filesize;
+
+    } ## end SERVICE file mode
+    else {
+
+        ## Make sure the file exists and is readable
+        if (! -e $filename) {
+            $arg{quiet} or warn qq{WARNING! Skipping non-existent file "$filename"\n};
+            return -1;
+        }
+        if (! -f $filename) {
+            $arg{quiet} or warn qq{WARNING! Skipping non-file "$filename"\n};
+            return -1;
+        }
+
+        ## Figure out where in the file we want to start scanning from
+        my $size = -s $filename;
+        my $offset = 0;
+        my $maxsize = $opt{maxsize} ? $opt{maxsize} : $arg{maxsize};
+
+        ## Is the offset significant?
+        if (!$arg{file}[0]               ## ...not if we passed in filenames manually
+                and $lastfile eq $filename   ## ...not if this is not the same file we got the offset for last time
+        ) {
+            ## Allow the offset to equal the size via --reset
+            if ($arg{reset}) {
+                $offset = $size;
+                $arg{verbose} and warn "  Resetting offset to $offset\n";
+            }
+            ## Allow the offset to be changed on the command line
+            elsif ($arg{offset} != -1) {
+                if ($arg{offset} >= 0) {
+                    $offset = $arg{offset};
+                }
+                elsif ($arg{offset} < -1) {
+                    $offset = $size + $arg{offset};
+                    $offset = 0 if $offset < 0;
+                }
+            }
+            else {
+                $offset = $lfileinfo->{offset} || 0;
+            }
+        }
+
+        my $psize = pretty_number($size);
+        my $pmaxs = pretty_number($maxsize);
+        my $poffset = pretty_number($offset);
+        $arg{verbose} and warn "  File: $filename Offset: $poffset Size: $psize Maxsize: $pmaxs\n";
+
+        ## The file may have shrunk due to a logrotate
+        if ($offset > $size) {
+            $arg{verbose} and warn "  File has shrunk - resetting offset to 0\n";
+            $offset = 0;
+        }
+
+        ## If the offset is equal to the size, we're done!
+        ## Store the offset if it is truly new and significant
+        if ($offset >= $size) {
+            $offset = $size;
+            if ($lfileinfo->{offset} != $offset) {
+                $opt{newoffset}{$filename} = $offset;
+            }
+            return 0;
+        }
+
+        ## Store the original offset
+        my $original_offset = $offset;
+
+        ## This can happen quite a bit on busy files!
+        if ($maxsize and ($size - $offset > $maxsize) and $arg{offset} < 0) {
+            $arg{quiet} or warn "  SIZE TOO BIG (size=$size, offset=$offset): resetting to last $maxsize bytes\n";
+            $toolarge{$filename} = qq{File "$filename" too large:\n  only read last $maxsize bytes (size=$size, offset=$offset)};
+            $offset = $size - $maxsize;
+        }
+
+        open $fh, '<', $filename or die qq{Could not open "$filename": $!\n};
+
+        ## Seek the right spot as needed
+        if ($offset and $offset < $size) {
+
+            ## Because we go back by 10 characters below, always offset at least 10
+            $offset = 10 if $offset < 10;
+
+            ## We go back 10 characters to get us before the newlines we (probably) ended with
+            seek $fh, $offset-10, 0;
+
+            ## If a manual rewind request has been given, process it (inverse)
+            if ($arg{rewind}) {
+                seek $fh, -$arg{rewind}, 1;
+            }
+        }
+
+        ## Optionally figure out what approximate line we are on
+        my $newlines = 0;
+        if ($arg{find_line_number}) {
+            my $pos = tell $fh;
+
+            ## No sense in counting if we're at the start of the file!
+            if ($pos > 1) {
+
+                seek $fh, 0, 0;
+                ## Need to sysread up to $pos
+                my $blocksize = 100_000;
+                my $current = 0;
+                {
+                    my $chunksize = $blocksize;
+                    if ($current + $chunksize > $pos) {
+                        $chunksize = $pos - $current;
+                    }
+                    my $foobar;
+                    my $res = read $fh, $foobar, $chunksize;
+                    ## How many newlines in there?
+                    $newlines += $foobar =~ y/\n/\n/;
+                    $current += $chunksize;
+                    redo if $current < $pos;
+                }
+
+                ## Return to the original position
+                seek $fh, 0, $pos;
+
+            } ## end pos > 1
+
+        } ## end find_line_number
+
+        ## Get exclusion and inclusion regexes for this file
+        ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
+
+        ## Discard the previous line if needed (we rewound by 10 characters above)
+        $original_offset and <$fh>;
+
+        $count += parse_filehandle($fh, $filename, \%pidline, $lfileinfo);
+
+        ## Get the new offset and store it
+        seek $fh, 0, 1;
+        $newoffset = tell $fh;
+
+    } ## end NORMAL file mode
+
     close $fh or die qq{Could not close "$filename": $!\n};
+
+    if ($lfileinfo->{offset} != $newoffset and $newoffset) {
+        $opt{newoffset}{$filename} = $newoffset;
+    }
+    if ($lfileinfo->{modtime} ne $newmodtime and $newmodtime) {
+        $opt{newmodtime}{$filename} = $newmodtime;
+    }
 
     ## Now add in any pids that have not been processed yet
     for my $pid (sort { $pidline{$a}{line} <=> $pidline{$b}{line} } keys %pidline) {
@@ -1659,6 +1844,7 @@ sub process_line {
 
     ## Special handling for forced checks, e.g. OS errors
     if (defined $forcematch) {
+
         $pgprefix = '?';
 
         ## Bail if it matches the exclusion non-parsed regex
@@ -2006,7 +2192,7 @@ sub process_line {
     if ($arg{'canceled_autovac'}) {
         if ($string =~ /^\s*ERROR:\s+canceling autovacuum task\s*CONTEXT: automatic vacuum of table (.+)/) {
             if (1 == $arg{'canceled_autovac'}) {
-                $fancyoutput{'canceled_autovac'}{$1}++;
+                $fancyoutput{'canceled_autovac'}{$filename}{$1}++;
             }
             return 1;
         }
@@ -2121,6 +2307,7 @@ sub process_report {
 
     ## Some minor help with debugging
     push @header => "X-TNM-VERSION: $VERSION";
+
     ## Sometimes we go dryrun for this section only!
     my $dryrun = $arg{dryrun};
 
@@ -2348,15 +2535,19 @@ sub process_report {
             if ('canceled_autovac' eq $fotype) {
                 print {$efh} "Number of times autovacuum was cancelled:\n";
                 my $max_table_length = 1;
-                for my $tablename (keys %{$fancyoutput{$fotype}}) {
+                for my $file (keys %{ $fancyoutput{$fotype} }) {
+                  for my $tablename (keys %{ $fancyoutput{$fotype}{$file} }) {
                     $max_table_length = length $tablename if length $tablename > $max_table_length;
+                  }
                 }
-                for my $tablename (sort {
-                    $fancyoutput{$fotype}{$b} <=> $fancyoutput{$fotype}{$a}
+                for my $file (sort keys %{ $fancyoutput{$fotype} }) {
+                  for my $tablename (sort {
+                    $fancyoutput{$fotype}{$file}{$b} <=> $fancyoutput{$fotype}{$file}{$a}
                         or $a cmp $b
-                    } keys %{$fancyoutput{$fotype}}) {
-                    printf {$efh} "%-*s : %d\n", $max_table_length, $tablename, $fancyoutput{$fotype}{$tablename};
-                }
+                      } keys %{$fancyoutput{$fotype}{$file}}) {
+                    printf {$efh} "[%s] %-*s : %d\n", $fab{$file}, $max_table_length, $tablename, $fancyoutput{$fotype}{$file}{$tablename};
+		  }
+		}
                 print {$efh} "\n\n";
             }
         }
@@ -2833,7 +3024,7 @@ sub final_cleanup {
     ## Need to walk through and see if anything has changed so we can rewrite the config
     ## For the moment, that only means the offset and the lastfile
 
-    ## Have we got new lastfiles or offsets?
+    ## Have we got new lastfiles, offsets, or modtimes?
     for my $t (@{ $opt{file} }) {
         if ($t->{latest} ne $t->{lastfile}) {
             $changes++;
@@ -2846,8 +3037,14 @@ sub final_cleanup {
                 $t->{offset} = $newoffset;
             }
         }
+        if (exists $opt{newmodtime}{$t->{lastfile}}) {
+            my $newmodtime = $opt{newmodtime}{$t->{lastfile}};
+            if ($t->{modtime} ne $newmodtime) {
+                $changes++;
+                $t->{modtime} = $newmodtime;
+            }
+        }
     }
-
     ## No rewriting if in dryrun mode, but reset always trumps dryrun
     ## Otherwise, do nothing if there have been no changes
     return if (!$changes or $arg{dryrun}) and !$arg{reset};
@@ -2860,7 +3057,6 @@ sub final_cleanup {
 ## This file is automatically updated
 ## Last updated: $now
 };
-
     for my $item (qw/ log_line_prefix pglog email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit statement_size /) {
         next if ! exists $opt{$item};
 
@@ -2879,7 +3075,13 @@ sub final_cleanup {
                 printf "%s: %s\n", uc $item, $itemz;
             }
         }
-        else {
+        elsif (ref $opt{$item} eq 'HASH') {
+          ## Only print the 0 one if it exists
+          if (exists $opt{$item}{0}) {
+            printf qq{%s: %s\n}, uc $item, $opt{$item}{0};
+          }
+        }
+        elsif (! ref $opt{item}) {
             ## If it has leading or trailing whitespace, quote it
             if ($opt{$item} =~ /^\s/ or $opt{$item} =~ /\s$/) {
                 printf qq{%s: "%s"\n}, uc $item, $opt{$item};
@@ -2887,6 +3089,9 @@ sub final_cleanup {
             else {
                 printf "%s: %s\n", uc $item, $opt{$item};
             }
+        }
+        else {
+          die "Invalid opt item $item\n";
         }
     }
 
@@ -2926,6 +3131,7 @@ sub final_cleanup {
 
     print "\n";
     add_comments('FILE');
+
     for my $f (sort { $a->{suffix} <=> $b->{suffix} }
                @{ $opt{file} }) {
 
@@ -2945,6 +3151,16 @@ sub final_cleanup {
         elsif ($f->{offset}) {
             printf "OFFSET%d: %d\n", $f->{suffix}, $f->{offset};
         }
+        ## May have a modtime
+        if ($f->{modtime}) {
+            printf "MODTIME%d: %s\n", $f->{suffix}, $f->{modtime};
+        }
+
+        ## May have its own log_line_prefix
+        if (exists $opt{log_line_prefix}{ $f->{suffix} }) {
+            printf "LOG_LINE_PREFIX%d: %s\n", $f->{suffix}, $opt{log_line_prefix}{ $f->{suffix} };
+        }
+
     }
     print "\n";
 

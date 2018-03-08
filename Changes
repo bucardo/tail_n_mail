@@ -2,7 +2,7 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 2.1.0
+Version 2.1.0, released March 8, 2018
 
 * Support grabbing log files via Postgres connections, by using service files 
   and the pg_read_file() function.

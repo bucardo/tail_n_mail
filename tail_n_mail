@@ -3141,7 +3141,7 @@ sub final_cleanup {
         printf "\nFILE%d: %s\n", $f->{suffix}, $f->{original};
 
         ## Got any lastfile or offset for these?
-        if ($f->{lastfile}) {
+        if ($f->{lastfile} and $f->{original} !~ /SERVICE=/) {
             printf "LASTFILE%d: %s\n", $f->{suffix}, $f->{lastfile};
         }
         ## The offset may be new, or we may be the same as last time

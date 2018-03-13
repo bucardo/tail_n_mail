@@ -7,6 +7,9 @@ Version 2.2.0
  * Do not write LASTFILE information to the config if using service files
   [Greg Sabino Mullane]
 
+ * Bunch all non-parsed lines together when possible (e.g. failing archive_command output)
+  [Greg Sabino Mullane]
+
  * Fix minor bug with display of autovac entries with a single matched file
   [Greg Sabino Mullane]
 

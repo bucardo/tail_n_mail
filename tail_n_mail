@@ -1704,6 +1704,7 @@ sub parse_file {
     if ($lfileinfo->{offset} != $newoffset and $newoffset) {
         $opt{newoffset}{$filename} = $newoffset;
     }
+    $lfileinfo->{modtime} ||= 0;
     if ($lfileinfo->{modtime} ne $newmodtime and $newmodtime) {
         $opt{newmodtime}{$filename} = $newmodtime;
     }

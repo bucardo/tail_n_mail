@@ -26,7 +26,7 @@ use POSIX          qw( strftime localeconv );
 use IO::Scalar;
 use 5.008003;
 
-our $VERSION = '2.2.0';
+our $VERSION = '2.2.1';
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
 
@@ -2371,27 +2371,29 @@ sub process_report {
         push @msg => "Unique items: $pretty_unique_matches";
     }
 
+    ## Setup fancy output
+    my $letter = 0;
+    my $maxcount = 1;
+    my $maxname = 1;
+    my $maxletter = 1;
+    for my $file (@files_parsed) {
+        next if ! $file->[1];
+        $file->[1] = pretty_number($file->[1]);
+        $maxcount = length $file->[1] if length $file->[1] > $maxcount;
+        $maxname = length $file->[0] if length $file->[0] > $maxname;
+        my $name = chr(65+$letter);
+        if ($letter >= 26) {
+            $name = sprintf '%s%s',
+                chr(64+($letter/26)), chr(65+($letter%26));
+        }
+        $letter++;
+        $fab{$file->[0]} = $name;
+        $maxletter = length $name if length $name > $maxletter;
+    }
+
     ## If we parsed more than one file, label them now
     if ($matchfiles > 1) {
-        my $letter = 0;
         push @msg => "Total matches: $pretty_grand_total";
-        my $maxcount = 1;
-        my $maxname = 1;
-        my $maxletter = 1;
-        for my $file (@files_parsed) {
-            next if ! $file->[1];
-            $file->[1] = pretty_number($file->[1]);
-            $maxcount = length $file->[1] if length $file->[1] > $maxcount;
-            $maxname = length $file->[0] if length $file->[0] > $maxname;
-            my $name = chr(65+$letter);
-            if ($letter >= 26) {
-                $name = sprintf '%s%s',
-                    chr(64+($letter/26)), chr(65+($letter%26));
-            }
-            $letter++;
-            $fab{$file->[0]} = $name;
-            $maxletter = length $name if length $name > $maxletter;
-        }
         for my $file (@files_parsed) {
             next if ! $file->[1];
             my $name = $fab{$file->[0]};

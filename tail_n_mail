@@ -1401,7 +1401,7 @@ sub parse_filehandle {
                     ## Not a continuation, so probably an error from the OS
                     ## Simply parse it right away, force it to match
                     if (! $arg{skip_non_parsed}) {
-                        $count += process_line($_, $linenumber + $newlines, $filename, 1);
+                        $count += process_line($_, $linenumber + $newlines, $filename, 1, 'nonparsed');
                     }
                 }
 
@@ -1809,7 +1809,7 @@ sub process_line {
     ## We've got a complete statement, so do something with it!
     ## If it matches, we'll either put into %find directly, or store in %similar
 
-    my ($info,$line,$filename,$forcematch) = @_;
+    my ($info,$line,$filename,$forcematch,$special) = @_;
 
     ## The final string
     $string = '';
@@ -1835,6 +1835,43 @@ sub process_line {
     }
     else {
         $string = $info;
+    }
+
+    ## Non-parsed lines are grouped together by filename
+    if (defined $special and $special eq 'nonparsed') {
+        my $lookup = "nonparsed $filename";
+        if (!exists $similar{$lookup}) {
+            $similar{$lookup}{earliest} = $similar{$lookup}{latest} =
+                {
+                    filename => $filename,
+                    line     => $line,
+                    pgprefix => $pgprefix,
+                    time     => $time,
+                    npstring => $string,
+                };
+            $similar{$lookup}{count} = 1; ## Stays at 1
+
+            ## Store this away for eventual output
+            $find{$filename}{$line} = $similar{$lookup};
+
+            ## Copy filename and line up a level for later sorting ease
+            $find{$filename}{$line}{filename} = $similar{$lookup}{earliest}{filename};
+            $find{$filename}{$line}{line} = $similar{$lookup}{earliest}{line};
+        }
+        else {
+            my $oldstring = $similar{$lookup}{latest}{npstring};
+            ## This becomes the new latest one
+            $similar{$lookup}{latest} =
+                {
+                    filename => $filename,
+                    pgprefix => $pgprefix,
+                    line     => $line,
+                    time     => $time,
+                    npstring => "$oldstring\n$string",
+                };
+        }
+
+        return 1;
     }
 
     ## Strip out leading whitespace
@@ -2846,7 +2883,14 @@ sub lines_of_interest {
         my $filename = exists $f->{earliest} ? $f->{earliest}{filename} : $f->{filename};
 
         ## If only a single entry, simpler output
-        if ($f->{count} == 1 and $arg{hideflatten}) {
+        if (exists $f->{latest}{npstring} or ($f->{count} == 1 and $arg{hideflatten})) {
+            if (exists $f->{latest}{npstring}) {
+                if ($f->{earliest}{line} != $f->{latest}{line}) {
+                    $f->{line} = "$f->{earliest}{line} - $f->{latest}{line}";
+                }
+                $f->{rawstring} = $f->{latest}{npstring};
+            }
+
             if ($matchfiles > 1) {
                 printf " From file %s%s\n",
                     $fab{$filename},
@@ -2865,7 +2909,7 @@ sub lines_of_interest {
             }
 
             ## If we are using prefixes, show it here
-            if (exists $f->{earliest}{pgprefix}) {
+            if (exists $f->{earliest}{pgprefix} and length $f->{earliest}{pgprefix}) {
                 print "$f->{earliest}{pgprefix}\n";
             }
 

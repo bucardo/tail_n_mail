@@ -2,6 +2,15 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
+Version 2.2.0
+
+ * Do not write LASTFILE information to the config if using service files
+  [Greg Sabino Mullane]
+
+ * Fix minor bug with display of autovac entries with a single matched file
+  [Greg Sabino Mullane]
+
+
 Version 2.1.0, released March 8, 2018
 
 * Support grabbing log files via Postgres connections, by using service files 

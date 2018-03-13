@@ -3041,6 +3041,7 @@ sub final_cleanup {
         }
         if (exists $opt{newmodtime}{$t->{lastfile}}) {
             my $newmodtime = $opt{newmodtime}{$t->{lastfile}};
+            $t->{modtime} ||= 0;
             if ($t->{modtime} ne $newmodtime) {
                 $changes++;
                 $t->{modtime} = $newmodtime;

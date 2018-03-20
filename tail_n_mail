@@ -2409,6 +2409,19 @@ sub process_report {
         push @msg => "Unique items: $pretty_unique_matches";
     }
 
+    ## Attempt to line up all the SERVICE= entries
+    my $maxservice = 0;
+    for my $file (@files_parsed) {
+        if ($file->[0] =~ /SERVICE=(\w+)/) {
+            $maxservice = length $1 if length $1 > $maxservice;
+        }
+    }
+    if ($maxservice) {
+        for my $file (@files_parsed) {
+            ($file->[2] = $file->[0]) =~ s/(SERVICE=(\w+))/$1 . ' 'x($maxservice - length $2)/e;
+        }
+    }
+
     ## Setup fancy output
     my $letter = 0;
     my $maxcount = 1;
@@ -2439,7 +2452,7 @@ sub process_report {
                 $maxletter + 2,
                 "[$name]",
                 $maxname+1,
-                "$file->[0]:",
+                $file->[2] ? "$file->[2]:" : "$file->[0]:",
                 $maxcount,
                 $file->[1];
         }

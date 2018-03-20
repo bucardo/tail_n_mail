@@ -65,6 +65,8 @@ my %arg = (
               mailuser         => 'example',
               mailpass         => 'example',
               mailport         => 465,
+## Send mail as text/html and wrap in PRE for nicer alignment?
+              html             => 0,
 ## Are we parsing Postgres logs?
               pgmode           => 1,
 ## What type of Postgres log we are parsing. Can be log, csv, or syslog/syslog2
@@ -169,6 +171,7 @@ my $result = GetOptions
    'mailport=s',
    'mailzero',
    'mailsig=s@',
+   'html',
    'smtp',
    'tsep=s',
    'tsepnosub',
@@ -2339,6 +2342,8 @@ sub process_report {
     ## Store the header separate from the body for later size checking
     my @header;
 
+    $arg{html} and push @header => 'Content-type: text/html';
+
     ## Discourage vacation programs from replying
     push @header => 'Auto-Submitted: auto-generated';
     push @header => 'Precedence: bulk';
@@ -2567,8 +2572,15 @@ sub process_report {
         ## Stop headers, start the message
         print {$efh} "\n";
 
+        $arg{html} and print "<pre>\n";
+
         $chunk and print {$efh} "Message was split: this is chunk #$chunk\n";
         for (@msg) {
+            if ($arg{html}) {
+                $_ =~ s/&/&amp;/g;
+                $_ =~ s/</&lt;/g;
+                $_ =~ s/>/&gt;/g;
+            }
             print {$efh} "$_\n";
         }
         ## Add a little space before the actual data
@@ -2589,18 +2601,18 @@ sub process_report {
                 print {$efh} "Number of times autovacuum was cancelled:\n";
                 my $max_table_length = 1;
                 for my $file (keys %{ $fancyoutput{$fotype} }) {
-                  for my $tablename (keys %{ $fancyoutput{$fotype}{$file} }) {
-                    $max_table_length = length $tablename if length $tablename > $max_table_length;
-                  }
+                    for my $tablename (keys %{ $fancyoutput{$fotype}{$file} }) {
+                        $max_table_length = length $tablename if length $tablename > $max_table_length;
+                    }
                 }
                 for my $file (sort keys %{ $fancyoutput{$fotype} }) {
-                  for my $tablename (sort {
-                    $fancyoutput{$fotype}{$file}{$b} <=> $fancyoutput{$fotype}{$file}{$a}
-                        or $a cmp $b
-                      } keys %{$fancyoutput{$fotype}{$file}}) {
-                    printf {$efh} "[%s] %-*s : %d\n", $fab{$file}, $max_table_length, $tablename, $fancyoutput{$fotype}{$file}{$tablename};
-		  }
-		}
+                    for my $tablename (sort {
+                        $fancyoutput{$fotype}{$file}{$b} <=> $fancyoutput{$fotype}{$file}{$a}
+                            or $a cmp $b
+                        } keys %{$fancyoutput{$fotype}{$file}}) {
+                        printf {$efh} "[%s] %-*s : %d\n", $fab{$file}, $max_table_length, $tablename, $fancyoutput{$fotype}{$file}{$tablename};
+                    }
+                }
                 print {$efh} "\n\n";
             }
         }
@@ -2610,6 +2622,8 @@ sub process_report {
             ## Caller's responsibility to add a "--" line
             print {$efh} $arg{mailsignature};
         }
+
+        $arg{html} and print "</pre>\n";
 
         close $efh or warn qq{Could not close $emailfile: $!\n};
 

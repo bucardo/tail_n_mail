@@ -1055,19 +1055,19 @@ sub parse_inherit_file {
         }
         ## Which lines to exclude from the report
         elsif (/^EXCLUDE:\s*(.+?)\s*$/) {
-            push @{$opt{exclude}}, $1;
+            push @{$opt{inherited_exclude}}, $1;
         }
         ## Which prefix lines to exclude from the report
         elsif (/^EXCLUDE_PREFIX:\s*(.+?)\s*$/) {
-            push @{$opt{exclude_prefix}}, $1;
+            push @{$opt{inherited_exclude_prefix}}, $1;
         }
         ## Which lines to exclude from the report
         elsif (/^EXCLUDE_NON_PARSED:\s*(.+?)\s*$/) {
-            push @{$opt{exclude_non_parsed}}, $1;
+            push @{$opt{inherited_exclude_non_parsed}}, $1;
         }
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
-            push @{$opt{include}}, $1;
+            push @{$opt{inherited_include}}, $1;
         }
         ## Maximum file size
         elsif (/^MAXSIZE:\s*(\d+)/) {
@@ -1759,7 +1759,7 @@ sub generate_regexes {
 
     ## Build an exclusion regex
     my $lexclude = '';
-    for my $ex (@{$opt{exclude}}) {
+    for my $ex (@{$opt{exclude}}, @{$opt{inherited_exclude}}) {
         $arg{debug} and warn "  Adding exclusion: $ex\n";
         my $regex = qr{$ex};
         $lexclude .= "$regex|";
@@ -1769,7 +1769,7 @@ sub generate_regexes {
 
     ## Build an exclusion non-parsed regex
     my $lexclude_non_parsed = '';
-    for my $ex (@{$opt{exclude_non_parsed}}) {
+    for my $ex (@{$opt{exclude_non_parsed}}, @{$opt{inherited_exclude_non_parsed}}) {
         $arg{debug} and warn "  Adding exclusion_non_parsed: $ex\n";
         my $regex = qr{$ex};
         $lexclude_non_parsed .= "$regex|";
@@ -1779,7 +1779,7 @@ sub generate_regexes {
 
     ## Build a prefix exclusion regex
     my $lexclude_prefix = '';
-    for my $ex (@{$opt{exclude_prefix}}) {
+    for my $ex (@{$opt{exclude_prefix}}, @{$opt{inherited_exclude_prefix}}) {
         $arg{debug} and warn "  Adding exclusion_prefix: $ex\n";
         my $regex = qr{$ex};
         $lexclude_prefix .= "$regex|";
@@ -1789,7 +1789,7 @@ sub generate_regexes {
 
     ## Build an inclusion regex
     my $linclude = '';
-    for my $in (@{$opt{include}}) {
+    for my $in (@{$opt{include}}, @{$opt{inherited_include}}) {
         $arg{debug} and warn "  Adding inclusion: $in\n";
         my $regex = qr{$in};
         $linclude .= "$regex|";

@@ -3223,7 +3223,7 @@ sub final_cleanup {
         if (exists $opt{newoffset}{$f->{lastfile}}) {
             printf "OFFSET%d: %d\n", $f->{suffix}, $opt{newoffset}{$f->{lastfile}};
         }
-        elsif ($f->{offset}) {
+        elsif (defined $f->{offset}) {
             printf "OFFSET%d: %d\n", $f->{suffix}, $f->{offset};
         }
         ## May have a modtime

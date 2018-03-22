@@ -2572,7 +2572,7 @@ sub process_report {
         ## Stop headers, start the message
         print {$efh} "\n";
 
-        $arg{html} and print "<pre>\n";
+        $arg{html} and print {$efh} "<pre>\n";
 
         $chunk and print {$efh} "Message was split: this is chunk #$chunk\n";
         for (@msg) {
@@ -2623,7 +2623,7 @@ sub process_report {
             print {$efh} $arg{mailsignature};
         }
 
-        $arg{html} and print "</pre>\n";
+        $arg{html} and print {$efh} "</pre>\n";
 
         close $efh or warn qq{Could not close $emailfile: $!\n};
 

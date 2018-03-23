@@ -1597,8 +1597,12 @@ sub parse_file {
                 exit 2;
             }
             close $efh;
+
             ## Because we read the rotated file, we want to slurp in the entire current file
             $offset = 0;
+
+            ## pg_read_file likes to add newlines, but we don't want any extra ones
+            $slurp =~ s/\s*$/\n/;
 
             ## Make sure we store our new modification time for the rotated file
             $opt{rotatefilemodtime}{$filename} = $remoterotatefileinfo{modification};

@@ -3089,15 +3089,15 @@ sub final_cleanup {
             $changes++;
             $t->{lastfile} = delete $t->{latest};
         }
-        if (exists $opt{newoffset}{$t->{lastfile}}) {
-            my $newoffset = $opt{newoffset}{$t->{lastfile}};
+        if (exists $opt{newoffset}{$t->{latest}}) {
+            my $newoffset = $opt{newoffset}{$t->{latest}};
             if ($t->{offset} != $newoffset) {
                 $changes++;
                 $t->{offset} = $newoffset;
             }
         }
-        if (exists $opt{newmodtime}{$t->{lastfile}}) {
-            my $newmodtime = $opt{newmodtime}{$t->{lastfile}};
+        if (exists $opt{newmodtime}{$t->{latest}}) {
+            my $newmodtime = $opt{newmodtime}{$t->{latest}};
             $t->{modtime} ||= 0;
             if ($t->{modtime} ne $newmodtime) {
                 $changes++;
@@ -3205,8 +3205,8 @@ sub final_cleanup {
             printf "LASTFILE%d: %s\n", $f->{suffix}, $f->{lastfile};
         }
         ## The offset may be new, or we may be the same as last time
-        if (exists $opt{newoffset}{$f->{lastfile}}) {
-            printf "OFFSET%d: %d\n", $f->{suffix}, $opt{newoffset}{$f->{lastfile}};
+        if (exists $opt{newoffset}{$f->{latest}}) {
+            printf "OFFSET%d: %d\n", $f->{suffix}, $opt{newoffset}{$f->{latest}};
         }
         elsif (defined $f->{offset}) {
             printf "OFFSET%d: %d\n", $f->{suffix}, $f->{offset};

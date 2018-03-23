@@ -7,6 +7,9 @@ Version 2.2.0
  * Add ---html option, to send text/html emails with <pre> for nicer alignments.
   [Greg Sabino Mullane]
 
+ * Support for handling files moved by log rotation.
+  [Greg Sabino Mullane]
+
  * Make sure we do not duplicate include/exclude information from inherited files.
   [Greg Sabino Mullane]
 

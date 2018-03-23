@@ -780,6 +780,11 @@ sub parse_config_file {
             my $suffix = $1 || 1;
             $localopt{lastfile}{$suffix} = $2;
         }
+        ## The rotation file modification time
+        elsif (/^ROTATEFILEMODTIME(\d*):\s*(.+?)\s*$/) {
+            my $suffix = $1 || 1;
+            $localopt{rotatefilemodtime}{$suffix} = $2;
+        }
         ## Who to send emails to for this file
         elsif (/^EMAIL:\s*(.+?)\s*$/) {
             push @{$localopt{email}}, $1;
@@ -895,7 +900,7 @@ sub parse_config_file {
 
     ## Adjust the file suffixes as needed
     ## This allows us to simply add multiple bare 'FILE:' entries before the first rewrite
-    ## We also plug in the LASTFILE, OFFSET, and MODTIME values now
+    ## We also plug in the LASTFILE, OFFSET, MODTIME, and ROTATEFILEMODTIME values now
     my %numused;
     for my $file (@{ $localopt{file} }) {
         $file->{suffix} ||= 0;
@@ -934,6 +939,9 @@ sub parse_config_file {
 
         ## Put the modtime into place if it exists
         $file->{modtime} = $localopt{modtime}{$file->{suffix}} || '';
+
+        ## Put the rotation file modtime into place if it exists
+        $file->{rotatefilemodtime} = $localopt{rotatefilemodtime}{$file->{suffix}} || '';
 
     }
 
@@ -1490,50 +1498,122 @@ sub parse_file {
         }
         close $efh;
         my %remotefileinfo = map { chomp; split /\|/, $_, 2 } @info;
-
         $newmodtime = $remotefileinfo{modification} || '';
+
+        ## If the reset argument was used, don't parse the file, just set the new offset and modtime
+        if ($arg{reset}) {
+            $arg{verbose} and warn "  Resetting offset to 0\n";
+            if ($lfileinfo->{offset} != 0) {
+                $opt{newoffset}{$filename} = 0;
+                $opt{newmodtime}{$filename} = $newmodtime;
+            }
+            return 0;
+        }
+
+        ## Make a decision soon about whether to bother trying to read the .1 file
+        my $read_rotated = 1; ## 1=might need  0=do not need  2=need
+
+        ## Offset of the file we are going to read
+        my $offset = $lfileinfo->{offset} || 0;
 
         my $filesize = $remotefileinfo{size};
 
-        my $offset = $lfileinfo->{offset} || 0;
-
-        ## Allow the offset to equal the size via --reset
-        if ($arg{reset}) {
-            $offset = $filesize;
-            $arg{verbose} and warn "  Resetting offset to $offset\n";
-        }
-        ## If we passed in files manually, they start at 0
-        elsif ($arg{file}[0]) {
+        ## If we passed in a file manually, always read the entire thing (and do not worry about file rotation)
+        if ($arg{file}[0]) {
             $offset = 0;
+            $read_rotated = 0;
         }
+
         ## If the offset was set from the command line, use that
-        elsif ($arg{offset} != -1) {
+        if ($arg{offset} != -1) {
+            $read_rotated = 0;
             if ($arg{offset} >= 0) {
                 $offset = $arg{offset};
+                if ($offset > $filesize) {
+                    $arg{verbose} and warn "  Changing offset ($offset) to file size $filesize\n";
+                    $offset = $filesize;
+                }
             }
-            ## Negative offset means we walk back from end of the file
-            elsif ($arg{offset} < -1) {
+            else { ## Negative offset means we walk back from end of the file
                 $offset = $filesize + $arg{offset};
                 ## But obviously don't walk too far back!
-                $offset = 0 if $offset < 0;
+                if ($offset < 0) {
+                    $arg{verbose} and warn "  Changing offset to 0 (file size was only $filesize)\n";
+                    $offset = 0;
+                }
             }
         }
-        ## If the file is now smaller than our offset, assume it's a new file
+        ## If the file is smaller than our offset, assume it's a new file
         elsif ($filesize < $offset) {
             $arg{debug} and print "File has shrunk, so resetting offset to 0\n";
-            $offset = 0;
+            $read_rotated = 2;
         }
-
-        ## If the modification time is the same, and the size is the same, skip it
-        if ($lfileinfo->{modtime} and $lfileinfo->{modtime} eq $newmodtime and $offset == $filesize) {
+        ## If the mod time and size are the same, do nothing at all
+        elsif ($lfileinfo->{modtime} and $lfileinfo->{modtime} eq $newmodtime and $offset == $filesize) {
             $arg{verbose} and print "Skipping file '$filename', as modtime is still $newmodtime and size is still $filesize\n";
             return 0;
         }
 
-        ## Attempt to read in the actual file data
+        ## Get exclusion and inclusion regexes for this file
+        ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
+
+        ## We may want to check for a .1 file and get information about it
+        ## Just in case, skip if we already end in ".1"!
+        my %remoterotatefileinfo;
+        if ($read_rotated and $newfilename !~ /\.1$/) {
+            ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+            $COM = qq{psql service="$service" -AX -qt -x -c "select * from pg_stat_file('$newfilename.1')" 2>$errorfile};
+            my @info = qx/ $COM /;
+            ## We don't really care what the error is: we simply refuse to parse if any error at all
+            close $efh;
+            if (! -s $errorfile) {
+                %remoterotatefileinfo = map { chomp; split /\|/, $_, 2 } @info;
+            }
+            else {
+                $arg{debug} and warn qq{Got an error while reading $newfilename.1\n};
+            }
+        }
+
+        ## Throw one or more files into this scalar:
+        my $slurp = '';
+
+        ## If there is an offset, it will be from the older file: which is probably the rotated file
+        ## Thus, we keep any offset, and read the entire "current" file
+        if (
+            exists $remoterotatefileinfo{modification} ## rotated file exists AND
+            and (!exists $lfileinfo->{rotatefilemodtime} ## we either have never seen this file ...
+                 or ($remoterotatefileinfo{modification} ne $lfileinfo->{rotatefilemodtime})) ## OR it has changed since the last time we have
+           ) {
+            ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+            my $rotatesize = $remoterotatefileinfo{size};
+            $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename.1',$offset,$rotatesize)" 2>$errorfile};
+            ## Put the file contents into our scalar
+            $slurp .= qx/ $COM /;
+            if (-s $errorfile) {
+                seek $efh, 0, 0;
+                my $errline = <$efh>;
+                chomp $errline;
+                warn "Call to pg_read_file failed for service $service and file $newfilename.1 ($errline)\n";
+                exit 2;
+            }
+            close $efh;
+            ## Because we read the rotated file, we want to slurp in the entire current file
+            $offset = 0;
+
+            ## Make sure we store our new modification time for the rotated file
+            $opt{rotatefilemodtime}{$filename} = $remoterotatefileinfo{modification};
+        }
+
+        ## Double check if we need the offset to be zero
+        if ($filesize < $offset) {
+            $offset = 0;
+        }
+
+        ## Read the curent file.
         ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
         $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename',$offset,$filesize)" 2>$errorfile};
-        my $slurp = qx/ $COM /;
+        ## Add file contents to our scalar
+        $slurp .= qx/ $COM /;
         if (-s $errorfile) {
             seek $efh, 0, 0;
             my $errline = <$efh>;
@@ -1542,9 +1622,6 @@ sub parse_file {
             exit 2;
         }
         close $efh;
-
-        ## Get exclusion and inclusion regexes for this file
-        ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
 
         $fh = new IO::Scalar \$slurp;
         $count += parse_filehandle($fh, $filename, \%pidline, $lfileinfo);
@@ -3083,7 +3160,7 @@ sub final_cleanup {
     ## Need to walk through and see if anything has changed so we can rewrite the config
     ## For the moment, that only means the offset and the lastfile
 
-    ## Have we got new lastfiles, offsets, or modtimes?
+    ## Have we got new lastfiles, offsets, modtimes, or rotatefilemodtimes?
     for my $t (@{ $opt{file} }) {
         if (exists $t->{latest} and $t->{latest} ne $t->{lastfile} and $t->{latest} !~ /SERVICE=/) {
             $changes++;
@@ -3102,6 +3179,14 @@ sub final_cleanup {
             if ($t->{modtime} ne $newmodtime) {
                 $changes++;
                 $t->{modtime} = $newmodtime;
+            }
+        }
+        if (exists $opt{rotatefilemodtime}{$t->{latest}}) {
+            my $newrotatemodtime = $opt{rotatefilemodtime}{$t->{latest}};
+            $t->{rotatefilemodtime} ||= 0;
+            if ($t->{rotatefilemodtime} ne $newrotatemodtime) {
+                $changes++;
+                $t->{rotatefilemodtime} = $newrotatemodtime;
             }
         }
     }
@@ -3203,6 +3288,10 @@ sub final_cleanup {
         ## Got any lastfile or offset for these?
         if ($f->{lastfile} and $f->{original} !~ /SERVICE=/) {
             printf "LASTFILE%d: %s\n", $f->{suffix}, $f->{lastfile};
+        }
+        ## Got a rotated file mod time?
+        if (exists $f->{rotatefilemodtime}) {
+            printf "ROTATEFILEMODTIME%d: %s\n", $f->{suffix}, $f->{rotatefilemodtime};
         }
         ## The offset may be new, or we may be the same as last time
         if (exists $opt{newoffset}{$f->{latest}}) { ## FIXME: latest may have been deleted, but sometimes lastfile does not exist...

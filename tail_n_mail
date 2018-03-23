@@ -3205,7 +3205,7 @@ sub final_cleanup {
             printf "LASTFILE%d: %s\n", $f->{suffix}, $f->{lastfile};
         }
         ## The offset may be new, or we may be the same as last time
-        if (exists $opt{newoffset}{$f->{latest}}) {
+        if (exists $opt{newoffset}{$f->{latest}}) { ## FIXME: latest may have been deleted, but sometimes lastfile does not exist...
             printf "OFFSET%d: %d\n", $f->{suffix}, $opt{newoffset}{$f->{latest}};
         }
         elsif (defined $f->{offset}) {

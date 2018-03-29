@@ -1613,7 +1613,7 @@ sub parse_file {
             $offset = 0;
         }
 
-        ## Read the curent file.
+        ## Read the current file.
         ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
         $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename',$offset,$filesize)" 2>$errorfile};
         ## Add file contents to our scalar

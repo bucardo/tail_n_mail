@@ -2347,6 +2347,12 @@ sub process_line {
             $find{$filename}{$line}{filename} = $similar{$string}{earliest}{filename};
             $find{$filename}{$line}{line} = $similar{$string}{earliest}{line};
         }
+
+        ## At this point we have an earliest
+        ## Store all filenames in case we need them
+        if ($filename =~ /SERVICE=/) {
+            push @{ $similar{$string}{earliest}{allfiles} }  => $filename;
+        }
     }
     else {
         $find{$filename}{$line} = {
@@ -3047,12 +3053,21 @@ sub lines_of_interest {
         }
         else {
             my ($A,$B) = ($fab{$earliest->{filename}}, $fab{$latest->{filename}});
-            print " From $A to $B";
-            if ($arg{find_line_number}) {
+
+            ## Ranges only make sense for time-sequential files
+            ## If any are not (e.g. service files), simply output all matching filenames
+            my $time_based = ! grep { /SERVICE=/ } @{ $earliest->{allfiles} };
+            if ($time_based) {
+                print " From $A to $B";
+            }
+            else {
+                print " From files: " . join ', ' => map { $fab{$_} } @{ $earliest->{allfiles} };
+            }
+            if ($arg{find_line_number} and $time_based) {
                 printf " (between lines $f->{line} of $A and $latest->{line} of $B, occurs $pcount times)",;
             }
             else {
-                print " Count: $pcount";
+                print "  Count: $pcount";
             }
             print "\n";
         }

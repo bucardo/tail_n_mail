@@ -2492,10 +2492,11 @@ sub process_report {
         if ($file->[0] =~ /SERVICE=(\w+)/) {
             $maxservice = length $1 if length $1 > $maxservice;
         }
+        $file->[2] = $file->[0];
     }
     if ($maxservice) {
         for my $file (@files_parsed) {
-            ($file->[2] = $file->[0]) =~ s/(SERVICE=(\w+))/$1 . ' 'x($maxservice - length $2)/e;
+            $file->[2] =~ s/(SERVICE=(\w+))/$1 . ' 'x($maxservice - length $2)/e;
         }
     }
 
@@ -2508,7 +2509,7 @@ sub process_report {
         next if ! $file->[1];
         $file->[1] = pretty_number($file->[1]);
         $maxcount = length $file->[1] if length $file->[1] > $maxcount;
-        $maxname = length $file->[0] if length $file->[0] > $maxname;
+        $maxname = length $file->[2] if length $file->[2] > $maxname;
         my $name = chr(65+$letter);
         if ($letter >= 26) {
             $name = sprintf '%s%s',

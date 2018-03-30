@@ -2351,7 +2351,9 @@ sub process_line {
         ## At this point we have an earliest
         ## Store all filenames in case we need them
         if ($filename =~ /SERVICE=/) {
-            push @{ $similar{$string}{earliest}{allfiles} }  => $filename;
+            if (! $similar{$string}{earliest}{allfileshash}{$filename}++) {
+                push @{ $similar{$string}{earliest}{allfiles} } => $filename;
+            }
         }
     }
     else {

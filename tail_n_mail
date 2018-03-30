@@ -152,6 +152,7 @@ my $result = GetOptions
    'duration=i',
    'tempfile=i',
    'file=s@',
+   'skipfilebyregex=s@',
    'sqlstate',
    'type=s',
    'flatten!',
@@ -1453,6 +1454,16 @@ sub parse_file {
 
     ## Touch the hash so we know we've been here
     $find{$filename} = {};
+
+    ## We may want to skip this file entirely
+    if (exists $arg{skipfilebyregex}) {
+        for my $regex (@{ $arg{skipfilebyregex} }) {
+            if ($filename =~ /$regex/) {
+                $arg{verbose} and warn "Skipping file $filename as it matched regex $regex\n";
+                return 0;
+            }
+        }
+    }
 
     ## Keep track of matches for this file
     my $count = 0;

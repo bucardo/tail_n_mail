@@ -10,6 +10,9 @@ Version 2.2.0
  * Support for handling files moved by log rotation.
   [Greg Sabino Mullane]
 
+ * Add new argument --skipfilebyregex to allow quick and easy skipping of downed nodes.
+  [Greg Sabino Mullane]
+
  * Make sure we do not duplicate include/exclude information from inherited files.
   [Greg Sabino Mullane]
 

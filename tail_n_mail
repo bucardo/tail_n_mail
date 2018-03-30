@@ -390,9 +390,6 @@ my %fancyoutput;
 ## Map filenames to "A", "B", etc. for clean output of multiple matches
 my %fab;
 
-## Are we viewing the older version of the file because it was rotated?
-my $rotatedfile = 0;
-
 ## Did we handle more than one file this round?
 my $multifile = 0;
 

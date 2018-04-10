@@ -2174,6 +2174,7 @@ sub process_line {
         $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)'.+?'}{$1'?')}gio;
         $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)\d+}{$1'?')}gio;
         $string =~ s{(,\s*)'.+?'(\s*AS\s*\w+\b)}{$1'?'$2)}gio;
+        $string =~ s{\(\s+}{(}go;
 
         if ($string =~ s{(UPDATE\s+[\w\.]+\s+SET\s+)(.+?)(\s+WHERE)}{${1}$UNIQSTRING${3}}) {
             my $sets = $2;
@@ -2196,6 +2197,9 @@ sub process_line {
 
         ## Ambiguity at a specific character
         $string =~ s{(" is ambiguous at character )\d+}{$1 ?}o;
+
+        ## Missing alias at a specific character
+        $string =~ s{( must have an alias at character )\d+}{$1 ?}o;
 
         ## Case of hard-coded numbers at the start of an inner SELECT
         $string =~ s{(\bSELECT\s*)\d+,\s*\d+,}{$1 ?,?,}gio;

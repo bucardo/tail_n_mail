@@ -50,6 +50,8 @@ my %arg = (
               quiet            => 0,
 ## Heavy debugging output
               debug            => 0,
+## Stop reading log files after this many bytes. For debugging only!
+              debug_partial_read => 0,
 ## Reset the marker of the log file to the current position
               reset            => 0,
 ## Rewind to a certain position inside the log file
@@ -142,6 +144,7 @@ my $result = GetOptions
    'verbose',
    'quiet',
    'debug',
+   'debug_partial_read=i',
    'dryrun|dry-run',
    'help',
    'nomail',
@@ -1593,8 +1596,8 @@ sub parse_file {
                  or ($remoterotatefileinfo{modification} ne $lfileinfo->{rotatefilemodtime})) ## OR it has changed since the last time we have
            ) {
             ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
-            my $rotatesize = $remoterotatefileinfo{size};
-            $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename.1',$offset,$rotatesize)" 2>$errorfile};
+            my $slurpsize = $arg{debug_partial_read} || $remoterotatefileinfo{size};
+            $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename.1',$offset,$slurpsize)" 2>$errorfile};
             ## Put the file contents into our scalar
             $slurp .= qx/ $COM /;
             if (-s $errorfile) {
@@ -1623,7 +1626,8 @@ sub parse_file {
 
         ## Read the current file.
         ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
-        $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename',$offset,$filesize)" 2>$errorfile};
+        my $slurpsize = $arg{debug_partial_read} || $filesize;
+        $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename',$offset,$slurpsize)" 2>$errorfile};
         ## Add file contents to our scalar
         $slurp .= qx/ $COM /;
         if (-s $errorfile) {
@@ -2432,6 +2436,11 @@ sub process_report {
 
     ## Some minor help with debugging
     push @header => "X-TNM-VERSION: $VERSION";
+
+    ## Make sure we know when things are manually adjusted
+    if ($arg{debug_partial_read}) {
+        push @header => 'X-WARNING: debug_partial_read set to $arg{debug_partial_read}';
+    }
 
     ## Sometimes we go dryrun for this section only!
     my $dryrun = $arg{dryrun};

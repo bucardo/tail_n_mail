@@ -3028,10 +3028,12 @@ sub lines_of_interest {
             if ($matchfiles > 1) {
                 printf " From %s%s\n",
                     $fab{$filename},
-                    $arg{find_line_number} ? " (line $f->{line})" : '';
+                    $arg{find_line_number}
+                       ? (sprintf ' (%s %s)', $f->{line} =~ / / ? 'lines' : 'line', $f->{line})
+                       : '';
             }
             elsif ($arg{find_line_number}) {
-                print " (from line $f->{line})\n";
+                printf " (from %s %s})\n", $f->{line} =~ / / ? 'lines' : 'line', $f->{line};
             }
             else {
                 print "\n";

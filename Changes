@@ -13,6 +13,10 @@ Version 2.2.0
  * Add new argument --skipfilebyregex to allow quick and easy skipping of downed nodes.
   [Greg Sabino Mullane]
 
+ * Add new argument, --nonparsed_statement_size, to control the maximum display size 
+   of "nonparsed" log lines (e.g. OS errors). Defaults to 400 characters.
+  [Greg Sabino Mullane]
+
  * Make sure we do not duplicate include/exclude information from inherited files.
   [Greg Sabino Mullane]
 

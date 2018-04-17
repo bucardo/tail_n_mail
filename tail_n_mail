@@ -77,6 +77,8 @@ my %arg = (
               log_line_prefix  => '',
 ## Maximum size of a statement before we truncate it.
               statement_size   => 1000,
+## Maximum size of a nonparsed line (e.g. OS error) before we truncate it.
+              nonparsed_statement_size   => 400,
 ## How to sort the output. Options are 'count' and 'date'
               sortby           => 'count',
 ## What type of file is this? Options are 'normal', 'duration', and 'tempfile'
@@ -185,6 +187,7 @@ my $result = GetOptions
    'duration_limit|duration-limit=i',
    'tempfile_limit|tempfile-limit=i',
    'statement_size|statement-size=i',
+   'nonparsed_statement_size|nonparsed-statement-size=i',
    'tailnmailrc=s',
    'no-tailnmailrc|no_tailnmailrc',
    'maxemailsize=i',
@@ -896,6 +899,10 @@ sub parse_config_file {
         elsif (/^STATEMENT_SIZE:\s*(.+)/) {
             $localopt{statement_size} = $1;
         }
+        ## Size at which we cutoff nonparsed long statements
+        elsif (/^NONPARSED_STATEMENT_SIZE:\s*(.+)/) {
+            $localopt{nonparsed_statement_size} = $1;
+        }
     }
     close $c or die qq{Could not close "$configfile": $!\n};
 
@@ -1154,6 +1161,10 @@ sub parse_inherit_file {
         ## Size at which we cutoff long statements
         elsif (/^STATEMENT_SIZE:\s*(.+)/) {
             $opt{statement_size} = $1;
+        }
+        ## Size at which we cutoff nonparsed long statements
+        elsif (/^NONPARSED_STATEMENT_SIZE:\s*(.+)/) {
+            $opt{nonparsed_statement_size} = $1;
         }
         else {
             warn qq{Unknown item in include file "$file": $_\n};
@@ -3037,7 +3048,8 @@ sub lines_of_interest {
             }
 
             ## Show the actual string, not the flattened version
-            my $lstring = wrapline($f->{rawstring} || $f->{string});
+            my $nonparsed = exists $f->{latest}{npstring} ? 1 : 0;
+            my $lstring = wrapline( ($f->{rawstring} || $f->{string} || ''), $nonparsed );
             print "$lstring\n";
 
             next;
@@ -3168,6 +3180,7 @@ sub wrapline {
     ## Wrap long lines to make SMTP servers happy
 
     my $line = shift;
+    my $nonparsed = shift || 0;
 
     my $len = length $line;
     my $olen = $len;
@@ -3175,6 +3188,12 @@ sub wrapline {
     my $maxsize = defined $opt{statement_size}
         ? $opt{statement_size}
         : $arg{statement_size};
+
+    if ($nonparsed) {
+        $maxsize = defined $opt{nonparsed_statement_size}
+        ? $opt{nonparsed_statement_size}
+        : $arg{nonparsed_statement_size};
+    }
 
     if ($maxsize and $len > $maxsize) {
         $line = substr($line,0,$maxsize);
@@ -3245,7 +3264,8 @@ sub final_cleanup {
 ## This file is automatically updated
 ## Last updated: $now
 };
-    for my $item (qw/ log_line_prefix pglog email from type mailsig duration tempfile find_line_number sortby duration_limit tempfile_limit statement_size /) {
+    for my $item (qw/ log_line_prefix pglog email from type mailsig duration tempfile find_line_number
+                      sortby duration_limit tempfile_limit statement_size nonparsed_statement_size /) {
         next if ! exists $opt{$item};
 
         next if $item eq 'duration' and $arg{duration} < 0;

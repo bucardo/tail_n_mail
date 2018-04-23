@@ -3205,6 +3205,7 @@ sub wrapline {
 
     my $len = length $line;
     my $olen = $len;
+    my $olinelength = $line =~ y/\n//;
     my $waschopped = 0;
     my $maxsize = defined $opt{statement_size}
         ? $opt{statement_size}
@@ -3227,8 +3228,9 @@ sub wrapline {
     }
 
     if ($waschopped) {
-        $olen = pretty_number($olen);
-        $line .= "\n[LINE TRUNCATED, original was $olen characters long]";
+        $line .= sprintf "\n[LINE TRUNCATED, original was %d characters%s long]",
+            pretty_number($olen),
+            ($olinelength > 2 ? ( " and " . pretty_number($olinelength) . " lines" ) : '');
     }
 
     return $line;

@@ -52,6 +52,8 @@ my %arg = (
               debug            => 0,
 ## Stop reading log files after this many bytes. For debugging only!
               debug_partial_read => 0,
+## Use the old rotation file
+              debug_force_rotated => 0,
 ## Reset the marker of the log file to the current position
               reset            => 0,
 ## Rewind to a certain position inside the log file
@@ -147,6 +149,7 @@ my $result = GetOptions
    'quiet',
    'debug',
    'debug_partial_read|debug-partial-read=i',
+   'debug_force_rotated|debug-force-rotated',
    'dryrun|dry-run|dry_run',
    'help',
    'nomail',
@@ -1571,9 +1574,16 @@ sub parse_file {
             $read_rotated = 2;
         }
         ## If the mod time and size are the same, do nothing at all
-        elsif ($lfileinfo->{modtime} and $lfileinfo->{modtime} eq $newmodtime and $offset == $filesize) {
+        elsif ($lfileinfo->{modtime} and $lfileinfo->{modtime} eq $newmodtime and $offset == $filesize
+               and !$arg{debug_force_rotated}) {
             $arg{verbose} and print "Skipping file '$filename', as modtime is still $newmodtime and size is still $filesize\n";
             return 0;
+        }
+
+        if ($arg{debug_force_rotated}) {
+            $read_rotated = 2;
+            $offset = 0;
+            $lfileinfo->{rotatefilemodtime} = 'forced';
         }
 
         ## Get exclusion and inclusion regexes for this file

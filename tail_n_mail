@@ -2297,12 +2297,12 @@ sub process_line {
             $similar{$string}{total} = $tempfilesize;
 
 
-            ## ??Store this away for eventual output
+            ## Store this away for eventual output
             $find{$filename}{$line} = $similar{$string};
             $find{$filename}{$line}{string} = $string;
             $find{$filename}{$line}{rawstring} = $rawstring;
 
-            ## ??Copy filename and line up a level for later sorting ease
+            ## Copy filename and line up a level for later sorting ease
             $find{$filename}{$line}{filename} = $similar{$string}{earliest}{filename};
             $find{$filename}{$line}{line} = $similar{$string}{earliest}{line};
             return 1;

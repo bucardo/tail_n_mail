@@ -1823,6 +1823,12 @@ sub parse_file {
         $arg{verbose} and warn "  Lines found in $filename: $count\n";
     }
 
+    if (exists $opt{total_non_parsed}) {
+        $count -= $opt{total_non_parsed};
+        $count++;
+        delete $opt{total_non_parsed};
+    }
+
     $opt{grand_total} += $count;
 
     return $count;
@@ -1972,6 +1978,9 @@ sub process_line {
                     npstring => "$oldstring\n$string",
                 };
         }
+
+        ## We want to count all non-parsed lines as a single "hit"
+        $opt{total_non_parsed}++;
 
         return 1;
     }

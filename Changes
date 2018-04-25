@@ -50,7 +50,7 @@ Version 1.32.0, released February 12, 2018
   [Joshua Tolley]
 
 * Add support for more custom timestamps, especially for non-Postgres logs.
-  Add %ts in the log_line_prefix to match thinkgs like: Sun Oct 29 08:50:53.691196 2017
+  Add %ts in the log_line_prefix to match things like: Sun Oct 29 08:50:53.691196 2017
   [Greg Sabino Mullane]
 
 * Better handling of continuation lines after an ignored LOG: line
@@ -88,7 +88,7 @@ Version 1.31.0, released October 24, 2017
 * Better flattening of UPDATE ... SET statements
   [Greg Sabino Mullane]
 
-* Better flattening of 'invlaid input sytnax' queries
+* Better flattening of 'invalid input syntax' queries
   [Greg Sabino Mullane]
 
 

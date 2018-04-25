@@ -448,7 +448,7 @@ my $found_errors = 0;
 
     ## If undefined or same as last time, we are done with this file
     if (! defined $logfile or $logfile eq $last_logfile) {
-        ## Grab the next extry
+        ## Grab the next entry
         $fileinfo = $opt{file}[++$filenumber];
         ## No more file? We are done!
         last if ! defined $fileinfo;
@@ -2276,7 +2276,7 @@ sub process_line {
     ## Special handling for tempfile mode
     if ($arg{type} eq 'tempfile') {
         ## We should know the temp file size by now
-        ## We want to store up to four possible versions of a statment:
+        ## We want to store up to four possible versions of a statement:
         ## Earliest, latest, smallest, largest
 
         ## The record we are going to store

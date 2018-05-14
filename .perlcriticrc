@@ -1,7 +1,14 @@
 ## Perl::Critic things we are not going to worry about:
 
+verbose = 8
+severity = 1
+profile-strictness = quiet
+
 [-Bangs::ProhibitNumberedNames]
 [-Bangs::ProhibitVagueNames]
+[-BuiltinFunctions::ProhibitComplexMappings]
+[-BuiltinFunctions::ProhibitUselessTopic]
+[-CodeLayout::ProhibitHashBarewords]
 [-CodeLayout::ProhibitParensWithBuiltins]
 [-CodeLayout::RequireTidyCode]
 [-CodeLayout::RequireUseUTF8]
@@ -14,13 +21,16 @@
 [-InputOutput::ProhibitBacktickOperators]
 [-InputOutput::ProhibitOneArgSelect]
 [-InputOutput::RequireCheckedSyscalls]
-[-Miscellanea::RequireRcsKeywords]
+[-InputOutput::RequireCheckedClose]
+[-Lax::ProhibitEmptyQuotes::ExceptAsFallback]
+[-Miscellanea::ProhibitUnrestrictedNoCritic]
 [-Modules::ProhibitExcessMainComplexity]
 [-References::ProhibitDoubleSigils]
 [-RegularExpressions::ProhibitCaptureWithoutTest]
 [-RegularExpressions::ProhibitComplexRegexes]
 [-RegularExpressions::ProhibitEnumeratedClasses]
 [-RegularExpressions::ProhibitEscapedMetacharacters]
+[-RegularExpressions::ProhibitUselessTopic]
 [-RegularExpressions::RequireDotMatchAnything]
 [-RegularExpressions::RequireExtendedFormatting]
 [-RegularExpressions::RequireLineBoundaryMatching]
@@ -33,6 +43,7 @@
 [-ValuesAndExpressions::ProhibitMagicNumbers]
 [-ValuesAndExpressions::ProhibitMixedBooleanOperators]
 [-ValuesAndExpressions::ProhibitNoisyQuotes]
+[-ValuesAndExpressions::RequireConstantOnLeftSideOfEquality]
 [-ValuesAndExpressions::RequireNumberSeparators]
 [-ValuesAndExpressions::RestrictLongStrings]
 [-Variables::ProhibitPackageVars]

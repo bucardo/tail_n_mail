@@ -2,7 +2,7 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 2.2.0
+Version 2.2.0, released May 14, 2018
 
  * Add ---html option, to send text/html emails with <pre> for nicer alignments.
   [Greg Sabino Mullane]

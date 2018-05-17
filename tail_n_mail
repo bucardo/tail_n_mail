@@ -1594,7 +1594,7 @@ sub parse_file {
         my %remoterotatefileinfo;
         if ($read_rotated and $newfilename !~ /\.1$/) {
             ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
-            $COM = qq{psql service="$service" -AX -qt -x -c "select * from pg_stat_file('$newfilename.1')" 2>$errorfile};
+            $COM = qq{psql service="$service" -AX -qt -x -c "select * from pg_stat_file('$newfilename.1', true)" 2>$errorfile};
             my @localinfo = qx/ $COM /;
             ## We don't really care what the error is: we simply refuse to parse if any error at all
             close $efh;
@@ -1612,7 +1612,7 @@ sub parse_file {
         ## If there is an offset, it will be from the older file: which is probably the rotated file
         ## Thus, we keep any offset, and read the entire "current" file
         if (
-            exists $remoterotatefileinfo{modification} ## rotated file exists AND
+            exists $remoterotatefileinfo{modification} and length $remoterotatefileinfo{modification} ## rotated file exists AND
             and (!exists $lfileinfo->{rotatefilemodtime} ## we either have never seen this file ...
                  or ($remoterotatefileinfo{modification} ne $lfileinfo->{rotatefilemodtime})) ## OR it has changed since the last time we have
            ) {
@@ -2254,7 +2254,7 @@ sub process_line {
 
         ## Variable limit and offset clauses
         $string =~ s{\bLIMIT\s+(\d+)}{LIMIT ?}gi;
-        $string =~ s{\bOFFSET\s+(\d+)}{OFFSET ?}gi
+        $string =~ s{\bOFFSET\s+(\d+)}{OFFSET ?}gi;
 
         ## Simple castings
         $string =~ s{'.*?'::(BOOLEAN|BIGINT|INTEGER|NUMERIC|TIMESTAMP|TIMESTAMPTZ)}{?::$1}g;

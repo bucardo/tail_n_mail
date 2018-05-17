@@ -7,6 +7,9 @@ Version 2.3.0, unreleased
  * Better flatteining of queries
    [Greg Sabino Mullane]
 
+ * Use the second-arg-true version of pg_stat_file for potential log rotated files
+   [Greg Sabino Mullane]
+
 
 Version 2.2.0, released May 14, 2018
 

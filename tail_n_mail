@@ -2249,6 +2249,9 @@ sub process_line {
         ## Raw number surrounded by commas
         $string =~ s{(,\s*)\d+(\s*,)}{$1?$2}go;
 
+        ## Simple castings
+        $string =~ s{'.*?'::(BOOLEAN|BIGINT|INTEGER|NUMERIC|TIMESTAMP|TIMESTAMPTZ)}{?::$1}g;
+
         if ($string =~ /JSON/) {
             $string =~ s{("\w+"):"[\d\.e\-]+"}{$1:"?"}g;
         }

@@ -2249,6 +2249,9 @@ sub process_line {
         ## Raw number surrounded by commas
         $string =~ s{(,\s*)\d+(\s*,)}{$1?$2}go;
 
+        ## Single-quoted items after an AND
+        $string =~ s{(\s+AND\s+\w+)\s*([<>=]+)\s*'.*?'}{$1 $2 ?}gio;
+
         ## Variable limit and offset clauses
         $string =~ s{\bLIMIT\s+(\d+)}{LIMIT ?}gi;
         $string =~ s{\bOFFSET\s+(\d+)}{OFFSET ?}gi

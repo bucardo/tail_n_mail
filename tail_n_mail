@@ -2249,6 +2249,10 @@ sub process_line {
         ## Raw number surrounded by commas
         $string =~ s{(,\s*)\d+(\s*,)}{$1?$2}go;
 
+        ## Variable limit and offset clauses
+        $string =~ s{\bLIMIT\s+(\d+)}{LIMIT ?}gi;
+        $string =~ s{\bOFFSET\s+(\d+)}{OFFSET ?}gi
+
         ## Simple castings
         $string =~ s{'.*?'::(BOOLEAN|BIGINT|INTEGER|NUMERIC|TIMESTAMP|TIMESTAMPTZ)}{?::$1}g;
 

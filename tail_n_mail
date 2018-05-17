@@ -2249,6 +2249,10 @@ sub process_line {
         ## Raw number surrounded by commas
         $string =~ s{(,\s*)\d+(\s*,)}{$1?$2}go;
 
+        if ($string =~ /JSON/) {
+            $string =~ s{("\w+"):"[\d\.e\-]+"}{$1:"?"}g;
+        }
+
         ## Timestamps as values
         $string =~ s{\s*=\s*'\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d\.\d\d\d\d\d\d'}{=?}go;
 

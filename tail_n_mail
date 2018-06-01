@@ -3242,7 +3242,7 @@ sub wrapline {
     }
 
     if ($waschopped) {
-        $line .= sprintf "\n[LINE TRUNCATED, original was %d characters%s long]",
+        $line .= sprintf "\n[LINE TRUNCATED, original was %s characters%s long]",
             pretty_number($olen),
             ($olinelength > 2 ? ( ' and ' . pretty_number($olinelength) . ' lines' ) : '');
     }

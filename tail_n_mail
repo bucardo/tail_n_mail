@@ -383,7 +383,7 @@ while (($llp_num,$llp1) = each %$llprefix) {
 my $changes = 0;
 
 ## Global regex: may change per file
-my ($exclude, $include, $exclude_prefix, $exclude_non_parsed);
+my ($exclude, $include, $exclude_prefix, $exclude_non_parsed, $bonus_include);
 
 ## Note if we bumped into maxsize when trying to read a file
 my (%toolarge);
@@ -1587,7 +1587,7 @@ sub parse_file {
         }
 
         ## Get exclusion and inclusion regexes for this file
-        ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
+        ($exclude,$include,$exclude_prefix,$exclude_non_parsed,$bonus_include) = generate_regexes($filename);
 
         ## We may want to check for a .1 file and get information about it
         ## Just in case, skip if we already end in ".1"!
@@ -1788,7 +1788,7 @@ sub parse_file {
         } ## end find_line_number
 
         ## Get exclusion and inclusion regexes for this file
-        ($exclude,$include,$exclude_prefix,$exclude_non_parsed) = generate_regexes($filename);
+        ($exclude,$include,$exclude_prefix,$exclude_non_parsed,$bonus_include) = generate_regexes($filename);
 
         ## Discard the previous line if needed (we rewound by 10 characters above)
         $original_offset and <$fh>;
@@ -1858,7 +1858,7 @@ sub generate_regexes {
 
     ## Currently, all files get the same regex, so we cache it
     if (exists $opt{globalexcluderegex}) {
-        return $opt{globalexcluderegex}, $opt{globalincluderegex}, $opt{globalexcludeprefixregex}, $opt{globalexcludenonparsedregex};
+        return $opt{globalexcluderegex}, $opt{globalincluderegex}, $opt{globalexcludeprefixregex}, $opt{globalexcludenonparsedregex},$opt{globalbonusinclude};
 
     }
 
@@ -1892,22 +1892,26 @@ sub generate_regexes {
     $lexclude_prefix =~ s/\|$//;
     $arg{verbose} and $lexclude_prefix and warn "  Exclusion_prefix: $lexclude_prefix\n";
 
-    ## Build an inclusion regex
+    ## Build an inclusion regex, and possible some bonus inclusion items
     my $linclude = '';
+    my $lbonus_include = [];
     for my $in (@{$opt{include}}, @{$opt{inherited_include}}) {
         $arg{debug} and warn "  Adding inclusion: $in\n";
+        if ($in =~ s/(.+)([+\-](?:PREFIX|FILE)):\s*(.+)/$1/) {
+            push @{ $lbonus_include } => [$1, $2, qr/$3/];
+        }
         my $regex = qr{$in};
         $linclude .= "$regex|";
     }
     $linclude =~ s/\|$//;
     $arg{verbose} and $linclude and warn "  Inclusion: $linclude\n";
-
     $opt{globalexcluderegex} = $lexclude;
     $opt{globalexcludeprefixregex} = $lexclude_prefix;
     $opt{globalexcludenonparsedregex} = $lexclude_non_parsed;
     $opt{globalincluderegex} = $linclude;
+    $opt{globalbonusinclude} = $lbonus_include;
 
-    return $lexclude, $linclude, $lexclude_prefix, $lexclude_non_parsed;
+    return $lexclude, $linclude, $lexclude_prefix, $lexclude_non_parsed, $lbonus_include;
 
 } ## end of generate_regexes
 
@@ -2012,6 +2016,22 @@ sub process_line {
 
         ## Bail if it matches the prefix exclusion regex
         return 0 if $exclude_prefix and $pgprefix =~ $exclude_prefix;
+
+        ## Do the bonus regex checks
+        for my $bonus (@$bonus_include) {
+            if ($string =~ $bonus->[0]) {
+                ## Bail if we matched, but we want to exclude based on the prefix
+                return 0 if $bonus->[1] eq '-PREFIX' and $pgprefix =~ $bonus->[2];
+                ## Bail if we matched, but we want to include based on the prefix
+                return 0 if $bonus->[1] eq '+PREFIX' and $pgprefix !~ $bonus->[2];
+                ## Bail if we matched, but we want to exclude based on the filename
+                return 0 if $bonus->[1] eq '-FILE' and $filename =~ $bonus->[2];
+                ## Bail if we matched, but we want to include based on the filename
+                return 0 if $bonus->[1] eq '+FILE' and $filename !~ $bonus->[2];
+            }
+        }
+
+
     }
 
     ## If in duration mode, and we have a minimum cutoff, discard faster ones

@@ -4,7 +4,14 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 Version 2.3.0, unreleased
 
- * Better flatteining of queries
+ * Add new "bonus include" feature to further control what lines match via INCLUDE.
+   After the INCLUDE string, you can tell it to only include if the prefix matches 
+   the given string, to only match if it does NOT match the given string, and the 
+   same for the filename. Examples:
+   INCLUDE: ERROR: +FILE:foo
+   INCLUDE: syntax error: -PREFIX:@devbox
+
+ * Better flattening of queries
    [Greg Sabino Mullane]
 
  * Use the second-arg-true version of pg_stat_file for potential log rotated files

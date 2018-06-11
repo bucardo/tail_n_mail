@@ -3066,7 +3066,7 @@ sub lines_of_interest {
                        : '';
             }
             elsif ($arg{find_line_number}) {
-                printf " (from %s %s})\n", $f->{line} =~ / / ? 'lines' : 'line', $f->{line};
+                printf " (from %s %s)\n", $f->{line} =~ / / ? 'lines' : 'line', $f->{line};
             }
             else {
                 print "\n";

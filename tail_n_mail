@@ -77,10 +77,12 @@ my %arg = (
               pglog            => 'pg',
 ## What is Postgres's log_line_prefix
               log_line_prefix  => '',
-## Maximum size of a statement before we truncate it.
+## Maximum size of a statement before we truncate it on display.
               statement_size   => 1000,
 ## Maximum size of a nonparsed line (e.g. OS error) before we truncate it.
               nonparsed_statement_size   => 400,
+## Maximum size of a just-read-in line before we truncate it
+              read_line_max_size => 10000,
 ## How to sort the output. Options are 'count' and 'date'
               sortby           => 'count',
 ## What type of file is this? Options are 'normal', 'duration', and 'tempfile'
@@ -170,6 +172,7 @@ my $result = GetOptions
    'pglog=s',
    'log_line_prefix|log-line-prefix=s',
    'maxsize=i',
+   'read_line_max_size|read-line-max-size=i',
    'sortby=s',
    'showonly=i',
    'mailmode=s',
@@ -1948,6 +1951,9 @@ sub process_line {
     else {
         $string = $info;
     }
+
+    ## Crazy large strings do not need to be fed through our regexes
+    $string = substr($string, 0, $arg{read_line_max_size});
 
     ## Non-parsed lines are grouped together by filename
     if (defined $special and $special eq 'nonparsed') {

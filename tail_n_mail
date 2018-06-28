@@ -1897,10 +1897,11 @@ sub generate_regexes {
     my $lbonus_include = [];
     for my $in (@{$opt{include}}, @{$opt{inherited_include}}) {
         $arg{debug} and warn "  Adding inclusion: $in\n";
-        if ($in =~ s/(.+)([+\-](?:PREFIX|FILE)):\s*(.+)/$1/) {
+        my $lin = $in;
+        if ($lin =~ s/(.+)([+\-](?:PREFIX|FILE)):\s*(.+)/$1/) {
             push @{ $lbonus_include } => [$1, $2, qr/$3/];
         }
-        my $regex = qr{$in};
+        my $regex = qr{$lin};
         $linclude .= "$regex|";
     }
     $linclude =~ s/\|$//;

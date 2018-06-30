@@ -1892,7 +1892,7 @@ sub generate_regexes {
     $lexclude_prefix =~ s/\|$//;
     $arg{verbose} and $lexclude_prefix and warn "  Exclusion_prefix: $lexclude_prefix\n";
 
-    ## Build an inclusion regex, and possible some bonus inclusion items
+    ## Build an inclusion regex, and possibly some bonus inclusion items
     my $linclude = '';
     my $lbonus_include = [];
     for my $in (@{$opt{include}}, @{$opt{inherited_include}}) {

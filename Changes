@@ -2,7 +2,7 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 2.3.0, unreleased
+Version 2.3.1, unreleased
 
  * Add new "bonus include" feature to further control what lines match via INCLUDE.
    After the INCLUDE string, you can tell it to only include if the prefix matches 
@@ -10,11 +10,16 @@ Version 2.3.0, unreleased
    same for the filename. Examples:
    INCLUDE: ERROR: +FILE:foo
    INCLUDE: syntax error: -PREFIX:@devbox
+   [Github issue #25]
+   [Greg Sabino Mullane]
 
  * Better flattening of queries
    [Greg Sabino Mullane]
 
  * Use the second-arg-true version of pg_stat_file for potential log rotated files
+   [Greg Sabino Mullane]
+
+ * Make sure all output in --html mode is escaped
    [Greg Sabino Mullane]
 
 

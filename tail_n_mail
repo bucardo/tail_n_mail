@@ -26,7 +26,7 @@ use POSIX          qw( strftime localeconv );
 use IO::Scalar;
 use 5.008003;
 
-our $VERSION = '2.3.0';
+our $VERSION = '2.3.1';
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
 
@@ -2751,6 +2751,11 @@ sub process_report {
         seek $bigfh, $start_point, 0;
 
         while (<$bigfh>) {
+            if ($arg{html}) {
+                s/&/&amp;/g;
+                s/</&lt;/g;
+                s/>/&gt;/g;
+            }
             print {$efh} $_;
             next if ! $stop_point;
             last if tell $bigfh >= $stop_point;
@@ -2780,8 +2785,14 @@ sub process_report {
 
         ## If we have a signature, add it
         if ($arg{mailsignature}) {
+            $_ = $arg{mailsignature};
+            if ($arg{html}) {
+                s/&/&amp;/g;
+                s/</&lt;/g;
+                s/>/&gt;/g;
+            }
             ## Caller's responsibility to add a "--" line
-            print {$efh} $arg{mailsignature};
+            print {$efh} $_;
         }
 
         $arg{html} and print {$efh} "</pre>\n";

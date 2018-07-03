@@ -5,7 +5,7 @@ primarily aimed at Postgres log files but can be used for any files.
 
 It was developed at End Point Corporation by Greg Sabino Mullane.
 
-The latest version, 1.32.0, can be downloaded here:
+The latest version, 2.3.1, can be downloaded here:
 
 -   [tail_n_mail](https://bucardo.org/downloads/tail_n_mail)
 -   [tail_n_mail.asc](https://bucardo.org/downloads/tail_n_mail.asc)

@@ -2221,7 +2221,7 @@ sub process_line {
             }
         }geix;
         $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
-        $string =~ s{(\bWHERE\s+\w+\s+IN\s*\((?!\s*SELECT))[^)]+\)}{$1?)}gio;
+        $string =~ s{(\bWHERE\s+\w+[\.\w]*\s+IN\s*\((?!\s*SELECT))[^)]+\)}{$1?)}gio;
         $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)'.+?'}{$1'?')}gio;
         $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)\d+}{$1'?')}gio;
         $string =~ s{(,\s*)'.+?'(\s*AS\s*\w+\b)}{$1'?'$2)}gio;

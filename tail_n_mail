@@ -437,10 +437,11 @@ if (defined $arg{mailsig}->[0]) {
 ## Parse each file returned by pick_log_file until we start looping
 my $last_logfile = '';
 my @files_parsed;
+my @problem_files;
 my $filenumber = 0;
 my $fileinfo = $opt{file}[$filenumber];
 my $found_errors = 0;
-
+my %badservice;
 {
 
     ## Generate the next log file to parse
@@ -456,9 +457,50 @@ my $found_errors = 0;
         redo;
     }
 
+    ## If this was a service, don't try to connect again if we already failed
+    my $servicename;
+    if ($logfile =~ /service=(\w+)/i) {
+        $servicename = $1;
+        if (exists $badservice{$servicename}) {
+            $last_logfile = $logfile;
+            redo;
+        }
+    }
+
     $arg{debug} and warn " Parsing file: $logfile\n";
 
     my $count = parse_file($logfile, $fileinfo);
+
+    if ($count < 0) {
+        if (-1 == $count) { ## skipfilebyregex was used
+            $count = 0;
+            ## Fallthrough
+        }
+        elsif (-2 == $count) { ## pg_stat_file has failed!
+            ## Do not try this one again, even for different targets
+            if (defined $servicename) {
+                $badservice{$servicename} = 1;
+            }
+            push @problem_files => "!! Connection failure: $logfile";
+            redo;
+        }
+        elsif (-3 == $count) { ## Reset argument was used
+            $count = 0;
+            ## Fallthrough
+        }
+        elsif (-4 == $count) { ## Size and mod_time have not changed
+            $count = 0;
+            ## Fallthrough
+        }
+        elsif (-5 == $count) { ## Given file does not exist
+            push @problem_files => "!! File was not found: $logfile";
+            ## Fallthrough
+        }
+        elsif (-6 == $count) { ## Given file is the wrong type!
+            push @problem_files => "!! Not a regular file: $logfile";
+            ## Fallthrough
+        }
+    }
 
     if ($count >= 0) {
         $found_errors += $count;
@@ -1458,7 +1500,13 @@ sub parse_file {
     ##   original: original name
     ##   lastfile: we scanned last time this ran. May be an empty string or not exist
     ##   offset: where in the file we stopped at last time
-    ## Returns the number of matches
+    ## Returns the number of matches, or
+    ## -1: File skipped due to "skipfilebyregex" option
+    ## -2: Call to pg_stat_file failed: usually means server is unreachable
+    ## -3: Reset argument was used, so we did not really parse
+    ## -4: Skipped as mod time and size have not changed
+    ## -5: The file does not exist
+    ## -6: The file exists, but is not a regular file
 
     my $filename = shift;
     my $lfileinfo = shift;
@@ -1477,7 +1525,7 @@ sub parse_file {
         for my $regex (@{ $arg{skipfilebyregex} }) {
             if ($filename =~ /$regex/) {
                 $arg{verbose} and warn "Skipping file $filename as it matched regex $regex\n";
-                return 0;
+                return -1;
             }
         }
     }
@@ -1519,7 +1567,7 @@ sub parse_file {
             my $errline = <$efh>;
             chomp $errline;
             warn "Call to pg_stat_file failed for service $service and file $newfilename ($errline)\n";
-            exit 2;
+            return -2;
         }
         close $efh;
         my %remotefileinfo = map { chomp; split /\|/, $_, 2 } @info;
@@ -1532,7 +1580,7 @@ sub parse_file {
                 $opt{newoffset}{$filename} = 0;
                 $opt{newmodtime}{$filename} = $newmodtime;
             }
-            return 0;
+            return -3;
         }
 
         ## Make a decision soon about whether to bother trying to read the .1 file
@@ -1577,7 +1625,7 @@ sub parse_file {
         elsif ($lfileinfo->{modtime} and $lfileinfo->{modtime} eq $newmodtime and $offset == $filesize
                and !$arg{debug_force_rotated}) {
             $arg{verbose} and print "Skipping file '$filename', as modtime is still $newmodtime and size is still $filesize\n";
-            return 0;
+            return -4;
         }
 
         if ($arg{debug_force_rotated}) {
@@ -1663,7 +1711,7 @@ sub parse_file {
         my $slurpsize = $arg{debug_partial_read} || $filesize;
         $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename',$offset,$slurpsize)" 2>$errorfile};
         ## Add file contents to our scalar
-        $slurp .= qx/ $COM /;
+        my $slurp_attempt = qx/ $COM /;
         if (-s $errorfile) {
             seek $efh, 0, 0;
             my $errline = <$efh>;
@@ -1697,11 +1745,11 @@ sub parse_file {
         ## Make sure the file exists and is readable
         if (! -e $filename) {
             $arg{quiet} or warn qq{WARNING! Skipping non-existent file "$filename"\n};
-            return -1;
+            return -5;
         }
         if (! -f $filename) {
             $arg{quiet} or warn qq{WARNING! Skipping non-file "$filename"\n};
-            return -1;
+            return -6;
         }
 
         ## Figure out where in the file we want to start scanning from
@@ -2664,6 +2712,11 @@ sub process_report {
     }
     if ($arg{type} eq 'tempfile' and $arg{tempfile_limit} and $grand_total > $arg{tempfile_limit}) {
         push @msg => "Not showing all lines: tempfile limit is $arg{tempfile_limit}";
+    }
+
+    ## Note any special problems from file parsing
+    for my $file (@problem_files) {
+        push @msg => "$file";
     }
 
     ## Create the mail message

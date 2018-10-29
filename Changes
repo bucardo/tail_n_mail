@@ -7,6 +7,12 @@ Version 2.4.0
   * Handle cases in which the log files contain null bytes.
     [Greg Sabino Mullane]
 
+  * Do not attempt to failed service twice, if host is the same but file is different.
+    [Greg Sabino Mullane]
+
+  * Output why some files were skipped in the header for serios issues.
+    [Greg Sabino Mullane]
+
   * Better flattening of queries
     [Greg Sabino Mullane]
 

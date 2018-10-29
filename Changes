@@ -2,10 +2,14 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 2.3.2
+Version 2.4.0
+
+  * Handle cases in which the log files contain null bytes.
+    [Greg Sabino Mullane]
 
   * Better flattening of queries
-   [Greg Sabino Mullane]
+    [Greg Sabino Mullane]
+
 
 Version 2.3.1, released July 3, 2018
 

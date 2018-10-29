@@ -26,7 +26,7 @@ use POSIX          qw( strftime localeconv );
 use IO::Scalar;
 use 5.008003;
 
-our $VERSION = '2.3.2';
+our $VERSION = '2.4.0';
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
 
@@ -1620,15 +1620,28 @@ sub parse_file {
             my $rotatesize = $arg{debug_partial_read} || $remoterotatefileinfo{size};
             $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename.1',$offset,$rotatesize)" 2>$errorfile};
             ## Put the file contents into our scalar
-            $slurp .= qx/ $COM /;
+            my $slurp_attempt = qx/ $COM /;
             if (-s $errorfile) {
                 seek $efh, 0, 0;
                 my $errline = <$efh>;
                 chomp $errline;
                 warn "Call to pg_read_file failed for service $service and file $newfilename.1 ($errline)\n";
-                exit 2;
+
+                ## If this was a UTF-8 error involving null bytes, try and filter them out
+                exit 2 unless $errline =~ /\b0x00\b/;
+
+                $COM = qq{psql service="$service" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$newfilename.1',$offset,$rotatesize), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
+                $slurp_attempt = qx/ $COM /;
+                if (-s $errorfile) {
+                    seek $efh, 0, 0;
+                    my $errline = <$efh>;
+                    chomp $errline;
+                    warn "Modified call to pg_read_file failed for service $service and file $newfilename.1 ($errline)\n";
+                    exit 2;
+                }
             }
             close $efh;
+            $slurp .= $slurp_attempt;
 
             ## pg_read_file() likes to add newlines, but we don't want any extra ones:
             $slurp =~ s/\s*$/\n/;
@@ -1656,9 +1669,22 @@ sub parse_file {
             my $errline = <$efh>;
             chomp $errline;
             warn "Call to pg_read_file failed for service $service and file $newfilename ($errline)\n";
-            exit 2;
+
+            ## If this was a UTF-8 error involving null bytes, try and filter them out
+            exit 2 unless $errline =~ /\b0x00\b/;
+
+            $COM = qq{psql service="$service" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$newfilename',$offset,$slurpsize), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
+            $slurp_attempt = qx/ $COM /;
+            if (-s $errorfile) {
+                seek $efh, 0, 0;
+                my $errline = <$efh>;
+                chomp $errline;
+                warn "Modified call to pg_read_file failed for service $service and file $newfilename ($errline)\n";
+                exit 2;
+            }
         }
         close $efh;
+        $slurp .= $slurp_attempt;
 
         $fh = new IO::Scalar \$slurp; ## no critic
         $count += parse_filehandle($fh, $filename, \%pidline, $lfileinfo);

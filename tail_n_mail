@@ -515,7 +515,7 @@ my %badservice;
 
 
 ## We're done parsing the message, send an email if needed
-process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero};
+process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero} or @problem_files;
 final_cleanup();
 
 $arg{critical} and $found_errors >= $arg{critical} and exit 2;

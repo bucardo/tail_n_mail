@@ -16,6 +16,9 @@ Version 2.4.0
   * Better flattening of queries
     [Greg Sabino Mullane]
 
+  * Do not show any file summaries if --mailzero was triggered
+    [Greg Sabino Mullane]
+
 
 Version 2.3.1, released July 3, 2018
 

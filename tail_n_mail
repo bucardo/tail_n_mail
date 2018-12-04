@@ -2697,7 +2697,7 @@ sub process_report {
                 $file->[1];
         }
     }
-    else {
+    elsif ($matchfiles) {
         push @msg => "Matches from $last_file_parsed: $pretty_grand_total";
     }
 

@@ -26,7 +26,7 @@ use POSIX          qw( strftime localeconv );
 use IO::Scalar;
 use 5.008003;
 
-our $VERSION = '2.4.0';
+our $VERSION = '2.5.0';
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
 
@@ -73,7 +73,7 @@ my %arg = (
               html             => 0,
 ## Are we parsing Postgres logs?
               pgmode           => 1,
-## What type of Postgres log we are parsing. Can be log, csv, or syslog/syslog2
+## What type of Postgres log we are parsing. Can be log, csv, pgbouncer, syslog, or syslog2
               pglog            => 'pg',
 ## What is Postgres's log_line_prefix
               log_line_prefix  => '',
@@ -230,6 +230,11 @@ if ($configfile =~ /tempfile/i or $arg{tempfile} > 0) {
     $arg{type} = 'tempfile';
 }
 
+## If the file has the name 'bouncer' in it, switch to pgbouncer mode
+if ($configfile =~ /bouncer/i) {
+    $arg{pglog} = 'pgbouncer';
+}
+
 ## Quick expansion of leading tildes for the file argument
 for (@{ $arg{file} }) {
     s{^~/?}{$ENV{HOME}/};
@@ -259,10 +264,11 @@ my $pglog = $opt{pglog} || $arg{pglog};
 
 ## Figure out each log_line_prefix, then create regexes for it
 my $default_llp = '%t [%p]';
+my $default_pgbouncer_llp = '%tb %p ';
 
 my $llprefix = $opt{log_line_prefix}
     || $arg{log_line_prefix}
-    ||($pglog =~ /syslog/ ? '' : $default_llp);
+    ||($pglog =~ /syslog/ ? '' : $pglog eq 'pgbouncer' ? $default_pgbouncer_llp : $default_llp);
 
 ## This may be a collection. Number "0" becomes the global default
 if (! ref $llprefix) {
@@ -291,6 +297,9 @@ while (($llp_num,$llp1) = each %$llprefix) {
   ## Some non-Postgres timestamps
   ## Example: Sun Oct 29 08:50:53.691196 2017
   $llp1 =~ s/%ts/(\\w\\w\\w \\w\\w\\w\\s+\\d+ \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\d\\d\\d\\d)/ and $havetime=1;
+
+  ## For pgbouncer logs
+  $llp1 =~ s/%tb/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\.\\d+)/ and $havetime=1;
 
   ## This assumes timestamp comes before the pid!
   $llp1 =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d \\w\\w\\w\\w?)/ and $havetime=1;
@@ -2125,6 +2134,15 @@ sub process_line {
     ## Strip leading whitespace
     $string =~ s/^\s+//o;
 
+    ## PgBouncer logs are fairly simple
+    if ($arg{pglog} eq 'pgbouncer') {
+        ## WARNING C-0x2ae3c50: myserver/alice@unix(18550):6432 Taking connection from reserve_pool<<
+        ## WARNING S-0x10d6320: myserver/alice@123.45.67.80:5432 got packet 'E' from server when not linked
+        $string =~ s/(\w+) [A-Z]\-0x.+?: /$1 /;
+        $string =~ s/\(\d+\):/:/;
+        goto PGPREFIX;
+    }
+
     ## If not in Postgres mode, we avoid all the mangling below
     if (! $arg{pgmode}) {
         $find{$filename}{$line} =
@@ -3193,9 +3211,9 @@ sub lines_of_interest {
                 print "$f->{earliest}{pgprefix}\n";
             }
 
-            ## Show the actual string, not the flattened version
+            ## Show the actual string, not the flattened version (unless pgbouncer)
             my $nonparsed = exists $f->{latest}{npstring} ? 1 : 0;
-            my $lstring = wrapline( ($f->{rawstring} || $f->{string} || ''), $nonparsed );
+            my $lstring = wrapline( ($arg{pglog} eq 'pgbouncer' ? $f->{string} : ($f->{rawstring} || $f->{string}) || ''), $nonparsed );
             print "$lstring\n";
 
             next;
@@ -3304,8 +3322,8 @@ sub lines_of_interest {
             print "\n";
         }
 
-        ## Show the first actual error if we've flattened things out
-        if ($estring ne $f->{rawstring}) {
+        ## Show the first actual error if we've flattened things out (unless pgbouncer)
+        if ($estring ne $f->{rawstring} and $arg{pglog} ne 'pgbouncer') {
             print "-\n";
             print wrapline($f->{rawstring});
             print "\n";
@@ -3372,9 +3390,13 @@ sub final_cleanup {
 
     ## Have we got new lastfiles, offsets, modtimes, or rotatefilemodtimes?
     for my $t (@{ $opt{file} }) {
-        if (exists $t->{latest} and $t->{latest} ne $t->{lastfile} and $t->{latest} !~ /SERVICE=/) {
+
+        next if ! exists $t->{latest};
+
+        if ($t->{latest} ne $t->{lastfile} and $t->{latest} !~ /SERVICE=/) {
             $changes++;
             $t->{lastfile} = delete $t->{latest};
+            next;
         }
         if (exists $opt{newoffset}{$t->{latest}}) {
             my $newoffset = $opt{newoffset}{$t->{latest}};
@@ -3505,7 +3527,7 @@ sub final_cleanup {
             printf "ROTATEFILEMODTIME%d: %s\n", $f->{suffix}, $f->{rotatefilemodtime};
         }
         ## The offset may be new, or we may be the same as last time
-        if (exists $opt{newoffset}{$f->{latest}}) { ## FIXME: latest may have been deleted, but sometimes lastfile does not exist...
+        if (defined $f->{latest} and exists $opt{newoffset}{$f->{latest}}) {
             printf "OFFSET%d: %d\n", $f->{suffix}, $opt{newoffset}{$f->{latest}};
         }
         elsif (defined $f->{offset}) {

@@ -2,7 +2,10 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 2.4.0
+Version 2.5.0
+
+  * Support for pgbouncer logs. Just give your config file the string 'bouncer' in it to activate.
+    [Greg Sabino Mullane]
 
   * Handle cases in which the log files contain null bytes.
     [Greg Sabino Mullane]

@@ -2,7 +2,7 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 2.5.0
+Version 2.4.0
 
   * Support for pgbouncer logs. Just give your config file the string 'bouncer' in it to activate.
     [Greg Sabino Mullane]
@@ -14,6 +14,9 @@ Version 2.5.0
     [Greg Sabino Mullane]
 
   * Output why some files were skipped in the header for serios issues.
+    [Greg Sabino Mullane]
+
+  * Add flattening for non-Postgres files
     [Greg Sabino Mullane]
 
   * Better flattening of queries

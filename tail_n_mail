@@ -1691,7 +1691,7 @@ sub parse_file {
                 $slurp_attempt = qx/ $COM /;
                 if (-s $errorfile) {
                     seek $efh, 0, 0;
-                    my $errline = <$efh>;
+                    $errline = <$efh>;
                     chomp $errline;
                     warn "Modified call to pg_read_file failed for service $service and file $newfilename.1 ($errline)\n";
                     exit 2;
@@ -1734,7 +1734,7 @@ sub parse_file {
             $slurp_attempt = qx/ $COM /;
             if (-s $errorfile) {
                 seek $efh, 0, 0;
-                my $errline = <$efh>;
+                $errline = <$efh>;
                 chomp $errline;
                 warn "Modified call to pg_read_file failed for service $service and file $newfilename ($errline)\n";
                 exit 2;

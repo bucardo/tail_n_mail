@@ -3172,7 +3172,7 @@ sub lines_of_interest {
         my $filename = exists $f->{earliest} ? $f->{earliest}{filename} : $f->{filename};
 
         ## If only a single entry, simpler output
-        if (exists $f->{latest}{npstring} or ($f->{count} == 1 and $arg{hideflatten})) {
+        if (exists $f->{latest}{npstring} or (1 === $f->{count} and $arg{hideflatten})) {
             if (exists $f->{latest}{npstring}) {
                 if ($f->{earliest}{line} != $f->{latest}{line}) {
                     $f->{line} = "$f->{earliest}{line} - $f->{latest}{line}";

@@ -2145,15 +2145,8 @@ sub process_line {
 
     ## If not in Postgres mode, we avoid all the mangling below
     if (! $arg{pgmode}) {
-        $find{$filename}{$line} =
-                {
-                 string   => $string,
-                 line     => $line,
-                 filename => $filename,
-                 count    => 1,
-                 };
-
-        return 1;
+        $pgprefix = '?';
+        goto PGPREFIX;
     }
 
     ## For tempfiles, strip out the size information and store it
@@ -3207,7 +3200,7 @@ sub lines_of_interest {
             }
 
             ## If we are using prefixes, show it here
-            if (exists $f->{earliest}{pgprefix} and length $f->{earliest}{pgprefix}) {
+            if (exists $f->{earliest}{pgprefix} and length $f->{earliest}{pgprefix} and $f->{earliest}{pgprefix} ne '?') {
                 print "$f->{earliest}{pgprefix}\n";
             }
 

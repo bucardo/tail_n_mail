@@ -20,7 +20,7 @@ elsif (!eval { require Text::SpellChecker; 1 }) {
 }
 else {
 	opendir my $dir, 't' or die qq{Could not open directory 't': $!\n};
-	@testfiles = map { "t/$_" } grep { /^.+\.(t|pl)$/ } readdir $dir;
+	@testfiles = map { "t/$_" } grep { /^\w.+\.(t|pl)$/ } readdir $dir;
 	closedir $dir or die qq{Could not closedir "$dir": $!\n};
 	plan tests => 2+@testfiles;
 }
@@ -114,6 +114,7 @@ __DATA__
 
 Deckelmann
 MAXSIZE
+Mullane
 bucardo
 config
 env
@@ -124,54 +125,69 @@ whitespace
 
 ## Changes:
 
-Arsen
-CSV
-ENV
-FILEx
-Fiske
-Github
-GSM
-Johan
-MAILSUBJECT
-Markus
-Mullane
-PID
-POSIX
-Sabino
-SQL
-Urbański
-Zimmermann
+arg
 args
+Arsen
+autovac
 autovacuum
 chunked
 config
+CSV
+devbox
 durations
+ENV
 filename
+FILEx
+Fiske
 func
+Github
+GSM
 havepid
 havetimestamp
+html
 http
+Johan
+LASTFILE
+logrotate
 lookahead
 mailsig
+MAILSUBJECT
+mailzero
+Markus
 metacharacters
+Nagios
 nolastfile
+nonparsed
+pgbouncer
 pgformat
 pglog
 pgpidre
+PID
+POSIX
+Postgres
+pre
 regex
 regexes
-SQLSTATE
+Sabino
+Seiler
+serios
+skipfilebyregex
+SQL
 sqlstate
+SQLSTATE
 Stasic
 syslog
 syslogs
 sysread
 tempfile
 timestamp
+timestamps
+Tolley
 uniques
 unlink
+Urbański
 whitespace
-
+Zimmermann
 
 ## tail_n_mail:
 
@@ -188,9 +204,10 @@ globals
 greg
 hostname
 http
+https
 lastfile
 maxsize
-Mullane
+pgbouncer
 pid
 rc
 regex
@@ -200,8 +217,8 @@ selena
 smtp
 tempfile
 timestamp
+turnstep
 usr
 wiki
 wrapline
-
 

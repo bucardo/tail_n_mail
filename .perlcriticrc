@@ -8,6 +8,7 @@ profile-strictness = quiet
 [-Bangs::ProhibitNumberedNames]
 [-Bangs::ProhibitVagueNames]
 [-BuiltinFunctions::ProhibitComplexMappings]
+[-BuiltinFunctions::ProhibitReverseSortBlock]
 [-BuiltinFunctions::ProhibitUselessTopic]
 [-CodeLayout::ProhibitHashBarewords]
 [-CodeLayout::ProhibitParensWithBuiltins]

@@ -13,6 +13,7 @@ profile-strictness = quiet
 [-BuiltinFunctions::ProhibitUselessTopic]
 [-CodeLayout::ProhibitHashBarewords]
 [-CodeLayout::ProhibitParensWithBuiltins]
+[-CodeLayout::RequireASCII]
 [-CodeLayout::RequireTidyCode]
 [-CodeLayout::RequireUseUTF8]
 [-ControlStructures::ProhibitCascadingIfElse]

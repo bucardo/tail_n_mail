@@ -13,7 +13,7 @@ Version 2.4.0
   * Do not attempt to failed service twice, if host is the same but file is different.
     [Greg Sabino Mullane]
 
-  * Output why some files were skipped in the header for serios issues.
+  * Output why some files were skipped in the header for serious issues.
     [Greg Sabino Mullane]
 
   * Add flattening for non-Postgres files

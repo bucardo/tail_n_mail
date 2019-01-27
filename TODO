@@ -7,3 +7,4 @@ do an opendir/readdir instead, so LATEST will work on Windows
 * While the POSIX-based log file strings are capable of being scanned backwards
 until the last one we processed is found, the "LATEST" version is not
 
+* Rewrite the opt/arg/localopt thing to be clear and concise

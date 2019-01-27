@@ -25,6 +25,9 @@ Version 2.4.0
   * Do not show any file summaries if --mailzero was triggered
     [Greg Sabino Mullane]
 
+  * Fix tracking of line number position
+    [Greg Sabino Mullane]
+
 
 Version 2.3.1, released July 3, 2018
 

@@ -33,11 +33,12 @@ sub run {
 my $num = 2;
 
 $info = run('t/config/config2.txt');
+
 my $start = substr($info,0,300);
 $t = qq{Test config $num gives correct subject line};
 my $host = qx{hostname};
 chomp $host;
-like ($start, qr{^Subject: Acme $host Postgres errors 50 : 60\n}, $t);
+like ($start, qr{^Subject: Acme $host Postgres errors 45 : 60\n}, $t);
 
 $t = qq{Test config $num inserts a 'Date' line with newlines before it};
 like ($start, qr{\n\n\Date: \w\w\w \w\w\w [\d ]\d}, $t);
@@ -46,7 +47,7 @@ $t = qq{Test config $num inserts a 'Host' line};
 like ($start, qr{\nHost: \w}, $t);
 
 $t = qq{Test config $num inserts a 'Unique items' line};
-like ($start, qr{\nUnique items: 50\n}, $t);
+like ($start, qr{\nUnique items: 45\n}, $t);
 
 $t = qq{Test config $num inserts a 'Matches from' line};
 like ($start, qr{\nMatches from t/logs/testlog2.csv: 60\n}, $t);
@@ -56,25 +57,25 @@ like ($info, qr{DRYRUN: }, $t);
 
 $t = qq{Test config $num gives correct first item match};
 $start = substr($info,0,700);
-like ($start, qr{\n\Q[1] (between lines 8,450 and 8,486, occurs 5 times)}, $t);
+like ($start, qr{\n\Q[1] (between lines 8,399 and 8,435, occurs 5 times)}, $t);
 
 $t = qq{Test config $num gives correct first item "First" timestamp};
-like ($start, qr{\n\QFirst: 2010-12-23 11:28:07.675 EST [7698]\E\n}, $t);
+like ($start, qr{\n\QFirst: 2010-12-23 11:28:07.653 EST [7698]\E\n}, $t);
 
 $t = qq{Test config $num gives correct first item "Last" timestamp};
-like ($start, qr{\n\QLast:  2010-12-23 11:28:07.686 EST [7698]\E\n}, $t);
+like ($start, qr{\n\QLast:  2010-12-23 11:28:07.670 EST [7698]\E\n}, $t);
 
 $t = qq{Test config $num gives correct normalized output};
-like ($start, qr{\nERROR: type "line" not yet implemented
-\QSTATEMENT: INSERT INTO dbd_pg_test_geom(xline) VALUES (?)\E\n\-\n}, $t);
+like ($start, qr{\nERROR: invalid input syntax for type point: "\?"
+STATEMENT: INSERT INTO dbd_pg_test_geom\(xpoint\) VALUES \(\?\)}, $t);
 
 $t = qq{Test config $num gives correct literal output};
-like ($start, qr{\n\-\nERROR: type "line" not yet implemented
-\QSTATEMENT: INSERT INTO dbd_pg_test_geom(xline) VALUES (\E\$1\)}, $t);
+like ($start, qr{\n\-\nERROR: invalid input syntax for type point: "123,abc"
+STATEMENT: INSERT INTO dbd_pg_test_geom\(xpoint\) VALUES \(\$1\)}, $t);
 
-## Second match is a simple COPY error with a CONTEXT
-$t = qq{Test config $num gives correct second match};
-$start = substr($info,550,350);
+## Third match is a simple COPY error with a CONTEXT
+$t = qq{Test config $num gives correct third match};
+$start = substr($info,850,350);
 like ($start, qr{\Q
 [2] (between lines 7,365 and 7,374, occurs 3 times)
 First: 2010-12-23 11:27:56.010 EST [7679]
@@ -83,6 +84,7 @@ ERROR: COPY from stdin failed: COPY terminated by new PQexec
 CONTEXT: COPY dbd_pg_test4, line 1
 STATEMENT: COPY dbd_pg_test4 FROM STDIN\E}, $t);
 
+exit;
 $t = qq{Test config $num gives correct third match};
 $start = substr($info,500,1000);
 like ($start, qr{\Q

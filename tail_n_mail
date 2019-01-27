@@ -1313,7 +1313,9 @@ sub parse_filehandle {
             my $prefix = "$line->[0] [$line->[3]]";
             my $context = length $line->[18] ? "CONTEXT: $line->[18] " : '';
             my $raw = "$line->[11]:  $line->[13] ${context}STATEMENT:  $line->[19]";
-            $count += process_line({pgprefix => $prefix, rawstring => $raw, line => $linenumber++}, $., $filename);
+            $count += process_line({pgprefix => $prefix, rawstring => $raw, line => $linenumber}, $., $filename);
+            my $innerlines = $raw =~ y/\n/\n/;
+            $linenumber += 1 + $innerlines;
         }
 
     } ## end of PG CSV mode

@@ -2477,6 +2477,9 @@ sub process_line {
     ## If we have a prefix, check for similar entries
     if (length $pgprefix) {
 
+        ## We do not want to track empty lines (typically seen for non-Postgres logs only)
+        next if ! length $string;
+
         ## Seen this string before?
         my $seenit = 0;
 

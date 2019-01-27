@@ -261,6 +261,7 @@ for my $k (keys %opt) {
 }
 
 my $pglog = $opt{pglog} || $arg{pglog};
+my $pgmode = $opt{pgmode} // $arg{pgmode};
 
 ## Figure out each log_line_prefix, then create regexes for it
 my $default_llp = '%t [%p]';
@@ -346,7 +347,7 @@ while (($llp_num,$llp1) = each %$llprefix) {
   }
 
   $pgpidre{$llp_num}{1} = qr{^($llp1)(.*)};
-  $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex $llp_num/1: $pgpidre{$llp_num}{1}\n";
+  $arg{verbose} and $pgmode and warn "  Log line prefix regex $llp_num/1: $pgpidre{$llp_num}{1}\n";
 
   ## And a separate one for cluster-wide notices
 
@@ -362,7 +363,7 @@ while (($llp_num,$llp1) = each %$llprefix) {
   }
 
   $pgpidre{$llp_num}{2} = qr{^$llp2};
-  $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex $llp_num/2: $pgpidre{$llp_num}{2}\n";
+  $arg{verbose} and $pgmode and warn "  Log line prefix regex $llp_num/2: $pgpidre{$llp_num}{2}\n";
 
   ## And one more for things that throw out everything except the timestamp
   ## May not work on against all log_line_prefixes
@@ -384,7 +385,7 @@ while (($llp_num,$llp1) = each %$llprefix) {
   $llp3 =~ s/\s$//;
 
   $pgpidre{$llp_num}{3} = qr{^$llp3};
-  $arg{verbose} and $arg{pgmode} and warn "  Log line prefix regex $llp_num/3: $pgpidre{$llp_num}{2}\n";
+  $arg{verbose} and $pgmode and warn "  Log line prefix regex $llp_num/3: $pgpidre{$llp_num}{2}\n";
 
 }
 
@@ -793,7 +794,7 @@ sub parse_config_file {
             if ($arg{file}[0]) {
 
                 ## Have we been here already? Only need to override once
-                if (! exists  $localopt{filename}) {
+                if (! exists $localopt{filename}) {
 
                     for my $argfile (@{ $arg{file} }) {
 
@@ -956,6 +957,10 @@ sub parse_config_file {
         ## Size at which we cutoff nonparsed long statements
         elsif (/^NONPARSED_STATEMENT_SIZE:\s*(.+)/) {
             $localopt{nonparsed_statement_size} = $1;
+        }
+        ## File mode
+        elsif (/^PGMODE:\s*(.+)/) {
+            $localopt{pgmode} = $1;
         }
     }
     close $c or die qq{Could not close "$configfile": $!\n};
@@ -1220,6 +1225,10 @@ sub parse_inherit_file {
         elsif (/^NONPARSED_STATEMENT_SIZE:\s*(.+)/) {
             $opt{nonparsed_statement_size} = $1;
         }
+        ## File mode
+        elsif (/^PGMODE:\s*(.+)/) {
+            $opt{pgmode} = $1;
+        }
         else {
             warn qq{Unknown item in include file "$file": $_\n};
         }
@@ -1378,7 +1387,7 @@ sub parse_filehandle {
                 next LOGLINE;
             }
 
-            if ($arg{pgmode}) {
+            if ($pgmode) {
 
                 ## 1=prefix 2=timestamp 3=PID 4=rest
                 if ($_ =~ s/$pgpidre1/$4/) {
@@ -2146,7 +2155,7 @@ sub process_line {
     }
 
     ## If not in Postgres mode, we avoid all the mangling below
-    if (! $arg{pgmode}) {
+    if (! $pgmode) {
         $pgprefix = '?';
         goto PGPREFIX;
     }
@@ -3433,7 +3442,7 @@ sub final_cleanup {
 ## Last updated: $now
 };
     for my $item (qw/ log_line_prefix pglog email from type mailsig duration tempfile find_line_number
-                      sortby duration_limit tempfile_limit statement_size nonparsed_statement_size /) {
+                      sortby duration_limit tempfile_limit statement_size nonparsed_statement_size pgmode /) {
         next if ! exists $opt{$item};
 
         next if $item eq 'duration' and $arg{duration} < 0;

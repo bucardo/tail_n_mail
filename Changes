@@ -1,3 +1,4 @@
+
 This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
@@ -17,6 +18,9 @@ Version 2.4.0
     [Greg Sabino Mullane]
 
   * Add flattening for non-Postgres files
+    [Greg Sabino Mullane]
+
+  * Allow custom flattening rules via FLATTEN: in the config file
     [Greg Sabino Mullane]
 
   * Better flattening of queries

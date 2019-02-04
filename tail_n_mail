@@ -922,6 +922,10 @@ sub parse_config_file {
         elsif (/^INCLUDE:\s*(.+)/) {
             push @{$localopt{include}}, $1;
         }
+        ## Custom flattening rules: format is FOO/BAR which maps to s/FOO/BAR/g;
+        elsif (/^FLATTEN:\s*(.+)/) {
+            push @{$localopt{flatten}}, $1;
+        }
         ## The current offset into a file
         elsif (/^OFFSET(\d*):\s*(\d+)/) {
             my $suffix = $1 || 1;
@@ -2152,6 +2156,15 @@ sub process_line {
         $string =~ s/(\w+) [A-Z]\-0x.+?: /$1 /;
         $string =~ s/\(\d+\):/:/;
         goto PGPREFIX;
+    }
+
+    ## Apply any custom flattening
+    for my $item (@{ $opt{flatten} }) {
+        if ($item !~ m{(.+)/(.+)}) {
+            die "Flatten regex must be of format foo/bar\n";
+        }
+        my ($left,$right) = ($1,$2);
+        $string =~ s/$left/$right/g;
     }
 
     ## If not in Postgres mode, we avoid all the mangling below
@@ -3442,7 +3455,7 @@ sub final_cleanup {
 ## Last updated: $now
 };
     for my $item (qw/ log_line_prefix pglog email from type mailsig duration tempfile find_line_number
-                      sortby duration_limit tempfile_limit statement_size nonparsed_statement_size pgmode /) {
+                      sortby duration_limit tempfile_limit statement_size nonparsed_statement_size pgmode flatten /) {
         next if ! exists $opt{$item};
 
         next if $item eq 'duration' and $arg{duration} < 0;

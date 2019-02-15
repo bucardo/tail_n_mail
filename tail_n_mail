@@ -510,6 +510,10 @@ my %badservice;
             push @problem_files => "!! Not a regular file: $logfile";
             ## Fallthrough
         }
+        elsif (-7 == $count) { ## Problem with pg_read_file
+            push @problem_files => "!! Call to pg_read_file failed: $logfile";
+            ## Fallthrough
+        }
     }
 
     if ($count >= 0) {
@@ -1531,6 +1535,7 @@ sub parse_file {
     ## -4: Skipped as mod time and size have not changed
     ## -5: The file does not exist
     ## -6: The file exists, but is not a regular file
+    ## -7: There was an unknown problem with pg_read_file
 
     my $filename = shift;
     my $lfileinfo = shift;
@@ -1702,8 +1707,12 @@ sub parse_file {
                 chomp $errline;
                 warn "Call to pg_read_file failed for service $service and file $newfilename.1 ($errline)\n";
 
-                ## If this was a UTF-8 error involving null bytes, try and filter them out
-                exit 2 unless $errline =~ /\b0x00\b/;
+                ## If this was a UTF-8 error involving null bytes, try and filter them out.
+                ## For everything else, we give up
+                if ($errline !~ /\b0x00\b/) {
+                    warn "Call to pg_read_file($newfilename.1) failed for service $service: $errline\n";
+                    return -7;
+                }
 
                 $COM = qq{psql service="$service" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$newfilename.1',$offset,$rotatesize), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
                 $arg{debug} and warn "Attempting: $COM\n";
@@ -1712,8 +1721,8 @@ sub parse_file {
                     seek $efh, 0, 0;
                     $errline = <$efh>;
                     chomp $errline;
-                    warn "Modified call to pg_read_file failed for service $service and file $newfilename.1 ($errline)\n";
-                    exit 2;
+                    warn "Modified call to pg_read_file($newfilename.1) failed for service $service: $errline\n";
+                    return -7;
                 }
             }
             close $efh;
@@ -1748,7 +1757,10 @@ sub parse_file {
             warn "Call to pg_read_file failed for service $service and file $newfilename ($errline)\n";
 
             ## If this was a UTF-8 error involving null bytes, try and filter them out
-            exit 2 unless $errline =~ /\b0x00\b/;
+            if ($errline !~ /\b0x00\b/) {
+                warn "Call to pg_read_file($newfilename) failed for service $service: $errline\n";
+                return -7;
+            }
 
             $COM = qq{psql service="$service" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$newfilename',$offset,$slurpsize), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
             $arg{debug} and warn "Attempting: $COM\n";
@@ -1757,8 +1769,8 @@ sub parse_file {
                 seek $efh, 0, 0;
                 $errline = <$efh>;
                 chomp $errline;
-                warn "Modified call to pg_read_file failed for service $service and file $newfilename ($errline)\n";
-                exit 2;
+                warn "Modified call to pg_read_file($newfilename) failed for service $service: $errline\n";
+                return -7;
             }
         }
         close $efh;

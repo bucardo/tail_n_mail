@@ -32,6 +32,8 @@ Version 2.4.0
   * Fix tracking of line number position
     [Greg Sabino Mullane]
 
+  * Report pg_read_file failures rather than exiting the whole program
+    [Greg Sabino Mullane]
 
 Version 2.3.1, released July 3, 2018
 

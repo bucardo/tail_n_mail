@@ -1585,6 +1585,7 @@ sub parse_file {
         ## Attempt to get information about the remote file
         my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
         my $COM = qq{psql service="$service" -AX -qt -x -c "select * from pg_stat_file('$newfilename')" 2>$errorfile};
+        $arg{debug} and warn "Attempting: $COM\n";
         my @info = qx/ $COM /;
         if (-s $errorfile) {
             seek $efh, 0, 0;
@@ -1667,6 +1668,7 @@ sub parse_file {
         if ($read_rotated and $newfilename !~ /\.1$/) {
             ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
             $COM = qq{psql service="$service" -AX -qt -x -c "select * from pg_stat_file('$newfilename.1', true)" 2>$errorfile};
+            $arg{debug} and warn "Attempting: $COM\n";
             my @localinfo = qx/ $COM /;
             ## We don't really care what the error is: we simply refuse to parse if any error at all
             close $efh;
@@ -1692,6 +1694,7 @@ sub parse_file {
             my $rotatesize = $arg{debug_partial_read} || $remoterotatefileinfo{size};
             $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename.1',$offset,$rotatesize)" 2>$errorfile};
             ## Put the file contents into our scalar
+            $arg{debug} and warn "Attempting: $COM\n";
             my $slurp_attempt = qx/ $COM /;
             if (-s $errorfile) {
                 seek $efh, 0, 0;
@@ -1703,6 +1706,7 @@ sub parse_file {
                 exit 2 unless $errline =~ /\b0x00\b/;
 
                 $COM = qq{psql service="$service" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$newfilename.1',$offset,$rotatesize), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
+                $arg{debug} and warn "Attempting: $COM\n";
                 $slurp_attempt = qx/ $COM /;
                 if (-s $errorfile) {
                     seek $efh, 0, 0;
@@ -1735,6 +1739,7 @@ sub parse_file {
         my $slurpsize = $arg{debug_partial_read} || $filesize;
         $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename',$offset,$slurpsize)" 2>$errorfile};
         ## Add file contents to our scalar
+        $arg{debug} and warn "Attempting: $COM\n";
         my $slurp_attempt = qx/ $COM /;
         if (-s $errorfile) {
             seek $efh, 0, 0;
@@ -1746,6 +1751,7 @@ sub parse_file {
             exit 2 unless $errline =~ /\b0x00\b/;
 
             $COM = qq{psql service="$service" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$newfilename',$offset,$slurpsize), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
+            $arg{debug} and warn "Attempting: $COM\n";
             $slurp_attempt = qx/ $COM /;
             if (-s $errorfile) {
                 seek $efh, 0, 0;

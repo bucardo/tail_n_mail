@@ -1584,24 +1584,14 @@ sub parse_file {
     ## Handle alternate ways of reading in a file
     ## At the end of the day, we want to provide a pseudo-filehandle
     if ($filename =~ /SERVICE=/) {
+
         (my $newfilename = $filename) =~ s/SERVICE=(\w+)\s*//;
         my $service = $1;
 
-        ## Attempt to get information about the remote file
-        my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
-        my $COM = qq{psql service="$service" -AX -qt -x -c "select * from pg_stat_file('$newfilename')" 2>$errorfile};
-        $arg{debug} and warn "Attempting: $COM\n";
-        my @info = qx/ $COM /;
-        if (-s $errorfile) {
-            seek $efh, 0, 0;
-            my $errline = <$efh>;
-            chomp $errline;
-            warn "Call to pg_stat_file failed for service $service and file $newfilename ($errline)\n";
-            return -2;
-        }
-        close $efh;
-        my %remotefileinfo = map { chomp; split /\|/, $_, 2 } @info;
-        $newmodtime = $remotefileinfo{modification} || '';
+        my $remotefileinfo = call_pg_stat_file($service, $newfilename);
+        return -2 if ! ref $remotefileinfo;
+
+        $newmodtime = $remotefileinfo->{modification} || '';
 
         ## If the reset argument was used, don't parse the file, just set the new offset and modtime
         if ($arg{reset}) {
@@ -1619,7 +1609,7 @@ sub parse_file {
         ## Offset of the file we are going to read
         my $offset = $lfileinfo->{offset} || 0;
 
-        my $filesize = $remotefileinfo{size};
+        my $filesize = $remotefileinfo->{size};
 
         ## If we passed in a file manually, always read the entire thing (and do not worry about file rotation)
         if ($arg{file}[0]) {
@@ -1669,20 +1659,9 @@ sub parse_file {
 
         ## We may want to check for a .1 file and get information about it
         ## Just in case, skip if we already end in ".1"!
-        my %remoterotatefileinfo;
+        my $remoterotatedfileinfo = {};
         if ($read_rotated and $newfilename !~ /\.1$/) {
-            ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
-            $COM = qq{psql service="$service" -AX -qt -x -c "select * from pg_stat_file('$newfilename.1', true)" 2>$errorfile};
-            $arg{debug} and warn "Attempting: $COM\n";
-            my @localinfo = qx/ $COM /;
-            ## We don't really care what the error is: we simply refuse to parse if any error at all
-            close $efh;
-            if (! -s $errorfile) {
-                %remoterotatefileinfo = map { chomp; split /\|/, $_, 2 } @localinfo;
-            }
-            else {
-                $arg{debug} and warn qq{Got an error while reading $newfilename.1\n};
-            }
+            $remoterotatedfileinfo = call_pg_stat_file($service, "$newfilename.1");
         }
 
         ## Throw one or more files into this scalar:
@@ -1691,51 +1670,19 @@ sub parse_file {
         ## If there is an offset, it will be from the older file: which is probably the rotated file
         ## Thus, we keep any offset, and read the entire "current" file
         if (
-            exists $remoterotatefileinfo{modification} and length $remoterotatefileinfo{modification} ## rotated file exists AND
+            ref $remoterotatedfileinfo ## if it gave an error above, this will be a scalar
+            and exists $remoterotatedfileinfo->{modification} and length $remoterotatedfileinfo->{modification} ## rotated file exists AND
             and (!exists $lfileinfo->{rotatefilemodtime} ## we either have never seen this file ...
-                 or ($remoterotatefileinfo{modification} ne $lfileinfo->{rotatefilemodtime})) ## OR it has changed since the last time we have
+                 or ($remoterotatedfileinfo->{modification} ne $lfileinfo->{rotatefilemodtime})) ## OR it has changed since the last time we have
            ) {
-            ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
-            my $rotatesize = $arg{debug_partial_read} || $remoterotatefileinfo{size};
-            $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename.1',$offset,$rotatesize)" 2>$errorfile};
-            ## Put the file contents into our scalar
-            $arg{debug} and warn "Attempting: $COM\n";
-            my $slurp_attempt = qx/ $COM /;
-            if (-s $errorfile) {
-                seek $efh, 0, 0;
-                my $errline = <$efh>;
-                chomp $errline;
-                warn "Call to pg_read_file failed for service $service and file $newfilename.1 ($errline)\n";
-
-                ## If this was a UTF-8 error involving null bytes, try and filter them out.
-                ## For everything else, we give up
-                if ($errline !~ /\b0x00\b/) {
-                    warn "Call to pg_read_file($newfilename.1) failed for service $service: $errline\n";
-                    return -7;
-                }
-
-                $COM = qq{psql service="$service" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$newfilename.1',$offset,$rotatesize), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
-                $arg{debug} and warn "Attempting: $COM\n";
-                $slurp_attempt = qx/ $COM /;
-                if (-s $errorfile) {
-                    seek $efh, 0, 0;
-                    $errline = <$efh>;
-                    chomp $errline;
-                    warn "Modified call to pg_read_file($newfilename.1) failed for service $service: $errline\n";
-                    return -7;
-                }
-            }
-            close $efh;
-            $slurp .= $slurp_attempt;
-
-            ## pg_read_file() likes to add newlines, but we don't want any extra ones:
-            $slurp =~ s/\s*$/\n/;
+            my $rotatesize = $arg{debug_partial_read} || $remoterotatedfileinfo->{size};
+            return -7 if slurp_via_pg_read_file($service, "$newfilename.1", $offset, $rotatesize, \$slurp);
 
             ## Because we read the rotated file, we want to slurp in the entire current file
             $offset = 0;
 
             ## Make sure we store our new modification time for the rotated file
-            $opt{rotatefilemodtime}{$filename} = $remoterotatefileinfo{modification};
+            $opt{rotatefilemodtime}{$filename} = $remoterotatedfileinfo->{modification};
         }
 
         ## Double check if we need the offset to be zero
@@ -1744,37 +1691,8 @@ sub parse_file {
         }
 
         ## Read the current file.
-        ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
         my $slurpsize = $arg{debug_partial_read} || $filesize;
-        $COM = qq{psql service="$service" -AX -qt -c "select * from pg_read_file('$newfilename',$offset,$slurpsize)" 2>$errorfile};
-        ## Add file contents to our scalar
-        $arg{debug} and warn "Attempting: $COM\n";
-        my $slurp_attempt = qx/ $COM /;
-        if (-s $errorfile) {
-            seek $efh, 0, 0;
-            my $errline = <$efh>;
-            chomp $errline;
-            warn "Call to pg_read_file failed for service $service and file $newfilename ($errline)\n";
-
-            ## If this was a UTF-8 error involving null bytes, try and filter them out
-            if ($errline !~ /\b0x00\b/) {
-                warn "Call to pg_read_file($newfilename) failed for service $service: $errline\n";
-                return -7;
-            }
-
-            $COM = qq{psql service="$service" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$newfilename',$offset,$slurpsize), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
-            $arg{debug} and warn "Attempting: $COM\n";
-            $slurp_attempt = qx/ $COM /;
-            if (-s $errorfile) {
-                seek $efh, 0, 0;
-                $errline = <$efh>;
-                chomp $errline;
-                warn "Modified call to pg_read_file($newfilename) failed for service $service: $errline\n";
-                return -7;
-            }
-        }
-        close $efh;
-        $slurp .= $slurp_attempt;
+        return -7 if slurp_via_pg_read_file($service, $newfilename, $offset, $slurpsize, \$slurp);
 
         $fh = new IO::Scalar \$slurp; ## no critic
         $count += parse_filehandle($fh, $filename, \%pidline, $lfileinfo);
@@ -2031,6 +1949,109 @@ sub generate_regexes {
     return $lexclude, $linclude, $lexclude_prefix, $lexclude_non_parsed, $lbonus_include;
 
 } ## end of generate_regexes
+
+
+sub call_pg_stat_file {
+
+    ## Get information about a remote log file via pg_stat_file()
+    ## Arguments: two
+    ## 1. Database service name
+    ## 2. Remote file name
+    ## Returns: hashref of information about the file, or an error string
+
+    my ($dbservice, $dbfilename) = @_;
+
+    ## We need a place to store any errors that come up
+    my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+
+    my $COM = qq{psql service="$dbservice" -AX -qt -x -c "select * from pg_stat_file('$dbfilename')" 2>$errorfile};
+    $arg{debug} and warn "Trying: $COM\n";
+    my @fileinfo = qx/ $COM /;
+    if (-s $errorfile) {
+        seek $efh, 0, 0;
+        my $errline = <$efh>;
+        chomp $errline;
+        warn "Call to pg_stat_file failed for service $dbservice and file $dbfilename ($errline)\n";
+        return $errline;
+    }
+    close $efh;
+
+    my %fileinfo = map { chomp; split /\|/, $_, 2 } @fileinfo;
+
+    return \%fileinfo;
+
+} ## end of call_pg_stat_file
+
+
+sub slurp_via_pg_read_file {
+
+    ## Grab the contents of a remote file pg_read_file()
+    ## Returns: false (0) for no problems, otherwise an error string
+    ## Arguments: five
+    ## 1. Database service name
+    ## 2. Remote file name
+    ## 3. Starting offset
+    ## 4. Requested bytes
+    ## 5. Scalar ref to store results in
+
+    my ($dbservice, $dbfilename, $fileoffset, $bytes, $dest) = @_;
+
+    ## We need a place to store any errors that come up
+    my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+
+    ## Because pg_read_file has an upper limit, we may need more than one run through
+    my $maxbytes = 1_000_000;
+    my $sizeleft = $bytes;
+    my $round = 0;
+    {
+        $round++;
+        my $bytes = $sizeleft > $maxbytes ? $maxbytes : $sizeleft;
+        $arg{debug} and warn "Round $round: offset $fileoffset, left to read is $sizeleft, bytes is $bytes\n";
+        my $COM = qq{psql service="$dbservice" -AX -qt -c "select * from pg_read_file('$dbfilename',$fileoffset,$bytes)" 2>$errorfile};
+        $arg{debug} and warn "Trying: $COM\n";
+        my $result = qx/ $COM /;
+
+        if (-s $errorfile) {
+            seek $efh, 0, 0;
+            my $errline = <$efh>;
+            chomp $errline;
+            $arg{debug} and warn "Call to pg_readline($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline\n";
+
+            ## If this was a UTF-8 error involving null bytes, try and filter them out
+            ## For everything else, we give up right away
+            if ($errline !~ /\b0x00\b/) {
+                warn "Call to pg_read_file($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline\n";
+                return $errline;
+            }
+
+            ## Run again, but try and filter things
+            $COM = qq{psql service="$dbservice" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$dbfilename',$fileoffset,$bytes), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
+            $result = qx/ $COM /;
+            if (-s $errorfile) {
+                seek $efh, 0, 0;
+                my $errline = <$efh>;
+                chomp $errline;
+                warn "Modified call to pg_read_file($dbfilename) failed for service $dbservice: $errline\n";
+                return $errline;
+            }
+        }
+        close $efh;
+
+        chomp $result;
+        {
+            no strict 'refs';
+            $$dest .= $result;
+        }
+
+        $sizeleft -= $bytes;
+        $fileoffset += $bytes;
+        last if $sizeleft < 1;
+        redo;
+    }
+
+    return 0;
+
+} ## end of slurp_via_pg_read_file
 
 
 sub process_line {

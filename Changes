@@ -35,6 +35,9 @@ Version 2.4.0
   * Report pg_read_file failures rather than exiting the whole program
     [Greg Sabino Mullane]
 
+  * Allow pg_read_file to handle very large files smoothly
+    [Greg Sabino Mullane]
+
 Version 2.3.1, released July 3, 2018
 
  * Add new "bonus include" feature to further control what lines match via INCLUDE.

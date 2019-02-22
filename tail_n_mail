@@ -2177,7 +2177,7 @@ sub process_line {
         return 0 if ($string =~ / duration: (\d+)/o and $1 < $arg{duration});
     }
 
-    $arg{debug} and warn "MATCH at line $line of $filename\n";
+    $arg{debug} > 2 and warn "MATCH at line $line of $filename\n";
 
     ## Force newlines to a single line
     $string =~ s/\n/\\n/go;

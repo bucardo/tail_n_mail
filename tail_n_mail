@@ -1467,7 +1467,7 @@ sub parse_filehandle {
                 ## May be a continuation or a special LOG line (e.g. autovacuum)
                 ## If it is, we'll simply ignore it
                 if ($_ =~ m{$pgpidre2}) {
-                    if ($arg{debug}) {
+                    if ($arg{debug} > 2) {
                         warn "Skipping line $_\n";
                     }
                     $ignore_indent = 1;

@@ -23,7 +23,6 @@ use Getopt::Long   qw( GetOptions          );
 use File::Temp     qw( tempfile            );
 use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
-use IO::Scalar;
 use 5.014_000;
 
 our $VERSION = '2.4.0';
@@ -1296,10 +1295,20 @@ sub parse_inherit_file {
 
 sub parse_filehandle {
 
+    ## Scan a filehandle for lines of interest
+    ## Arguments: five
+    ## 1. File handle
+    ## 2. File name
+    ## 3. PID line mapping (hashref)
+    ## 4. Local file info (hashref)
+    ## 5. Map of pids to numbers (hashref)
+    ## Returns: number of matches, any extra string
+
     my $fh = shift or die;
     my $filename = shift;
     my $pidline = shift;
     my $lfileinfo = shift;
+    my $current_pid_num = shift;
 
     my $newlines = 0;
     my $count = 0;
@@ -1338,7 +1347,7 @@ sub parse_filehandle {
     } ## end of PG CSV mode
     else {
         ## Postgres-specific multi-line grabbing stuff:
-        my ($pgts, $pgpid, %current_pid_num, $lastpid, $pgprefix);
+        my ($pgts, $pgpid, $lastpid, $pgprefix);
         my $pgnum = 1;
         my $lastline = '';
         my $syslognum = 0; ## used by syslog only
@@ -1354,7 +1363,13 @@ sub parse_filehandle {
         my $pgpidre3 = $pgpidre{$prefixnumber}{3};
 
       LOGLINE: while (<$fh>) {
+
             $linenumber++;
+
+            ## For service files, we need to return this string if we are at the end of the file
+            if (eof $fh and $filename =~ /SERVICE=/) {
+                return $count, $_;
+            }
 
             ## We ran into a truncated line last time, so we are most likely done
             last if $bailout;
@@ -1367,32 +1382,20 @@ sub parse_filehandle {
 
             ## Easiest to just remove the newline here and now
             if (! chomp) {
-                ## If this is a static string we are parsing, just give up now
-                if (ref $fh eq 'IO::Scalar') {
-                    $bailout = 1;
+                ## There was no newline, so it's possible some other process is in
+                ## the middle of writing this line. Just in case this is so, sleep and
+                ## let it finish, then try again. Because we don't want to turn this
+                ## into a tail -f situation, bail out of the loop once done
+                sleep 1;
+                ## Rewind just far enough to try this line again
+                seek $fh, - (length $_), 1;
+                $_ = <$fh>;
+                if (! chomp) {
+                    ## Still no go! Let's just leave and abandon this line
+                    last LOGLINE;
                 }
-                else {
-                    ## There was no newline, so it's possible some other process is in
-                    ## the middle of writing this line. Just in case this is so, sleep and
-                    ## let it finish, then try again. Because we don't want to turn this
-                    ## into a tail -f situation, bail out of the loop once done
-                    sleep 1;
-                    ## Rewind just far enough to try this line again
-                    seek $fh, - (length $_), 1;
-                    $_ = <$fh>;
-                    if (! chomp) {
-                        ## Still no go! Let's just leave and abandon this line
-                        last LOGLINE;
-                    }
-                    ## Success! Finish up this line, but then abandon any further slurping
-                    $bailout = 1;
-                }
-            }
-
-            ## Skip quietly if this is the last line of a scalar
-            if (!length $_ and ref $fh eq 'IO::Scalar' and $fh->eof) {
-                $arg{debug} and print "Skipping empty line at end of scalar\n";
-                next LOGLINE;
+                ## Success! Finish up this line, but then abandon any further slurping
+                $bailout = 1;
             }
 
             if ($pgmode) {
@@ -1422,7 +1425,7 @@ sub parse_filehandle {
                             ## Append to the string for this PID
                             if (/\b(?:STATEMENT|DETAIL|HINT|CONTEXT|QUERY):  /o) {
                                 ## Increment the pgnum by one
-                                $pgnum = $current_pid_num{$pgpid} + 1;
+                                $pgnum = $current_pid_num->{$pgpid} + 1;
                             }
                             else {
                                 ## Process the old one
@@ -1435,8 +1438,8 @@ sub parse_filehandle {
                     if ($pglog =~ /syslog/) {
                         $syslognum = $pgnum;
                         ## Increment our arbitrary internal number
-                        $current_pid_num{$pgpid} ||= 0;
-                        $pgnum = $current_pid_num{$pgpid} + 1;
+                        $current_pid_num->{$pgpid} ||= 0;
+                        $pgnum = $current_pid_num->{$pgpid} + 1;
                     }
 
                     ## Optionally strip out SQLSTATE codes
@@ -1446,7 +1449,7 @@ sub parse_filehandle {
 
                     ## Assign this string to the current pgnum slot
                     $pidline->{$pgpid}{string}{$pgnum} = $_;
-                    $current_pid_num{$pgpid} = $pgnum;
+                    $current_pid_num->{$pgpid} = $pgnum;
 
                     ## If we don't yet have a line, store it, plus the prefix and timestamp
                     if (! $pidline->{$pgpid}{line}) {
@@ -1480,8 +1483,8 @@ sub parse_filehandle {
                 ## If there is a leading tab, remove it and treat as a continuation
                 if (s{^\t}{ }) {
                     ## Increment the pgnum
-                    $pgnum = $current_pid_num{$lastpid} + 1;
-                    $current_pid_num{$lastpid} = $pgnum;
+                    $pgnum = $current_pid_num->{$lastpid} + 1;
+                    $current_pid_num->{$lastpid} = $pgnum;
 
                     ## Store this string
                     $pidline->{$lastpid}{string}{$pgnum} = $_;
@@ -1513,7 +1516,7 @@ sub parse_filehandle {
 
     } ## end of non-CSV mode
 
-    return $count;
+    return $count, undef;
 
 } ## end of parse_filehandle
 
@@ -1677,7 +1680,9 @@ sub parse_file {
                  or ($remoterotatedfileinfo->{modification} ne $lfileinfo->{rotatefilemodtime})) ## OR it has changed since the last time we have
            ) {
             my $rotatesize = $arg{debug_partial_read} || $remoterotatedfileinfo->{size};
-            return -7 if slurp_via_pg_read_file($service, "$newfilename.1", $offset, $rotatesize, \$slurp);
+            my $retval = slurp_via_pg_read_file($service, "$newfilename.1", $offset, $rotatesize, \%pidline, $filename, $lfileinfo);
+            return -7 if $retval < 0;
+            $count += $retval;
 
             ## Because we read the rotated file, we want to slurp in the entire current file
             $offset = 0;
@@ -1693,10 +1698,9 @@ sub parse_file {
 
         ## Read the current file.
         my $slurpsize = $arg{debug_partial_read} || $filesize;
-        return -7 if slurp_via_pg_read_file($service, $newfilename, $offset, $slurpsize, \$slurp);
-
-        $fh = new IO::Scalar \$slurp; ## no critic
-        $count += parse_filehandle($fh, $filename, \%pidline, $lfileinfo);
+        my $retval = slurp_via_pg_read_file($service, $newfilename, $offset, $slurpsize, \%pidline, $filename, $lfileinfo);
+        return -7 if $retval < 0;
+        $count += $retval;
 
         $newoffset = $filesize;
 
@@ -1828,7 +1832,10 @@ sub parse_file {
         ## Discard the previous line if needed (we rewound by 10 characters above)
         $original_offset and <$fh>;
 
-        $count += parse_filehandle($fh, $filename, \%pidline, $lfileinfo);
+        my $current_pid_num = {};
+        my ($retcount, $retval) = parse_filehandle($fh, $filename, \%pidline, $lfileinfo, $current_pid_num);
+
+        $count += $retcount;
 
         ## Get the new offset and store it
         seek $fh, 0, 1;
@@ -1836,7 +1843,7 @@ sub parse_file {
 
     } ## end NORMAL file mode
 
-    close $fh or die qq{Could not close "$filename": $!\n};
+    close $fh if defined $fh;
 
     if ($lfileinfo->{offset} != $newoffset and $newoffset) {
         $opt{newoffset}{$filename} = $newoffset;
@@ -1986,71 +1993,106 @@ sub call_pg_stat_file {
 
 sub slurp_via_pg_read_file {
 
-    ## Grab the contents of a remote file pg_read_file()
-    ## Returns: false (0) for no problems, otherwise an error string
-    ## Arguments: five
+    ## Grab the contents of a remote file via pg_read_file()
+    ## Returns: count of matches, or -1 for pg_read_file failures
+    ## Arguments: seven
     ## 1. Database service name
     ## 2. Remote file name
     ## 3. Starting offset
     ## 4. Requested bytes
-    ## 5. Scalar ref to store results in
+    ## 5. PID line hashref
+    ## 6. Final filename
+    ## 7. Local file info
 
-    my ($dbservice, $dbfilename, $fileoffset, $bytes, $dest) = @_;
+    my ($dbservice, $dbfilename, $fileoffset, $bytes, $pidline, $filename, $lfileinfo) = @_;
 
     ## We need a place to store any errors that come up
     my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
 
+    ## We also want to store the output, rather than creating extra scalars
+    my ($ofh, $outputfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
+
     ## Because pg_read_file has an upper limit, we may need more than one run through
     my $maxbytes = 1_000_000;
     my $sizeleft = $bytes;
+    my $count = 0;
+
+    my $current_pid_num = {};
+    my $oldstring = '';
     my $round = 0;
     {
+
         $round++;
+
+        ## We want to re-use the temp file each round. First, truncate it:
+        truncate $ofh, 0;
+
+        ## If there was a previous round, we need to add the partial line to this round.
+        ## We chomp and check length because pg_read_file always adds a newline
+        ## In the case where we stopped at the exact end of a line, it still adds a newline
+        chomp $oldstring;
+        if (length $oldstring) {
+            seek $ofh, 0, 0;
+            print {$ofh} $oldstring;
+        }
+
+
+        ## We want to grab as much as we can this round, up to the hard-coded limit above
         my $bytes = $sizeleft > $maxbytes ? $maxbytes : $sizeleft;
         $arg{debug} and warn "Round $round: offset $fileoffset, left to read is $sizeleft, bytes is $bytes\n";
-        my $COM = qq{psql service="$dbservice" -AX -qt -c "select * from pg_read_file('$dbfilename',$fileoffset,$bytes)" 2>$errorfile};
+
+
+        ## Note that we append the output, due to the chance of $oldstring above
+        my $SQL = "select * from pg_read_file('$dbfilename',$fileoffset,$bytes)";
+        my $COM = qq{psql service="$dbservice" -AX -qt -c "$SQL" 2>$errorfile >>$outputfile};
         $arg{debug} and warn "Trying: $COM\n";
-        my $result = qx/ $COM /;
+        system $COM;
 
         if (-s $errorfile) {
             seek $efh, 0, 0;
             my $errline = <$efh>;
-            chomp $errline;
-            $arg{debug} and warn "Call to pg_readline($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline\n";
+            $arg{debug} and warn "Call to pg_readline($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline";
 
             ## If this was a UTF-8 error involving null bytes, try and filter them out
             ## For everything else, we give up right away
             if ($errline !~ /\b0x00\b/) {
-                warn "Call to pg_read_file($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline\n";
-                return $errline;
+                warn "Call to pg_read_file($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline";
+                return -1;
             }
 
-            ## Run again, but try and filter things
-            $COM = qq{psql service="$dbservice" -AX -qt -c "select * from regexp_replace(encode(pg_read_binary_file('$dbfilename',$fileoffset,$bytes), 'escape'), '\\\\000', '~', 'g')" 2>$errorfile};
-            $result = qx/ $COM /;
+            ## Run the same command, but try and filter the output this time
+            $SQL = "select * from regexp_replace(encode(pg_read_binary_file('$dbfilename',$fileoffset,$bytes), 'escape'), '\\\\000', '~', 'g')";
+            $COM = qq{psql service="$dbservice" -AX -qt -c "$SQL" 2>$errorfile >>$outputfile};
+            $arg{debug} and warn "Trying: $COM\n";
+            system $COM;
+
             if (-s $errorfile) {
                 seek $efh, 0, 0;
-                my $errline = <$efh>;
-                chomp $errline;
-                warn "Modified call to pg_read_file($dbfilename) failed for service $dbservice: $errline\n";
-                return $errline;
+                $errline = <$efh>;
+                warn "Modified call to pg_read_file($dbfilename) failed for service $dbservice: $errline";
+                return -1;
             }
         }
         close $efh;
 
-        chomp $result;
-        {
-            no strict 'refs';
-            $$dest .= $result;
-        }
+
+        ## Pass the temp filehandle directly to parse_filehandle
+        seek $ofh, 0, 0;
+        my ($retcount, $retval) = parse_filehandle($ofh, $filename, $pidline, $lfileinfo, $current_pid_num);
+        $count += $retcount;
 
         $sizeleft -= $bytes;
         $fileoffset += $bytes;
-        last if $sizeleft < 1;
+
+        last if !$sizeleft;
+
+        ## Store the final bit that did not make up a full line
+        $oldstring = $retval;
+
         redo;
     }
 
-    return 0;
+    return $count;
 
 } ## end of slurp_via_pg_read_file
 
@@ -2929,10 +2971,9 @@ sub process_report {
                     }
                 }
                 for my $file (sort keys %{ $fancyoutput{$fotype} }) {
-                    for my $tablename (sort {
-                        $fancyoutput{$fotype}{$file}{$b} <=> $fancyoutput{$fotype}{$file}{$a}
-                            or $a cmp $b
-                        } keys %{$fancyoutput{$fotype}{$file}}) {
+                    for my $tablename (
+                        sort { $fancyoutput{$fotype}{$file}{$b} <=> $fancyoutput{$fotype}{$file}{$a} or $a cmp $b }
+                        keys %{$fancyoutput{$fotype}{$file}}) {
                         printf {$efh} "[%s] %-*s : %d\n", $fab{$file}, $max_table_length, $tablename, $fancyoutput{$fotype}{$file}{$tablename};
                     }
                 }

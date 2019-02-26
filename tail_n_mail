@@ -2245,8 +2245,8 @@ sub process_line {
         if ($item !~ m{(.+)/(.+)}) {
             die "Flatten regex must be of format foo/bar\n";
         }
-        my ($left,$right) = ($1,$2);
-        $string =~ s/$left/$right/g;
+        my ($leftreg,$rightreg) = ($1,$2);
+        $string =~ s/$leftreg/$rightreg/g;
     }
 
     ## If not in Postgres mode, we avoid all the mangling below

@@ -3699,7 +3699,7 @@ sub pretty_size {
     my $bytes = shift;
     my $rounded = shift || 0;
 
-    return "$bytes bytes" if $bytes < 10240;
+    return "$bytes bytes" if $bytes < 10_240;
 
     my @unit = qw/kB MB GB TB PB EB YB ZB/;
 

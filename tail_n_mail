@@ -577,8 +577,8 @@ sub pick_log_file {
             while (my $file = readdir($dh)) {
                 my $fname = "$dir/$file";
                 my $modtime = -M $fname;
-                ## Skip if not a normal file
-                next if ! -f _;
+                ## Skip if not readable
+                next if ! -r _;
                 if (length $prefix or length $postfix) {
                     next if $file !~ /\A\Q$prefix\E.*\Q$postfix\E\z/o;
                 }
@@ -1712,8 +1712,8 @@ sub parse_file {
             $arg{quiet} or warn qq{WARNING! Skipping non-existent file "$filename"\n};
             return -5;
         }
-        if (! -f $filename) {
-            $arg{quiet} or warn qq{WARNING! Skipping non-file "$filename"\n};
+        if (! -r $filename) {
+            $arg{quiet} or warn qq{WARNING! Skipping unreadable file "$filename"\n};
             return -6;
         }
 

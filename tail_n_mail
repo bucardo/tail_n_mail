@@ -2004,7 +2004,7 @@ sub slurp_via_pg_read_file {
     ## 6. Final filename
     ## 7. Local file info
 
-    my ($dbservice, $dbfilename, $fileoffset, $bytes, $pidline, $filename, $lfileinfo) = @_;
+    my ($dbservice, $dbfilename, $fileoffset, $bytesneeded, $pidline, $filename, $lfileinfo) = @_;
 
     ## We need a place to store any errors that come up
     my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
@@ -2014,7 +2014,7 @@ sub slurp_via_pg_read_file {
 
     ## Because pg_read_file has an upper limit, we may need more than one run through
     my $maxbytes = 1_000_000;
-    my $sizeleft = $bytes;
+    my $sizeleft = $bytesneeded;
     my $count = 0;
 
     my $current_pid_num = {};

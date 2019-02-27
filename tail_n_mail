@@ -2073,8 +2073,6 @@ sub slurp_via_pg_read_file {
                 return -1;
             }
         }
-        close $efh;
-
 
         ## Pass the temp filehandle directly to parse_filehandle
         seek $ofh, 0, 0;
@@ -2091,6 +2089,8 @@ sub slurp_via_pg_read_file {
 
         redo;
     }
+
+    close $efh;
 
     return $count;
 

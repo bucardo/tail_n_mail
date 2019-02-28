@@ -76,6 +76,10 @@ my %arg = (
               pglog            => 'pg',
 ## What is Postgres's log_line_prefix
               log_line_prefix  => '',
+## Alternate location for the service.conf file
+              service_conf_file => '',
+## Alternate location for the pgpass file
+              pgpass_file       => '',
 ## Maximum size of a statement before we truncate it.
               statement_size   => 1000,
 ## Maximum size of a nonparsed line (e.g. OS error) before we truncate it.
@@ -168,6 +172,8 @@ my $result = GetOptions
    'pgmode=s',
    'pglog=s',
    'log_line_prefix|log-line-prefix=s',
+   'service_conf_file=s',
+   'pgpass_file=s',
    'maxsize=i',
    'sortby=s',
    'showonly=i',
@@ -1575,12 +1581,23 @@ sub parse_file {
 
     ## Allow for alternate service and password files
     my $basedir = dirname($0);
+
     my $tnm_service_file = 'tnm.service.conf';
-    if (-e "$basedir/$tnm_service_file") {
+    ## Command line always wins
+    if ($arg{service_conf_file}) {
+        -e $arg{service_conf_file} or die "Specified service.conf file does not exist: $arg{service_conf_file}\n";
+        $ENV{PGSERVICEFILE} = $arg{service_conf_file};
+    }
+    elsif (-e "$basedir/$tnm_service_file") {
       $ENV{PGSERVICEFILE} = "$basedir/$tnm_service_file";
     }
+
     my $tnm_pgpass_file = 'tnm.pgpass';
-    if (-e "$basedir/$tnm_pgpass_file") {
+    if ($arg{pgpass_file}) {
+        -e $arg{pgpass_file} or die "Specified pgpass file does not exist: $arg{pgpass_file}\n";
+        $ENV{PGPASSFILE} = $arg{pgpass_file};
+    }
+    elsif (-e "$basedir/$tnm_pgpass_file") {
       $ENV{PGPASSFILE} = "$basedir/$tnm_pgpass_file";
     }
 
@@ -2036,11 +2053,9 @@ sub slurp_via_pg_read_file {
             print {$ofh} $oldstring;
         }
 
-
         ## We want to grab as much as we can this round, up to the hard-coded limit above
         my $bytes = $sizeleft > $maxbytes ? $maxbytes : $sizeleft;
         $arg{debug} and warn "Round $round: offset $fileoffset, left to read is $sizeleft, bytes is $bytes\n";
-
 
         ## Note that we append the output, due to the chance of $oldstring above
         my $SQL = "select * from pg_read_file('$dbfilename',$fileoffset,$bytes)";

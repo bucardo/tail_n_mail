@@ -80,6 +80,8 @@ my %arg = (
               service_conf_file => '',
 ## Alternate location for the pgpass file
               pgpass_file       => '',
+## Maximum number of bytes to pull back from pg_read_file
+              pg_read_file_limit => 1_000_000,
 ## Maximum size of a statement before we truncate it.
               statement_size   => 1000,
 ## Maximum size of a nonparsed line (e.g. OS error) before we truncate it.
@@ -174,6 +176,7 @@ my $result = GetOptions
    'log_line_prefix|log-line-prefix=s',
    'service_conf_file=s',
    'pgpass_file=s',
+   'pg_read_file_limit=i',
    'maxsize=i',
    'sortby=s',
    'showonly=i',
@@ -2030,10 +2033,8 @@ sub slurp_via_pg_read_file {
     my ($ofh, $outputfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
 
     ## Because pg_read_file has an upper limit, we may need more than one run through
-    my $maxbytes = 1_000_000;
     my $sizeleft = $bytesneeded;
     my $count = 0;
-
     my $current_pid_num = {};
     my $oldstring = '';
     my $round = 0;
@@ -2054,7 +2055,7 @@ sub slurp_via_pg_read_file {
         }
 
         ## We want to grab as much as we can this round, up to the hard-coded limit above
-        my $bytes = $sizeleft > $maxbytes ? $maxbytes : $sizeleft;
+        my $bytes = $sizeleft > $arg{pg_read_file_limit} ? $arg{pg_read_file_limit} : $sizeleft;
         $arg{debug} and warn "Round $round: offset $fileoffset, left to read is $sizeleft, bytes is $bytes\n";
 
         ## Note that we append the output, due to the chance of $oldstring above
@@ -2066,7 +2067,7 @@ sub slurp_via_pg_read_file {
         if (-s $errorfile) {
             seek $efh, 0, 0;
             my $errline = <$efh>;
-            $arg{debug} and warn "Call to pg_readline($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline";
+            $arg{debug} and warn "Call to pg_read_file($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline";
 
             ## If this was a UTF-8 error involving null bytes, try and filter them out
             ## For everything else, we give up right away

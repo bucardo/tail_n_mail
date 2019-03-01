@@ -1343,7 +1343,7 @@ sub parse_filehandle {
                 $csv = Text::CSV_XS->new({ binary => 1, eol => $/ });
             }
         }
-        my $linenumber = 1;
+        $linenumber = 1;
         while (my $line = $csv->getline($fh)) {
             my @cols = @$line;
             my $prefix = "$line->[0] [$line->[3]]";

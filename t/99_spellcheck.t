@@ -115,11 +115,15 @@ __DATA__
 Deckelmann
 MAXSIZE
 Mullane
+Postgres
 bucardo
 config
 env
 hideflatten
+initdb
 perl
+tmp
+tnm
 txt
 whitespace
 

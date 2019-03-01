@@ -1311,13 +1311,14 @@ sub parse_filehandle {
     ## 3. PID line mapping (hashref)
     ## 4. Local file info (hashref)
     ## 5. Map of pids to numbers (hashref)
-    ## Returns: number of matches, any extra string
+    ## Returns: number of matches, number of lines processed, any extra string
 
     my $fh = shift or die;
     my $filename = shift;
     my $pidline = shift;
     my $lfileinfo = shift;
     my $current_pid_num = shift;
+    my $linenumber = shift || 0;
 
     my $newlines = 0;
     my $count = 0;
@@ -1362,7 +1363,6 @@ sub parse_filehandle {
         my $syslognum = 0; ## used by syslog only
         my $bailout = 0; ## emergency bail out in case we end up sleep seeking
         my $ignore_indent = 0; ## ignore indented lines, e.g. continuations after a skipped LOG
-        my $linenumber = 0;
 
         my $prefixnumber = $lfileinfo->{suffix};
         $prefixnumber = 0 if ! exists $pgpidre{$prefixnumber};
@@ -1373,12 +1373,12 @@ sub parse_filehandle {
 
       LOGLINE: while (<$fh>) {
 
-            $linenumber++;
-
             ## For service files, we need to return this string if we are at the end of the file
             if (eof $fh and $filename =~ /SERVICE=/) {
-                return $count, $_;
+                return $count, $linenumber, $_;
             }
+
+            $linenumber++;
 
             ## We ran into a truncated line last time, so we are most likely done
             last if $bailout;
@@ -1525,7 +1525,7 @@ sub parse_filehandle {
 
     } ## end of non-CSV mode
 
-    return $count, undef;
+    return $count, $linenumber, undef;
 
 } ## end of parse_filehandle
 
@@ -1853,7 +1853,7 @@ sub parse_file {
         $original_offset and <$fh>;
 
         my $current_pid_num = {};
-        my ($retcount, $retval) = parse_filehandle($fh, $filename, \%pidline, $lfileinfo, $current_pid_num);
+        my ($retcount, $retlines, $retval) = parse_filehandle($fh, $filename, \%pidline, $lfileinfo, $current_pid_num, $newlines);
 
         $count += $retcount;
 
@@ -2038,6 +2038,7 @@ sub slurp_via_pg_read_file {
     my $current_pid_num = {};
     my $oldstring = '';
     my $round = 0;
+    my $linenumber = 0;
     {
 
         $round++;
@@ -2092,7 +2093,7 @@ sub slurp_via_pg_read_file {
 
         ## Pass the temp filehandle directly to parse_filehandle
         seek $ofh, 0, 0;
-        my ($retcount, $retval) = parse_filehandle($ofh, $filename, $pidline, $lfileinfo, $current_pid_num);
+        my ($retcount, $retlines, $retval) = parse_filehandle($ofh, $filename, $pidline, $lfileinfo, $current_pid_num, $linenumber);
         $count += $retcount;
 
         $sizeleft -= $bytes;
@@ -2102,6 +2103,9 @@ sub slurp_via_pg_read_file {
 
         ## Store the final bit that did not make up a full line
         $oldstring = $retval;
+
+        ## Advance our line count as well
+        $linenumber += $retlines;
 
         redo;
     }

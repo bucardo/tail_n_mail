@@ -1,0 +1,23 @@
+2019-02-28 19:00:52.996 EST [8015] LOG:  database system was shut down at 2019-02-28 19:00:52 EST
+2019-02-28 19:00:52.999 EST [8013] LOG:  database system is ready to accept connections
+2019-02-28 19:00:53.732 EST [8030] LOG:  statement: select * from pg_stat_file('pg_log/postgresql-2019-02-28.log')
+2019-02-28 19:00:53.752 EST [8033] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',0,301)
+2019-02-28 19:00:55.038 EST [8038] LOG:  statement: select * from pg_stat_file('pg_log/postgresql-2019-02-28.log')
+2019-02-28 19:00:55.059 EST [8041] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',0,537)
+2019-02-28 19:00:56.155 EST [8044] LOG:  statement: SELECT 1/0
+2019-02-28 19:00:56.155 EST [8044] ERROR:  division by zero
+2019-02-28 19:00:56.155 EST [8044] STATEMENT:  SELECT 1/0
+2019-02-28 19:00:56.431 EST [8049] LOG:  statement: select * from pg_stat_file('pg_log/postgresql-2019-02-28.log')
+2019-02-28 19:00:56.451 EST [8052] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',0,954)
+2019-02-28 19:00:57.559 EST [8055] ERROR:  syntax error at or near "GARBLE" at character 1
+2019-02-28 19:00:57.559 EST [8055] STATEMENT:  GARBLE 1
+2019-02-28 19:00:57.805 EST [8060] LOG:  statement: select * from pg_stat_file('pg_log/postgresql-2019-02-28.log')
+2019-02-28 19:00:57.826 EST [8063] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',0,1337)
+2019-02-28 19:00:59.183 EST [8068] LOG:  statement: select * from pg_stat_file('pg_log/postgresql-2019-02-28.log')
+2019-02-28 19:00:59.209 EST [8071] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',0,200)
+2019-02-28 19:00:59.232 EST [8074] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',200,200)
+2019-02-28 19:00:59.252 EST [8077] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',400,200)
+2019-02-28 19:00:59.273 EST [8080] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',600,200)
+2019-02-28 19:00:59.292 EST [8083] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',800,200)
+2019-02-28 19:00:59.311 EST [8086] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',1000,200)
+2019-02-28 19:00:59.331 EST [8089] LOG:  statement: select * from pg_read_file('pg_log/postgresql-2019-02-28.log',1200,200)

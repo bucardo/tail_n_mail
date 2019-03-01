@@ -1,0 +1,128 @@
+#!perl
+
+use strict;
+use warnings;
+use autodie;
+use Data::Dumper;
+use lib 't','.';
+use Test::More tests => 27;
+
+use vars qw{ $info $t };
+
+my $datadir = '/tmp/tail_n_mail-testing';
+my $pidfile = "$datadir/postmaster.pid";
+my $test_service_conf = "$datadir/test.service.conf";
+my $test_pgpass = "$datadir/test.pgpass";
+
+sub cleanup {
+
+    if (-e $pidfile) {
+        open my $fh, '<', $pidfile;
+        <$fh> =~ /(\d+)/ or die "Could nto find PID inside $pidfile!\n";
+        my $pid = $1;
+        close $fh;
+        kill 'KILL', $pid;
+        sleep 1;
+    }
+    if (-e $datadir) {
+        system "rm -fr $datadir";
+    }
+}
+
+END { 
+    cleanup();
+}
+
+sub run {
+
+	my $conf = shift or die "Must supply a config file!\n";
+
+	my $options = shift || '';
+
+	my $COM = "perl tail_n_mail --dryrun --no-tailnmailrc --service_conf_file=$test_service_conf --pgpass_file=$test_pgpass --offset=0 $conf $options";
+
+	my $result = '';
+	eval {
+		$result = qx{$COM 2>&1};
+	};
+    chomp $result;
+	return $@ ? "OOPS: $@\n" : $result;
+}
+
+## We need to fire up a Postgres instance so we can connect to it via a service file
+## It also needs some logs (not fake?)
+
+## initdb - not available everywhere, but let's assume it is for testing purposes
+## socket in /tmp/tnm_testing
+## Stop the old one if it exists
+cleanup();
+my $COM = "initdb --pgdata $datadir --data-checksums 2>&1";
+my $result = qx{ $COM };
+like( $result, qr/Success/, 'initdb worked') or BAIL_OUT;
+my $conf = "$datadir/postgresql.conf";
+my $socketdir = "$datadir/socket";
+mkdir $socketdir;
+open my $fh, '>>', $conf;
+print {$fh} "
+port= 5555
+unix_socket_directories = '$socketdir'
+logging_collector = on
+log_directory = 'pg_log'
+log_filename = 'postgresql-%Y-%m-%d.log'
+log_statement = all
+";
+close $fh;
+system "pg_ctl -D $datadir -l logfile start >/dev/null";
+
+$t = q{Failure when supplied service.conf file does not exist};
+unlink $test_service_conf if -e $test_service_conf;
+$info = run('t/config/config_service_1.txt');
+is ($info, "Specified service.conf file does not exist: $test_service_conf", $t );
+open $fh, '>', $test_service_conf;
+print {$fh} "[foobar1]\nhost=$socketdir\nport=5555\ndbname=postgres\n\n";
+print {$fh} "[foobar2]\nhost=$socketdir\nport=5555\ndbname=postgres\n\n";
+close $fh;
+chmod 0600, $test_service_conf;
+
+$t = q{Failure when supplied pgpass file does not exist};
+unlink $test_pgpass if -e $test_pgpass;
+$info = run('t/config/config_service_1.txt');
+is ($info, "Specified pgpass file does not exist: $test_pgpass", $t );
+open $fh, '>', $test_pgpass;
+print {$fh} "blah:blah\n";
+close $fh;
+chmod 0600, $test_pgpass;
+
+$t = q{Service file works when no matching lines in the log file};
+$info = run('t/config/config_service_1.txt');
+is ($info, '', $t);
+
+$t = q{With no matching items and --mailzero, email is sent};
+$info = run('t/config/config_service_1.txt', '--mailzero');
+like ($info, qr/Unique items: 0/, $t);
+
+## Create some errors
+system "PGSERVICEFILE=$test_service_conf psql service=foobar1 -c 'SELECT 1/0' 2>/dev/null";
+
+$t = q{With no matching items and --mailzero, email is sent};
+$info = run('t/config/config_service_1.txt');
+like ($info, qr/Unique items: 1\b/, $t);
+
+## Create a lot more errors
+my $numerrors = 22;
+for my $number (1 .. $numerrors-1) {
+    system "PGSERVICEFILE=$test_service_conf psql service=foobar1 -c 'GARBLE $number' 2>/dev/null";
+}
+
+$t = q{Correct number of unique errors is found};
+$info = run('t/config/config_service_1.txt');
+my $count = $info =~ /(Unique items: \d+)/ ? $1 : '';
+is ($count, "Unique items: $numerrors", $t);
+
+$t = q{Correct number of unique errors is found with multiple pg_read_file chunks};
+$info = run('t/config/config_service_1.txt', '--pg_read_file_limit=200');
+$count = $info =~ /(Unique items: \d+)/ ? $1 : '';
+is ($count, "Unique items: $numerrors", $t);
+
+exit;
+

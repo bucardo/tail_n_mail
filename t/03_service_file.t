@@ -27,9 +27,10 @@ sub cleanup {
     if (-e $datadir) {
         system "rm -fr $datadir";
     }
+    return;
 }
 
-END { 
+END {
     cleanup();
 }
 
@@ -58,7 +59,7 @@ sub run {
 cleanup();
 my $COM = "initdb --pgdata $datadir --data-checksums 2>&1";
 my $result = qx{ $COM };
-like( $result, qr/Success/, 'initdb worked') or BAIL_OUT;
+like ($result, qr/Success/, 'initdb worked') or BAIL_OUT;
 my $conf = "$datadir/postgresql.conf";
 my $socketdir = "$datadir/socket";
 mkdir $socketdir;

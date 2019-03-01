@@ -5,7 +5,7 @@ use warnings;
 use autodie;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 27;
+use Test::More tests => 8;
 
 use vars qw{ $info $t };
 

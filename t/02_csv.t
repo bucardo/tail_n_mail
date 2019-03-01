@@ -75,31 +75,30 @@ STATEMENT: INSERT INTO dbd_pg_test_geom\(xpoint\) VALUES \(\$1\)}, $t);
 
 ## Third match is a simple COPY error with a CONTEXT
 $t = qq{Test config $num gives correct third match};
-$start = substr($info,850,350);
+$start = substr($info,950,350);
 like ($start, qr{\Q
-[2] (between lines 7,365 and 7,374, occurs 3 times)
+[3] (between lines 7,365 and 7,374, occurs 3 times)
 First: 2010-12-23 11:27:56.010 EST [7679]
 Last:  2010-12-23 11:27:56.013 EST [7679]
 ERROR: COPY from stdin failed: COPY terminated by new PQexec
 CONTEXT: COPY dbd_pg_test4, line 1
 STATEMENT: COPY dbd_pg_test4 FROM STDIN\E}, $t);
 
-exit;
-$t = qq{Test config $num gives correct third match};
-$start = substr($info,500,1000);
+$t = qq{Test config $num gives correct fourth match};
+$start = substr($info,1220,300);
 like ($start, qr{\Q
-[3] (between lines 737 and 738, occurs 2 times)
+[4] (between lines 737 and 738, occurs 2 times)
 First: 2010-12-23 11:27:53.100 EST [7649]
 Last:  2010-12-23 11:27:53.101 EST [7649]
 ERROR: syntax error at or near "Testing"
 STATEMENT: Testing the ShowErrorStatement attribute
 \E}, $t);
 
-## Fifth match has no normalization
-$t = qq{Test config $num gives correct fifth match};
-$start = substr($info,1350,500);
+## Sixth match has no normalization
+$t = qq{Test config $num gives correct sixth match};
+$start = substr($info,1600,500);
 like ($start, qr{\Q
-[5] (between lines 6,607 and 6,907, occurs 2 times)
+[6] (between lines 6,607 and 6,907, occurs 2 times)
 First: 2010-12-23 11:27:55.046 EST [7661]
 Last:  2010-12-23 11:27:55.307 EST [7665]
 ERROR: column "dbdpg_throws_an_error" does not exist

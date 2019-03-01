@@ -2070,15 +2070,20 @@ sub slurp_via_pg_read_file {
             my $errline = <$efh>;
             $arg{debug} and warn "Call to pg_read_file($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline";
 
+            ## If we had a conflict, try again after a short sleep
+            if ($errline =~ /due to conflict with recovery/) {
+                sleep 30;
+            }
             ## If this was a UTF-8 error involving null bytes, try and filter them out
+            elsif ($errline =~ /\b0x00\b/) {
+                $SQL = "select * from regexp_replace(encode(pg_read_binary_file('$dbfilename',$fileoffset,$bytes), 'escape'), '\\\\000', '~', 'g')";
+            }
             ## For everything else, we give up right away
-            if ($errline !~ /\b0x00\b/) {
+            else {
                 warn "Call to pg_read_file($dbfilename,$fileoffset,$bytes) failed for service $dbservice: $errline";
                 return -1;
             }
 
-            ## Run the same command, but try and filter the output this time
-            $SQL = "select * from regexp_replace(encode(pg_read_binary_file('$dbfilename',$fileoffset,$bytes), 'escape'), '\\\\000', '~', 'g')";
             $COM = qq{psql service="$dbservice" -AX -qt -c "$SQL" 2>$errorfile >>$outputfile};
             $arg{debug} and warn "Trying: $COM\n";
             system $COM;

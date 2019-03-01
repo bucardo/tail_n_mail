@@ -11,6 +11,7 @@ use vars qw{ $info $t };
 
 my $datadir = '/tmp/tail_n_mail-testing';
 my $pidfile = "$datadir/postmaster.pid";
+my $logfile = 'test.logfile';
 my $test_service_conf = "$datadir/test.service.conf";
 my $test_pgpass = "$datadir/test.pgpass";
 
@@ -24,9 +25,15 @@ sub cleanup {
         kill 'KILL', $pid;
         sleep 1;
     }
+
     if (-e $datadir) {
         system "rm -fr $datadir";
     }
+
+    if (-e $logfile) {
+        unlink $logfile;
+    }
+
     return;
 }
 
@@ -73,7 +80,7 @@ log_filename = 'postgresql-%Y-%m-%d.log'
 log_statement = all
 ";
 close $fh;
-system "pg_ctl -D $datadir -l logfile start >/dev/null";
+system "pg_ctl -D $datadir -l $logfile start >/dev/null";
 
 $t = q{Failure when supplied service.conf file does not exist};
 unlink $test_service_conf if -e $test_service_conf;

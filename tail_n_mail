@@ -2033,7 +2033,7 @@ sub slurp_via_pg_read_file {
     my ($ofh, $outputfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
 
     ## Because pg_read_file has an upper limit, we may need more than one run through
-    my $sizeleft = $bytesneeded;
+    my $sizeleft = $bytesneeded - $fileoffset;
     my $count = 0;
     my $current_pid_num = {};
     my $oldstring = '';
@@ -2109,8 +2109,8 @@ sub slurp_via_pg_read_file {
         ## Store the final bit that did not make up a full line
         $oldstring = $retval;
 
-        ## Advance our line count as well
-        $linenumber += $retlines;
+        ## Update our line count as well
+        $linenumber = $retlines;
 
         redo;
     }

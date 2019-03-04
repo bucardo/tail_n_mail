@@ -23,8 +23,8 @@ elsif ($Perl::Critic::VERSION < 0.23) {
 }
 else {
 	$ENV{LANG} = 'C';
-	opendir my $dir, 't' or die qq{Could not open directory 't': $!\n};
-	@testfiles = map { "t/$_" } grep { /^.+\.(t|pl)$/ } readdir $dir;
+	opendir my $dir, 'tests' or die qq{Could not open directory 't': $!\n};
+	@testfiles = map { "tests/$_" } grep { /\.test$/ } readdir $dir;
 	closedir $dir or die qq{Could not closedir "$dir": $!\n};
 
 	my $testmore = 0;

@@ -24,7 +24,7 @@ sub run {
 }
 
 $t = q{Running with non-existent config file gives an error};
-$info = run('t/nosuch.config');
+$info = run('tests/nosuch.config');
 like ($info, qr{Could not open}, $t);
 
 $t = q{Program outputs version information correctly};
@@ -33,7 +33,7 @@ like ($verinfo, qr{^tail_n_mail version \d+\.\d+\.\d+}, $t);
 $verinfo =~ /(\d+\.\d+\.\d+)/ or die;
 my $ver = $1;
 
-$info = run('t/config/config1.txt');
+$info = run('tests/config/testconfig-tail_n_mail.1');
 my $start = substr($info,0,300);
 $t = q{Test config 1 gives correct subject line};
 my $host = qx{hostname};
@@ -59,7 +59,7 @@ $t = q{Test config 1 inserts a 'Unique items' line};
 like ($start, qr{\nUnique items: 45\n}, $t);
 
 $t = q{Test config 1 inserts a 'Matches from' line};
-like ($start, qr{\nMatches from t/logs/testlog1.txt: 60\n}, $t);
+like ($start, qr{\nMatches from tests/logs/testlog1.txt: 60\n}, $t);
 
 $t = q{Test config 1 gives a 'DRYRUN' line};
 like ($info, qr{DRYRUN: }, $t);
@@ -119,7 +119,7 @@ ERROR: column "dbdpg_throws_an_error" does not exist at character 8
 STATEMENT: SELECT dbdpg_throws_an_error
 \E}, $t);
 
-$info = run('t/config/config3.txt');
+$info = run('tests/config/testconfig-tail_n_mail.3');
 $start = substr($info,0,300);
 $t = q{Test config 3 gives correct subject line};
 $host = qx{hostname};
@@ -144,7 +144,7 @@ STATEMENT: Testing the ShowErrorStatement attribute\E\n\-\n}, $t);
 $t = q{Test config 3 gives correct literal output};
 like ($start, qr{\n\-\nERROR: syntax error at or near "Testing" at character 1}, $t);
 
-$info = run('t/config/config4.txt');
+$info = run('tests/config/testconfig-tail_n_mail.4');
 $start = substr($info,0,300);
 $t = q{Test config 4 gives correct subject line};
 $host = qx{hostname};

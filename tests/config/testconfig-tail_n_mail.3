@@ -1,16 +1,13 @@
 ## Config file for the tail_n_mail program
 ## This file is automatically updated
-## Last updated: Sun Jan 29 17:07:20 2012
-## Test config file #4
+## Test config file #3
 EMAIL: someone@example.com
 MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
 
-LOG_LINE_PREFIX: '%m [%p]: %q [%l-1] %d %u@%r %a '
-FILE: t/logs/testlog4.txt
-LASTFILE: t/logs/testlog4.txt
+LOG_LINE_PREFIX: '%m [%p] %u@%d '
+FILE: tests/logs/testlog3.txt
 OFFSET: 0
 INCLUDE: ERROR:  
 INCLUDE: FATAL:  
 INCLUDE: PANIC:  
-
 

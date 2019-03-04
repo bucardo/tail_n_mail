@@ -84,7 +84,7 @@ system "pg_ctl -D $datadir -l $logfile start >/dev/null";
 
 $t = q{Failure when supplied service.conf file does not exist};
 unlink $test_service_conf if -e $test_service_conf;
-$info = run('t/config/config_service_1.txt');
+$info = run('tests/config/config_service_1.txt');
 is ($info, "Specified service.conf file does not exist: $test_service_conf", $t );
 open $fh, '>', $test_service_conf;
 print {$fh} "[foobar1]\nhost=$socketdir\nport=5555\ndbname=postgres\n\n";
@@ -94,7 +94,7 @@ chmod 0600, $test_service_conf;
 
 $t = q{Failure when supplied pgpass file does not exist};
 unlink $test_pgpass if -e $test_pgpass;
-$info = run('t/config/config_service_1.txt');
+$info = run('tests/config/config_service_1.txt');
 is ($info, "Specified pgpass file does not exist: $test_pgpass", $t );
 open $fh, '>', $test_pgpass;
 print {$fh} "blah:blah\n";
@@ -102,18 +102,18 @@ close $fh;
 chmod 0600, $test_pgpass;
 
 $t = q{Service file works when no matching lines in the log file};
-$info = run('t/config/config_service_1.txt');
+$info = run('tests/config/config_service_1.txt');
 is ($info, '', $t);
 
 $t = q{With no matching items and --mailzero, email is sent};
-$info = run('t/config/config_service_1.txt', '--mailzero');
+$info = run('tests/config/config_service_1.txt', '--mailzero');
 like ($info, qr/Unique items: 0/, $t);
 
 ## Create some errors
 system "PGSERVICEFILE=$test_service_conf psql service=foobar1 -c 'SELECT 1/0' 2>/dev/null";
 
 $t = q{With no matching items and --mailzero, email is sent};
-$info = run('t/config/config_service_1.txt');
+$info = run('tests/config/config_service_1.txt');
 like ($info, qr/Unique items: 1\b/, $t);
 
 ## Create a lot more errors
@@ -123,12 +123,12 @@ for my $number (1 .. $numerrors-1) {
 }
 
 $t = q{Correct number of unique errors is found};
-$info = run('t/config/config_service_1.txt');
+$info = run('tests/config/config_service_1.txt');
 my $count = $info =~ /(Unique items: \d+)/ ? $1 : '';
 is ($count, "Unique items: $numerrors", $t);
 
 $t = q{Correct number of unique errors is found with multiple pg_read_file chunks};
-$info = run('t/config/config_service_1.txt', '--pg_read_file_limit=200');
+$info = run('tests/config/config_service_1.txt', '--pg_read_file_limit=200');
 $count = $info =~ /(Unique items: \d+)/ ? $1 : '';
 is ($count, "Unique items: $numerrors", $t);
 

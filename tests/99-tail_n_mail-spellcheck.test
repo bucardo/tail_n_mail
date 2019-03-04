@@ -19,8 +19,8 @@ elsif (!eval { require Text::SpellChecker; 1 }) {
 	plan skip_all => 'Could not find Text::SpellChecker';
 }
 else {
-	opendir my $dir, 't' or die qq{Could not open directory 't': $!\n};
-	@testfiles = map { "t/$_" } grep { /^\w.+\.(t|pl)$/ } readdir $dir;
+	opendir my $dir, 'tests' or die qq{Could not open directory 't': $!\n};
+	@testfiles = map { "tests/$_" } grep { /\.test$/ } readdir $dir;
 	closedir $dir or die qq{Could not closedir "$dir": $!\n};
 	plan tests => 2+@testfiles;
 }

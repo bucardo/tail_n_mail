@@ -32,7 +32,7 @@ sub run {
 
 my $num = 2;
 
-$info = run('t/config/config2.txt');
+$info = run('tests/config/testconfig-tail_n_mail.2');
 
 my $start = substr($info,0,300);
 $t = qq{Test config $num gives correct subject line};
@@ -50,7 +50,7 @@ $t = qq{Test config $num inserts a 'Unique items' line};
 like ($start, qr{\nUnique items: 45\n}, $t);
 
 $t = qq{Test config $num inserts a 'Matches from' line};
-like ($start, qr{\nMatches from t/logs/testlog2.csv: 60\n}, $t);
+like ($start, qr{\nMatches from tests/logs/testlog2.csv: 60\n}, $t);
 
 $t = qq{Test config $num gives a 'DRYRUN' line};
 like ($info, qr{DRYRUN: }, $t);

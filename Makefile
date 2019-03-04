@@ -1,5 +1,5 @@
 NOECHO = @
-TEST_FILES = t/*.t
+TEST_FILES = tests/*.test
 
 test:
 	$(NOECHO) prove $(TEST_FILES)

@@ -2268,6 +2268,9 @@ sub process_line {
         goto PGPREFIX;
     }
 
+    ## Reassign rawstring
+    $rawstring = $string;
+
     ## Apply any custom flattening
     for my $item (@{ $opt{flatten} }) {
         if ($item !~ m{(.+)/(.+)}) {
@@ -2295,9 +2298,6 @@ sub process_line {
         }
         $string =~ s/^\s*STATEMENT:\s*//o;
     }
-
-    ## Reassign rawstring
-    $rawstring = $string;
 
     ## Make some adjustments to attempt to compress similar entries
     if ($arg{flatten} and $arg{type} ne 'duration') {

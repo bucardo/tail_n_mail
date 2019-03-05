@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 27;
+use Test::More tests => 2;
 
 use vars qw{ $info $t };
 

@@ -1,0 +1,37 @@
+2010-12-22 19:17:07 EST [29801] LOG:  database system was shut down at 2010-12-22 19:17:01 EST
+2010-12-22 19:17:07 EST [29804] LOG:  autovacuum launcher started
+2010-12-22 19:17:07 EST [29799] LOG:  database system is ready to accept connections
+2010-12-22 19:17:37 EST [29856] LOG:  connection received: host=[local]
+2010-12-22 19:17:37 EST [29856] LOG:  connection authorized: user=greg database=greg
+2010-12-22 19:17:53 EST [29931] LOG:  duration: 0.068 ms  bind dbdpg_p29930_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2010-12-22 19:17:53 EST [29931] DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence3'
+2010-12-22 19:17:53 EST [29931] LOG:  duration: 0.019 ms  execute dbdpg_p29930_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2010-12-22 19:17:53 EST [29931] DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence3'
+2010-12-22 19:17:53 EST [29931] LOG:  duration: 0.137 ms  bind dbdpg_p29930_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2010-12-22 19:17:53 EST [29931] DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+2010-12-22 19:17:53 EST [29931] LOG:  duration: 0.025 ms  execute dbdpg_p29930_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2010-12-22 19:17:53 EST [29931] DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+2010-12-22 19:17:53 EST [29931] LOG:  duration: 0.130 ms  statement: DROP SCHEMA dbd_pg_testschema CASCADE
+2010-12-22 19:17:53 EST [29931] LOG:  duration: 0.127 ms  bind dbdpg_p29930_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2010-12-22 19:17:53 EST [29931] DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
+2010-12-22 19:17:53 EST [29931] LOG:  duration: 0.020 ms  execute dbdpg_p29930_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+2010-12-22 19:17:53 EST [29931] DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
+2010-12-22 19:17:53 EST [29931] LOG:  duration: 4.503 ms  statement: commit
+2010-12-22 20:01:53 EST [29933] ERROR:  canceling statement due to conflict with recovery
+2010-12-22 20:01:53 EST [29933] DETAIL:  User query might have needed to see row versions that must be removed.
+2010-12-22 20:01:53 EST [29933] STATEMENT:  SELECT * FROM foobar(1, 12)
+2010-12-22 20:02:53 EST [29934] ERROR:  canceling statement due to conflict with recovery
+2010-12-22 20:02:53 EST [29934] DETAIL:  User query might have needed to see row versions that must be removed.
+2010-12-22 20:02:53 EST [29934] STATEMENT:  SELECT * FROM foobar(1, 12)
+2010-12-22 20:03:53 EST [29935] ERROR:  canceling statement due to conflict with recovery
+2010-12-22 20:03:53 EST [29935] DETAIL:  User query might have needed to see row versions that must be removed.
+2010-12-22 20:03:53 EST [29935] STATEMENT:  SELECT * FROM foobar(1, 22)
+2010-12-22 20:04:53 EST [29936] ERROR:  canceling statement due to conflict with recovery
+2010-12-22 20:04:53 EST [29936] DETAIL:  User query might have needed to see row versions that must be removed.
+2010-12-22 20:04:53 EST [29936] STATEMENT:  SELECT * FROM foobar(1, 22)
+2010-12-22 20:05:53 EST [29937] ERROR:  canceling statement due to conflict with recovery
+2010-12-22 20:05:53 EST [29937] DETAIL:  User query might have needed to see row versions that must be removed.
+2010-12-22 20:05:53 EST [29937] STATEMENT:  SELECT * FROM foobar(1, 33)
+2010-12-22 20:06:53 EST [29938] ERROR:  canceling statement due to conflict with recovery
+2010-12-22 20:06:53 EST [29938] DETAIL:  User query might have needed to see row versions that must be removed.
+2010-12-22 20:06:53 EST [29938] STATEMENT:  SELECT * FROM mytable WHERE id = 10

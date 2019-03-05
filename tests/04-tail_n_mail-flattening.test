@@ -1,0 +1,37 @@
+#!perl
+
+use strict;
+use warnings;
+use Data::Dumper;
+use lib 't','.';
+use Test::More tests => 27;
+
+use vars qw{ $info $t };
+
+sub run {
+
+	my $conf = shift or die "Must supply a config file!\n";
+
+	my $options = shift || '';
+
+	my $COM = "perl tail_n_mail --dryrun --no-tailnmailrc --offset=0 $conf $options";
+
+	my $result = '';
+	eval {
+		$result = qx{$COM 2>&1};
+	};
+	return $@ ? "OOPS: $@\n" : $result;
+}
+
+
+$t = q{By default we see two 'conflict with recovery' errors};
+$info = run('tests/config/testconfig-tail_n_mail.6');
+my $unique = $info =~ /Unique items: (\d+)/ ? $1 : 0;
+is ($unique, 2, $t);
+
+$t = q{When the '' argument is set, errors are flattened};
+$info = run('tests/config/testconfig-tail_n_mail.6', '--hide_conflict_error_details');
+$unique = $info =~ /Unique items: (\d+)/ ? $1 : 0;
+is ($unique, 1, $t);
+
+exit;

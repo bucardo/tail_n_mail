@@ -106,6 +106,8 @@ my %arg = (
               flatten          => 1,
 ## Hide the flattened version if there is only a single entry
               hideflatten      => 1,
+## Do not show the STATEMENT for 'conflict with recovery' errors
+              hide_conflict_error_details => 0,
 ## Move around in time for debugging
               timewarp         => 0,
 ## Show which line number problems are found on. Should be disabled for large/frequent reports
@@ -170,6 +172,7 @@ my $result = GetOptions
    'type=s',
    'flatten!',
    'hideflatten!',
+   'hide_conflict_error_details!',
    'timewarp=i',
    'pgmode=s',
    'pglog=s',
@@ -2602,6 +2605,11 @@ sub process_line {
         }
     }
 
+    ## Special handling for "conflict with recovery" errors, as the STATEMENT is not too relevant
+    if ($arg{'hide_conflict_error_details'} and $string =~ s/(ERROR: canceling statement due to conflict with recovery).+/$1/s) {
+        $rawstring = '';
+    }
+
   PGPREFIX:
     ## If we have a prefix, check for similar entries
     if (length $pgprefix) {
@@ -3449,7 +3457,7 @@ sub lines_of_interest {
         }
 
         ## Show the first actual error if we've flattened things out (unless pgbouncer)
-        if ($estring ne $f->{rawstring} and $arg{pglog} ne 'pgbouncer') {
+        if ($estring ne $f->{rawstring} and $arg{pglog} ne 'pgbouncer' and length $f->{rawstring}) {
             print "-\n";
             print wrapline($f->{rawstring});
             print "\n";

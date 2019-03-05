@@ -2497,7 +2497,7 @@ sub process_line {
         $string =~ s{\bOFFSET\s+(\d+)}{OFFSET ?}gi;
 
         ## Simple castings
-        $string =~ s{'.*?'::(BOOLEAN|BIGINT|INTEGER|NUMERIC|TIMESTAMP|TIMESTAMPTZ)}{?::$1}g;
+        $string =~ s{'.*?'::(BOOLEAN|BIGINT|INTEGER|JSONB|NUMERIC|TIMESTAMP|TIMESTAMPTZ)}{?::$1}g;
 
         if ($string =~ /JSON/) {
             $string =~ s{("\w+"):"[\d\.e\-]+"}{$1:"?"}g;

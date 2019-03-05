@@ -1139,6 +1139,10 @@ sub parse_inherit_file {
             ## We adjust the global here and now
             $arg{find_line_number} = $1;
         }
+        ## Custom flattening rules
+        elsif ( /^FLATTEN:\s*(.+)/ ) {
+            push @{$opt{flatten}}, $1;
+        }
         ## What type of Postgres log we are parsing
         elsif (/^PGLOG:\s*(\w+)/) {
             $opt{pglog} = $1;

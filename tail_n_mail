@@ -2064,6 +2064,7 @@ sub slurp_via_pg_read_file {
 
         ## We want to grab as much as we can this round, up to the hard-coded limit above
         my $bytes = $sizeleft > $arg{pg_read_file_limit} ? $arg{pg_read_file_limit} : $sizeleft;
+        return 0 if $bytes < 0;
         $arg{debug} and warn "Round $round: offset $fileoffset, left to read is $sizeleft, bytes is $bytes\n";
 
         ## Note that we append the output, due to the chance of $oldstring above

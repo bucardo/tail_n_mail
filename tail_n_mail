@@ -2809,7 +2809,7 @@ sub process_report {
     ## Attempt to line up all the SERVICE= entries
     my $maxservice = 0;
     for my $file (@files_parsed) {
-        if ($file->[0] =~ /SERVICE=(\w+)/) {
+        if ($file->[1] and $file->[0] =~ /SERVICE=(\w+)/) {
             $maxservice = length $1 if length $1 > $maxservice;
         }
         $file->[2] = $file->[0];

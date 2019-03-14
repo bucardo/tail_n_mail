@@ -23,6 +23,10 @@ Version 2.4.0
   * Allow custom flattening rules via FLATTEN: in the config file
     [Greg Sabino Mullane]
 
+  * Rather than [A], [B], etc., show the service names themselves in the output if all 
+    of the files are using service names. Can be overriden with --force-letter-output.
+    [Greg Sabino Mullane]
+
   * Better flattening of queries
     [Greg Sabino Mullane]
 

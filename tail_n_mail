@@ -206,6 +206,7 @@ my $result = GetOptions
    'no-tailnmailrc|no_tailnmailrc',
    'maxemailsize=i',
    'skip_non_parsed|skip-non-parsed',
+   'force-letter-output',
    'warning=i',
    'critical=i',
   ) or help();
@@ -2808,11 +2809,16 @@ sub process_report {
 
     ## Attempt to line up all the SERVICE= entries
     my $maxservice = 0;
+    my $allservice = 1;
     for my $file (@files_parsed) {
-        if ($file->[1] and $file->[0] =~ /SERVICE=(\w+)/) {
+        $file->[2] = $file->[0];
+        next if ! $file->[1];
+        if ($file->[0] =~ /SERVICE=(\w+)/) {
             $maxservice = length $1 if length $1 > $maxservice;
         }
-        $file->[2] = $file->[0];
+        else {
+            $allservice = 0;
+        }
     }
     if ($maxservice) {
         for my $file (@files_parsed) {
@@ -2820,22 +2826,40 @@ sub process_report {
         }
     }
 
+    ## Just in case anyone needs the old behavior:
+    $allservice = 0 if $arg{'force-letter-output'};
+
     ## Setup fancy output
     my $letter = 0;
     my $maxcount = 1;
     my $maxname = 1;
     my $maxletter = 1;
     for my $file (@files_parsed) {
+
+        ## Skip if no matches for this file
         next if ! $file->[1];
+
+        ## Format the number of matches and track the string length
         $file->[1] = pretty_number($file->[1]);
         $maxcount = length $file->[1] if length $file->[1] > $maxcount;
+
+        ## Track the longest file
         $maxname = length $file->[2] if length $file->[2] > $maxname;
-        my $name = chr(65+$letter);
-        if ($letter >= 26) {
-            $name = sprintf '%s%s',
-                chr(64+($letter/26)), chr(65+($letter%26));
+
+        ## Assign a letter to each file, unless we are using all service files
+        my $name;
+        if ($allservice) {
+            $name = ($file->[0] =~ /SERVICE=(\w+)/) ? $1 : '?';
         }
-        $letter++;
+        else {
+            $name = chr(65+$letter);
+            if ($letter >= 26) {
+                $name = sprintf '%s%s',
+                    chr(64+($letter/26)), chr(65+($letter%26));
+            }
+            $letter++;
+        }
+
         $fab{$file->[0]} = $name;
         $maxletter = length $name if length $name > $maxletter;
     }
@@ -2846,13 +2870,22 @@ sub process_report {
         for my $file (@files_parsed) {
             next if ! $file->[1];
             my $name = $fab{$file->[0]};
-            push @msg => sprintf 'Matches from %-*s %-*s %*s',
-                $maxletter + 2,
-                "[$name]",
-                $maxname+1,
-                $file->[2] ? "$file->[2]:" : "$file->[0]:",
-                $maxcount,
-                $file->[1];
+            if ($allservice) {
+                push @msg => sprintf 'Matches from %-*s %*s',
+                    $maxname+1,
+                    $file->[2] ? "$file->[2]:" : "$file->[0]:",
+                    $maxcount,
+                    $file->[1];
+            }
+            else {
+                push @msg => sprintf 'Matches from %-*s %-*s %*s',
+                    $maxletter + 2,
+                    "[$name]",
+                    $maxname+1,
+                    $file->[2] ? "$file->[2]:" : "$file->[0]:",
+                    $maxcount,
+                    $file->[1];
+            }
         }
     }
     elsif ($matchfiles) {

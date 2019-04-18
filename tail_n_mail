@@ -404,8 +404,11 @@ while (($llp_num,$llp1) = each %$llprefix) {
 ## Keep track of changes to know if we need to rewrite the config file or not
 my $changes = 0;
 
-## Global regex: may change per file
+## Global regexes: may change per file
 my ($exclude, $include, $exclude_prefix, $exclude_non_parsed, $bonus_include);
+
+## Service names can have 'words' and dashes
+my $servicenameregex = qr{\w[\w\-]*};
 
 ## Note if we bumped into maxsize when trying to read a file
 my (%toolarge);
@@ -481,7 +484,7 @@ my %badservice;
 
     ## If this was a service, don't try to connect again if we already failed
     my $servicename;
-    if ($logfile =~ /service=(\w+)/i) {
+    if ($logfile =~ /service=($servicenameregex)/i) {
         $servicename = $1;
         if (exists $badservice{$servicename}) {
             $last_logfile = $logfile;
@@ -1616,7 +1619,7 @@ sub parse_file {
     ## At the end of the day, we want to provide a pseudo-filehandle
     if ($filename =~ /SERVICE=/) {
 
-        (my $newfilename = $filename) =~ s/SERVICE=(\w+)\s*//;
+        (my $newfilename = $filename) =~ s/SERVICE=($servicenameregex)\s*//;
         my $service = $1;
 
         my $remotefileinfo = call_pg_stat_file($service, $newfilename);
@@ -2813,7 +2816,7 @@ sub process_report {
     for my $file (@files_parsed) {
         $file->[2] = $file->[0];
         next if ! $file->[1];
-        if ($file->[0] =~ /SERVICE=(\w+)/) {
+        if ($file->[0] =~ /SERVICE=($servicenameregex)/) {
             $maxservice = length $1 if length $1 > $maxservice;
         }
         else {
@@ -2822,7 +2825,7 @@ sub process_report {
     }
     if ($maxservice) {
         for my $file (@files_parsed) {
-            $file->[2] =~ s/(SERVICE=(\w+))/$1 . ' 'x($maxservice - length $2)/e;
+            $file->[2] =~ s/(SERVICE=($servicenameregex))/$1 . ' 'x($maxservice - length $2)/e;
         }
     }
 
@@ -2849,7 +2852,7 @@ sub process_report {
         ## Assign a letter to each file, unless we are using all service files
         my $name;
         if ($allservice) {
-            $name = ($file->[0] =~ /SERVICE=(\w+)/) ? $1 : '?';
+            $name = ($file->[0] =~ /SERVICE=($servicenameregex)/) ? $1 : '?';
         }
         else {
             $name = chr(65+$letter);

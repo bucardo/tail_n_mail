@@ -24,7 +24,8 @@ Version 2.4.0
     [Greg Sabino Mullane]
 
   * Rather than [A], [B], etc., show the service names themselves in the output if all 
-    of the files are using service names. Can be overriden with --force-letter-output.
+    of the files are using service names (unless the name is the same).
+    Can be overriden with --force-letter-output.
     [Greg Sabino Mullane]
 
   * Better flattening of queries

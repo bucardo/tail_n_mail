@@ -2813,11 +2813,13 @@ sub process_report {
     ## Attempt to line up all the SERVICE= entries
     my $maxservice = 0;
     my $allservice = 1;
+    my %servicename;
     for my $file (@files_parsed) {
         $file->[2] = $file->[0];
         next if ! $file->[1];
         if ($file->[0] =~ /SERVICE=($servicenameregex)/) {
             $maxservice = length $1 if length $1 > $maxservice;
+            $servicename{$1}++;
         }
         else {
             $allservice = 0;
@@ -2828,6 +2830,9 @@ sub process_report {
             $file->[2] =~ s/(SERVICE=($servicenameregex))/$1 . ' 'x($maxservice - length $2)/e;
         }
     }
+
+    ## If any service names are identical (e.g. different log files), do not show just the name
+    $allservice = 0 if grep { $_ > 1 } values %servicename;
 
     ## Just in case anyone needs the old behavior:
     $allservice = 0 if $arg{'force-letter-output'};

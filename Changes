@@ -3,7 +3,7 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 2.4.0
+Version 2.4.0, released April 22, 2019
 
   * Support for pgbouncer logs. Just give your config file the string 'bouncer' in it to activate.
     [Greg Sabino Mullane]
@@ -25,7 +25,7 @@ Version 2.4.0
 
   * Rather than [A], [B], etc., show the service names themselves in the output if all 
     of the files are using service names (unless the name is the same).
-    Can be overriden with --force-letter-output.
+    Can be forced to the old behavior with --force-letter-output.
     [Greg Sabino Mullane]
 
   * Better flattening of queries
@@ -45,6 +45,7 @@ Version 2.4.0
 
   * Add 'hide_conflict_error_details' option to merge all "conflict with recovery" strings
     [Greg Sabino Mullane]
+
 
 Version 2.3.1, released July 3, 2018
 

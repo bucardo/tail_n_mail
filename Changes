@@ -3,6 +3,12 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
+Version 2.5.0
+
+  * Do not show passwords that appear in the logs as "dsn was .. password="
+    [Greg Sabino Mullane]
+
+
 Version 2.4.0, released April 22, 2019
 
   * Support for pgbouncer logs. Just give your config file the string 'bouncer' in it to activate.

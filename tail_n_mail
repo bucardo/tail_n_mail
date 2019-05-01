@@ -2259,6 +2259,9 @@ sub process_line {
 
     $arg{debug} > 2 and warn "MATCH at line $line of $filename\n";
 
+    ## Special handling for errant apps
+    $string =~ s/(dsn was:.+ password=)\S+/$1\[elided\]/;
+
     ## Force newlines to a single line
     $string =~ s/\n/\\n/go;
 

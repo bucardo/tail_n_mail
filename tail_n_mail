@@ -3146,7 +3146,7 @@ sub send_smtp_email {
 
     my ($from_addr,$emails,$subject,$tempfile) = @_;
 
-    require Net::SMTP::SSL;
+    require Net::SMTP;
 
     ## Absorb any values set by rc files, and sanity check things
     my $mailserver = $opt{mailserver} || $arg{mailserver};
@@ -3165,11 +3165,12 @@ sub send_smtp_email {
 
     ## Attempt to connect to the server
     my $smtp;
-    if (not $smtp = Net::SMTP::SSL->new(
+    if (not $smtp = Net::SMTP->new(
         $mailserver,
         Port    => $mailport,
         Debug   => 0,
         Timeout => 30,
+        SSL     => 1
     )) {
         die qq{Failed to connect to mail server: $!};
     }

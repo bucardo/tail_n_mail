@@ -12,6 +12,9 @@ Version 2.5.0
    [Github issue #13]
    [Greg Sabino Mullane]
 
+ * Use Net::SMTP directly instead of Net::SMTP::SSL
+   [Git hub pull request #30 by KrzysztofCzajkaTURCOM]
+
 
 Version 2.4.0, released April 22, 2019
 

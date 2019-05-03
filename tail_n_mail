@@ -3176,7 +3176,7 @@ sub send_smtp_email {
         Port    => $mailport,
         Debug   => 0,
         Timeout => 30,
-        SSL     => 1
+        SSL     => 1,
     )) {
         die qq{Failed to connect to mail server: $!};
     }

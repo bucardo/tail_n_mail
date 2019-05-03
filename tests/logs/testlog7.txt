@@ -1,0 +1,231 @@
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.939 EDT [unknown] greg@postgres line:36 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence3'
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.940 EDT [unknown] greg@postgres line:37 LOG:  execute <unnamed>: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.940 EDT [unknown] greg@postgres line:38 DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.941 EDT [unknown] greg@postgres line:39 LOG:  statement: DROP SCHEMA dbd_pg_testschema CASCADE
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.949 EDT [unknown] greg@postgres line:40 LOG:  execute dbdpg_p13269_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.949 EDT [unknown] greg@postgres line:41 DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.949 EDT [unknown] greg@postgres line:42 LOG:  statement: CREATE SCHEMA dbd_pg_testschema
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.960 EDT [unknown] greg@postgres line:43 LOG:  statement: SET search_path TO dbd_pg_testschema
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.960 EDT [unknown] greg@postgres line:44 LOG:  statement: CREATE SEQUENCE dbd_pg_testsequence
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.971 EDT [unknown] greg@postgres line:45 LOG:  statement: 
+	CREATE TABLE dbd_pg_test (
+	  id         integer not null primary key,
+	  lii        integer unique not null default nextval('dbd_pg_testsequence'),
+	  pname      varchar(20) default 'Testing Default' ,
+	  val        text,
+	  score      float CHECK(score IN ('1','2','3')),
+	  Fixed      character(5),
+	  pdate      timestamp default now(),
+	  testarray  text[][],
+	  testarray2 int[],
+	  testarray3 bool[],
+	  "CaseTest" boolean,
+	  expo       numeric(6,2),
+	  bytetest   bytea,
+	  bytearray  bytea[]
+	)
+	
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:08.976 EDT [unknown] greg@postgres line:46 DEBUG:  building index "pg_toast_2222333689_index" on table "pg_toast_2222333689"
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:09.038 EDT [unknown] greg@postgres line:47 DEBUG:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_pkey" for table "dbd_pg_test"
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:09.039 EDT [unknown] greg@postgres line:48 DEBUG:  building index "dbd_pg_test_pkey" on table "dbd_pg_test"
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:09.083 EDT [unknown] greg@postgres line:49 DEBUG:  CREATE TABLE / UNIQUE will create implicit index "dbd_pg_test_lii_key" for table "dbd_pg_test"
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:09.083 EDT [unknown] greg@postgres line:50 DEBUG:  building index "dbd_pg_test_lii_key" on table "dbd_pg_test"
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:09.149 EDT [unknown] greg@postgres line:51 LOG:  statement: COMMENT ON COLUMN dbd_pg_test.id IS 'Bob is your uncle'
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:09.163 EDT [unknown] greg@postgres line:52 LOG:  statement: DEALLOCATE dbdpg_p13269_2
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:09.163 EDT [unknown] greg@postgres line:53 LOG:  statement: DEALLOCATE dbdpg_p13269_1
+[local] [13278] 5ccc4c38.33de 2019-05-03 10:12:09.163 EDT [unknown] greg@postgres line:54 LOG:  statement: DEALLOCATE dbdpg_p13269_3
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.045 EDT [unknown] greg@postgres line:1 LOG:  statement: SET client_encoding = utf8
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.046 EDT [unknown] greg@postgres line:2 LOG:  statement: SELECT usesuper FROM pg_user WHERE usename = current_user
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.048 EDT [unknown] greg@postgres line:3 LOG:  statement: SET LC_MESSAGES = 'C'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.049 EDT [unknown] greg@postgres line:4 LOG:  statement: /* DBD::Pg ping test v3.8.0 */
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.050 EDT [unknown] greg@postgres line:5 LOG:  execute <unnamed>: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.050 EDT [unknown] greg@postgres line:6 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_matview'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.054 EDT [unknown] greg@postgres line:7 LOG:  execute <unnamed>: SELECT 1 FROM pg_operator o, pg_namespace n WHERE oprname=$1 AND oprleft = $2::regtype AND oprright = $3::regtype AND o.oprnamespace = n.oid AND n.nspname = $4
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.054 EDT [unknown] greg@postgres line:8 DETAIL:  parameters: $1 = '?', $2 = 'integer', $3 = 'integer', $4 = 'dbd_pg_testschema'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.056 EDT [unknown] greg@postgres line:9 LOG:  execute dbdpg_p13294_1: SELECT 1 FROM pg_operator o, pg_namespace n WHERE oprname=$1 AND oprleft = $2::regtype AND oprright = $3::regtype AND o.oprnamespace = n.oid AND n.nspname = $4
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.056 EDT [unknown] greg@postgres line:10 DETAIL:  parameters: $1 = '??', $2 = 'text', $3 = 'text', $4 = 'dbd_pg_testschema'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.057 EDT [unknown] greg@postgres line:11 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.057 EDT [unknown] greg@postgres line:12 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test5'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.058 EDT [unknown] greg@postgres line:13 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.058 EDT [unknown] greg@postgres line:14 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test4'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.059 EDT [unknown] greg@postgres line:15 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.059 EDT [unknown] greg@postgres line:16 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test3'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.060 EDT [unknown] greg@postgres line:17 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.060 EDT [unknown] greg@postgres line:18 DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_test3'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.061 EDT [unknown] greg@postgres line:19 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.061 EDT [unknown] greg@postgres line:20 DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_test2'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.062 EDT [unknown] greg@postgres line:21 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.062 EDT [unknown] greg@postgres line:22 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test2'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.062 EDT [unknown] greg@postgres line:23 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.062 EDT [unknown] greg@postgres line:24 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test1'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.062 EDT [unknown] greg@postgres line:25 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.062 EDT [unknown] greg@postgres line:26 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.063 EDT [unknown] greg@postgres line:27 LOG:  statement: DROP TABLE dbd_pg_testschema.dbd_pg_test
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.152 EDT [unknown] greg@postgres line:28 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.152 EDT [unknown] greg@postgres line:29 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_test_geom'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.153 EDT [unknown] greg@postgres line:30 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.153 EDT [unknown] greg@postgres line:31 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_testsequence'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.153 EDT [unknown] greg@postgres line:32 LOG:  statement: DROP SEQUENCE dbd_pg_testschema.dbd_pg_testsequence
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.208 EDT [unknown] greg@postgres line:33 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.208 EDT [unknown] greg@postgres line:34 DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_testsequence2'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.208 EDT [unknown] greg@postgres line:35 LOG:  execute dbdpg_p13294_2: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.208 EDT [unknown] greg@postgres line:36 DETAIL:  parameters: $1 = 'dbd_pg_testschema2', $2 = 'dbd_pg_testsequence3'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.209 EDT [unknown] greg@postgres line:37 LOG:  execute <unnamed>: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.209 EDT [unknown] greg@postgres line:38 DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.209 EDT [unknown] greg@postgres line:39 LOG:  statement: DROP SCHEMA dbd_pg_testschema CASCADE
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.218 EDT [unknown] greg@postgres line:40 LOG:  execute dbdpg_p13294_3: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.218 EDT [unknown] greg@postgres line:41 DETAIL:  parameters: $1 = 'dbd_pg_testschema2'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.218 EDT [unknown] greg@postgres line:42 LOG:  statement: CREATE SCHEMA dbd_pg_testschema
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.228 EDT [unknown] greg@postgres line:43 LOG:  statement: SET search_path TO dbd_pg_testschema
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.228 EDT [unknown] greg@postgres line:44 LOG:  statement: CREATE SEQUENCE dbd_pg_testsequence
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.241 EDT [unknown] greg@postgres line:45 LOG:  statement: 
+	CREATE TABLE dbd_pg_test (
+	  id         integer not null primary key,
+	  lii        integer unique not null default nextval('dbd_pg_testsequence'),
+	  pname      varchar(20) default 'Testing Default' ,
+	  val        text,
+	  score      float CHECK(score IN ('1','2','3')),
+	  Fixed      character(5),
+	  pdate      timestamp default now(),
+	  testarray  text[][],
+	  testarray2 int[],
+	  testarray3 bool[],
+	  "CaseTest" boolean,
+	  expo       numeric(6,2),
+	  bytetest   bytea,
+	  bytearray  bytea[]
+	)
+	
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.246 EDT [unknown] greg@postgres line:46 DEBUG:  building index "pg_toast_2222333706_index" on table "pg_toast_2222333706"
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.378 EDT [unknown] greg@postgres line:47 DEBUG:  CREATE TABLE / PRIMARY KEY will create implicit index "dbd_pg_test_pkey" for table "dbd_pg_test"
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.379 EDT [unknown] greg@postgres line:48 DEBUG:  building index "dbd_pg_test_pkey" on table "dbd_pg_test"
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.433 EDT [unknown] greg@postgres line:49 DEBUG:  CREATE TABLE / UNIQUE will create implicit index "dbd_pg_test_lii_key" for table "dbd_pg_test"
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.435 EDT [unknown] greg@postgres line:50 DEBUG:  building index "dbd_pg_test_lii_key" on table "dbd_pg_test"
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.530 EDT [unknown] greg@postgres line:51 LOG:  statement: COMMENT ON COLUMN dbd_pg_test.id IS 'Bob is your uncle'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.562 EDT [unknown] greg@postgres line:52 LOG:  statement: begin
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.562 EDT [unknown] greg@postgres line:53 LOG:  statement: 
+	CREATE OR REPLACE FUNCTION dbdpg_test_error_handler(TEXT)
+	RETURNS boolean
+	LANGUAGE plpgsql
+	AS $BC$
+	 DECLARE
+	   level ALIAS FOR $1;
+	 BEGIN 
+	  IF level ~* 'notice' THEN
+	    RAISE NOTICE 'RAISE NOTICE FROM dbdpg_test_error_handler';
+	  ELSIF level ~* 'warning' THEN
+	    RAISE WARNING 'RAISE WARNING FROM dbdpg_test_error_handler';
+	  ELSIF level ~* 'exception' THEN
+	    RAISE EXCEPTION 'RAISE EXCEPTION FROM dbdpg_test_error_handler';
+	  END IF;
+	  RETURN TRUE;
+	 END;
+	$BC$
+	
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.565 EDT [unknown] greg@postgres line:54 LOG:  statement: commit
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.575 EDT [unknown] greg@postgres line:55 LOG:  statement: begin
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.576 EDT [unknown] greg@postgres line:56 LOG:  statement: SET client_min_messages = 'ERROR'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.577 EDT [unknown] greg@postgres line:57 LOG:  execute <unnamed>: SELECT * FROM dbdpg_test_error_handler( $1 )
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.577 EDT [unknown] greg@postgres line:58 DETAIL:  parameters: $1 = 'notice'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.578 EDT [unknown] greg@postgres line:59 NOTICE:  RAISE NOTICE FROM dbdpg_test_error_handler
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.578 EDT [unknown] greg@postgres line:60 CONTEXT:  PL/pgSQL function dbdpg_test_error_handler(text) line 6 at RAISE
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.582 EDT [unknown] greg@postgres line:61 LOG:  execute dbdpg_p13294_4: SELECT * FROM dbdpg_test_error_handler( $1 )
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.582 EDT [unknown] greg@postgres line:62 DETAIL:  parameters: $1 = 'warning'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.582 EDT [unknown] greg@postgres line:63 WARNING:  RAISE WARNING FROM dbdpg_test_error_handler
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.582 EDT [unknown] greg@postgres line:64 CONTEXT:  PL/pgSQL function dbdpg_test_error_handler(text) line 8 at RAISE
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.584 EDT [unknown] greg@postgres line:65 LOG:  execute dbdpg_p13294_4: SELECT * FROM dbdpg_test_error_handler( $1 )
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.584 EDT [unknown] greg@postgres line:66 DETAIL:  parameters: $1 = 'exception'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.584 EDT [unknown] greg@postgres line:67 ERROR:  RAISE EXCEPTION FROM dbdpg_test_error_handler
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.584 EDT [unknown] greg@postgres line:68 CONTEXT:  PL/pgSQL function dbdpg_test_error_handler(text) line 10 at RAISE
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.584 EDT [unknown] greg@postgres line:69 STATEMENT:  SELECT * FROM dbdpg_test_error_handler( $1 )
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.586 EDT [unknown] greg@postgres line:70 LOG:  statement: rollback
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.586 EDT [unknown] greg@postgres line:71 LOG:  statement: begin
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.586 EDT [unknown] greg@postgres line:72 LOG:  execute dbdpg_p13294_4: SELECT * FROM dbdpg_test_error_handler( $1 )
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.586 EDT [unknown] greg@postgres line:73 DETAIL:  parameters: $1 = 'normal'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.587 EDT [unknown] greg@postgres line:74 LOG:  statement: DROP FUNCTION dbdpg_test_error_handler(TEXT)
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.588 EDT [unknown] greg@postgres line:75 LOG:  statement: SET client_min_messages = NOTICE
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.588 EDT [unknown] greg@postgres line:76 LOG:  statement: commit
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.751 EDT [unknown] greg@postgres line:77 LOG:  statement: begin
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.752 EDT [unknown] greg@postgres line:78 LOG:  statement: SELECT 'dbdpg_flag_testing'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.752 EDT [unknown] greg@postgres line:79 LOG:  statement: commit
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.755 EDT [unknown] greg@postgres line:80 LOG:  statement: begin
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.755 EDT [unknown] greg@postgres line:81 LOG:  statement: SELECT 'dbdpg_flag_testing'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.756 EDT [unknown] greg@postgres line:82 LOG:  statement: commit
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.758 EDT [unknown] greg@postgres line:83 LOG:  statement: begin
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.759 EDT [unknown] greg@postgres line:84 LOG:  statement: SELECT 'dbdpg_flag_testing'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.760 EDT [unknown] greg@postgres line:85 LOG:  statement: commit
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.762 EDT [unknown] greg@postgres line:86 LOG:  statement: begin
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.762 EDT [unknown] greg@postgres line:87 LOG:  statement: SELECT 'dbdpg_flag_testing'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.762 EDT [unknown] greg@postgres line:88 LOG:  statement: commit
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.763 EDT [unknown] greg@postgres line:89 LOG:  statement: begin
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.763 EDT [unknown] greg@postgres line:90 LOG:  statement: SELECT 'dbdpg_flag_testing'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.763 EDT [unknown] greg@postgres line:91 LOG:  statement: commit
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.764 EDT [unknown] greg@postgres line:92 LOG:  statement: begin
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.765 EDT [unknown] greg@postgres line:93 LOG:  statement: SELECT 'dbdpg_flag_testing'
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.765 EDT [unknown] greg@postgres line:94 LOG:  statement: commit
+[local] [13296] 5ccc4c4d.33f0 2019-05-03 10:12:29.771 EDT [unknown] greg@postgres line:1 LOG:  statement: SET client_encoding = utf8
+[local] [13296] 5ccc4c4d.33f0 2019-05-03 10:12:29.772 EDT [unknown] greg@postgres line:2 LOG:  statement: SELECT usesuper FROM pg_user WHERE usename = current_user
+[local] [13296] 5ccc4c4d.33f0 2019-05-03 10:12:29.775 EDT [unknown] greg@postgres line:3 LOG:  statement: SET LC_MESSAGES = 'C'
+[local] [13296] 5ccc4c4d.33f0 2019-05-03 10:12:29.776 EDT [unknown] greg@postgres line:4 LOG:  execute <unnamed>: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+[local] [13296] 5ccc4c4d.33f0 2019-05-03 10:12:29.776 EDT [unknown] greg@postgres line:5 DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+[local] [13296] 5ccc4c4d.33f0 2019-05-03 10:12:29.776 EDT [unknown] greg@postgres line:6 LOG:  statement: SET search_path TO dbd_pg_testschema
+[local] [13296] 5ccc4c4d.33f0 2019-05-03 10:12:29.776 EDT [unknown] greg@postgres line:7 LOG:  statement: begin
+[local] [13296] 5ccc4c4d.33f0 2019-05-03 10:12:29.776 EDT [unknown] greg@postgres line:8 LOG:  statement: SELECT 'dbdpg_flag_testing'
+[local] [13296] 5ccc4c4d.33f0 2019-05-03 10:12:29.777 EDT [unknown] greg@postgres line:9 LOG:  statement: rollback
+[local] [13297] 5ccc4c4d.33f1 2019-05-03 10:12:29.783 EDT [unknown] greg@postgres line:1 LOG:  statement: SET client_encoding = utf8
+[local] [13297] 5ccc4c4d.33f1 2019-05-03 10:12:29.783 EDT [unknown] greg@postgres line:2 LOG:  statement: SELECT usesuper FROM pg_user WHERE usename = current_user
+[local] [13297] 5ccc4c4d.33f1 2019-05-03 10:12:29.786 EDT [unknown] greg@postgres line:3 LOG:  statement: SET LC_MESSAGES = 'C'
+[local] [13297] 5ccc4c4d.33f1 2019-05-03 10:12:29.787 EDT [unknown] greg@postgres line:4 LOG:  execute <unnamed>: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+[local] [13297] 5ccc4c4d.33f1 2019-05-03 10:12:29.787 EDT [unknown] greg@postgres line:5 DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+[local] [13297] 5ccc4c4d.33f1 2019-05-03 10:12:29.788 EDT [unknown] greg@postgres line:6 LOG:  statement: SET search_path TO dbd_pg_testschema
+[local] [13298] 5ccc4c4d.33f2 2019-05-03 10:12:29.795 EDT [unknown] greg@postgres line:1 LOG:  statement: SET client_encoding = utf8
+[local] [13298] 5ccc4c4d.33f2 2019-05-03 10:12:29.796 EDT [unknown] greg@postgres line:2 LOG:  statement: SELECT usesuper FROM pg_user WHERE usename = current_user
+[local] [13298] 5ccc4c4d.33f2 2019-05-03 10:12:29.799 EDT [unknown] greg@postgres line:3 LOG:  statement: SET LC_MESSAGES = 'C'
+[local] [13298] 5ccc4c4d.33f2 2019-05-03 10:12:29.800 EDT [unknown] greg@postgres line:4 LOG:  execute <unnamed>: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+[local] [13298] 5ccc4c4d.33f2 2019-05-03 10:12:29.800 EDT [unknown] greg@postgres line:5 DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+[local] [13298] 5ccc4c4d.33f2 2019-05-03 10:12:29.800 EDT [unknown] greg@postgres line:6 LOG:  statement: SET search_path TO dbd_pg_testschema
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.808 EDT [unknown] greg@postgres line:1 LOG:  statement: SET client_encoding = utf8
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.809 EDT [unknown] greg@postgres line:2 LOG:  statement: SELECT usesuper FROM pg_user WHERE usename = current_user
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.812 EDT [unknown] greg@postgres line:3 LOG:  statement: SET LC_MESSAGES = 'C'
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.813 EDT [unknown] greg@postgres line:4 LOG:  execute <unnamed>: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.813 EDT [unknown] greg@postgres line:5 DETAIL:  parameters: $1 = 'dbd_pg_testschema'
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.813 EDT [unknown] greg@postgres line:6 LOG:  statement: SET search_path TO dbd_pg_testschema
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.814 EDT [unknown] greg@postgres line:7 LOG:  statement: begin
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.814 EDT [unknown] greg@postgres line:8 LOG:  statement: SELECT 'dbdpg_flag_testing'
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.815 EDT [unknown] greg@postgres line:9 LOG:  statement: SELECT 'dbdpg_flag_testing'
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.815 EDT [unknown] greg@postgres line:10 LOG:  statement: rollback
+[local] [13300] 5ccc4c4d.33f4 2019-05-03 10:12:29.820 EDT [unknown] greg@postgres line:1 LOG:  statement: SELECT pg_catalog.quote_ident(datname) FROM pg_catalog.pg_database ORDER BY 1
+[local] [13301] 5ccc4c4d.33f5 2019-05-03 10:12:29.831 EDT [unknown] greg@postgres line:1 LOG:  statement: SELECT pg_catalog.quote_ident(datname) FROM pg_catalog.pg_database ORDER BY 1
+[local] [13302] 5ccc4c4d.33f6 2019-05-03 10:12:29.840 EDT [unknown] greg@postgres line:1 LOG:  statement: SELECT pg_catalog.quote_ident(datname) FROM pg_catalog.pg_database ORDER BY 1
+[local] [13303] 5ccc4c4d.33f7 2019-05-03 10:12:29.848 EDT [unknown] greg@postgres line:1 LOG:  statement: SELECT pg_catalog.quote_ident(datname) FROM pg_catalog.pg_database ORDER BY 1
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.852 EDT [unknown] greg@postgres line:11 LOG:  statement: begin
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.853 EDT [unknown] greg@postgres line:12 LOG:  statement: INSERT INTO dbd_pg_test (id, pname) VALUES ('600',DEFAULT)
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.856 EDT [unknown] greg@postgres line:13 LOG:  statement: INSERT INTO dbd_pg_test (id, pname) VALUES ('602',DEFAULT)
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.856 EDT [unknown] greg@postgres line:14 LOG:  statement: commit
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.874 EDT [unknown] greg@postgres line:15 LOG:  statement: begin
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.875 EDT [unknown] greg@postgres line:16 LOG:  statement: SELECT 123
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.875 EDT [unknown] greg@postgres line:17 LOG:  statement: ROLLBACK
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.879 EDT [unknown] greg@postgres line:18 LOG:  statement: begin
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.879 EDT [unknown] greg@postgres line:19 LOG:  statement: COMMIT
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.882 EDT [unknown] greg@postgres line:20 LOG:  statement: begin
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.882 EDT [unknown] greg@postgres line:21 LOG:  statement: COMMIT
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.883 EDT [unknown] greg@postgres line:22 LOG:  statement: begin
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.884 EDT [unknown] greg@postgres line:23 LOG:  statement: SELECT   0
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.884 EDT [unknown] greg@postgres line:24 LOG:  statement: SELECT    1
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.885 EDT [unknown] greg@postgres line:25 LOG:  statement: SELECT     2
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.885 EDT [unknown] greg@postgres line:26 LOG:  statement: SELECT      3
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.886 EDT [unknown] greg@postgres line:27 LOG:  statement: SELECT       4
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.886 EDT [unknown] greg@postgres line:28 LOG:  statement: SELECT        5
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.886 EDT [unknown] greg@postgres line:29 LOG:  statement: SELECT         6
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.886 EDT [unknown] greg@postgres line:30 LOG:  statement: SELECT          7
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.887 EDT [unknown] greg@postgres line:31 LOG:  statement: SELECT           8
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.887 EDT [unknown] greg@postgres line:32 LOG:  statement: SELECT            9
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.887 EDT [unknown] greg@postgres line:33 LOG:  statement: SELECT            10
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.887 EDT [unknown] greg@postgres line:34 LOG:  statement: SELECT             11
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.888 EDT [unknown] greg@postgres line:35 LOG:  statement: SELECT              12
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.888 EDT [unknown] greg@postgres line:36 LOG:  statement: SELECT               13
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.888 EDT [unknown] greg@postgres line:37 LOG:  statement: SELECT                14
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.888 EDT [unknown] greg@postgres line:38 LOG:  statement: SELECT                 15
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.889 EDT [unknown] greg@postgres line:39 LOG:  statement: SELECT                  16
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.889 EDT [unknown] greg@postgres line:40 LOG:  statement: SELECT                   17
+[local] [13299] 5ccc4c4d.33f3 2019-05-03 10:12:29.889 EDT [unknown] greg@postgres line:41 LOG:  statement: SELECT                    18

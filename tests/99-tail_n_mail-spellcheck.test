@@ -138,6 +138,7 @@ chunked
 config
 CSV
 devbox
+dsn
 durations
 ENV
 filename
@@ -151,6 +152,7 @@ havetimestamp
 html
 http
 Johan
+KrzysztofCzajkaTURCOM
 LASTFILE
 logrotate
 lookahead
@@ -176,9 +178,11 @@ Sabino
 Seiler
 serios
 skipfilebyregex
+SMTP
 SQL
 sqlstate
 SQLSTATE
+SSL
 Stasic
 syslog
 syslogs

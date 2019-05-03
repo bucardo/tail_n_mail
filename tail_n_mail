@@ -323,7 +323,13 @@ while (($llp_num,$llp1) = each %$llprefix) {
     $llp1 = "()$llp1";
   }
   $llp1 =~ s/%p/(\\d+)/ and $havepid = 1;
-  $llp1 =~ s/%c/(\\S+)/ and $havepid = 1;
+  if ($havepid) {
+      ## We want to capture only one of %p or %c
+      $llp1 =~ s/%c/(?:\\S+)/;
+  }
+  else {
+      $llp1 =~ s/%c/(\\S+)/ and $havepid = 1;
+  }
   if (!$havepid and $pglog !~ /syslog/) {
     $llp1 = "()$llp1";
   }

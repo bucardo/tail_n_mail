@@ -15,6 +15,10 @@ Version 2.5.0
  * Use Net::SMTP directly instead of Net::SMTP::SSL
    [Git hub pull request #30 by KrzysztofCzajkaTURCOM]
 
+ * Handle case where log_line_prefix has both %p and %c inside it
+   [Github issue #29]
+   [Greg Sabino Mullane]
+
 
 Version 2.4.0, released April 22, 2019
 

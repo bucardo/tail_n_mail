@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 27;
+use Test::More tests => 28;
 
 use vars qw{ $info $t };
 
@@ -155,6 +155,20 @@ like ($start, qr{^Subject: Acme $host Postgres errors 2 : 2\n}, $t);
 $t = q{Test config 4 gives correct first item match};
 $start = substr($info,0,600);
 like ($start, qr{\n\Q[1] (from line 13)}, $t);
+
+$t = q{Test config 7 gives correct first item match};
+$info = run('tests/config/testconfig-tail_n_mail.7');
+$start = substr($info,260,350);
+my $expected = q{[1] (from line 138)
+[local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.584 EDT [unknown] greg@postgres line:67
+ERROR: RAISE EXCEPTION FROM dbdpg_test_error_handler
+CONTEXT: PL/pgSQL function dbdpg_test_error_handler(text) line 10 at RAISE
+STATEMENT: SELECT * FROM dbdpg_test_error_handler( $1 )};
+like ($start, qr{\Q$expected}s, $t);
+
+
+
+
 
 exit;
 

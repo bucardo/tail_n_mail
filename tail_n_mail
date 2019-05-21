@@ -1705,7 +1705,17 @@ sub parse_file {
         my $remoterotatedfileinfo = {};
         if ($read_rotated and $newfilename !~ /\.1$/) {
             $remoterotatedfileinfo = call_pg_stat_file($service, "$newfilename.1");
-            return -2 if ! ref $remoterotatedfileinfo;
+            ## Handle the case when the rotated file is gone: usually means the server was rebuilt
+            ## In that case, we want to be safe and ignore any existing offsets!
+            if ($remoterotatedfileinfo =~ /could not stat file/) {
+                $arg{verbose} and warn "File $newfilename.1 not found, so setting offset to 0\n";
+                $offset = 0;
+                ## We want to remove this from the rewritten config file entirely
+                $opt{newrotatefilemodtime}{$filename} = 'filegone';
+            }
+            elsif (! ref $remoterotatedfileinfo) {
+                return -2;
+            }
         }
 
         ## Throw one or more files into this scalar:
@@ -1728,7 +1738,7 @@ sub parse_file {
             $offset = 0;
 
             ## Make sure we store our new modification time for the rotated file
-            $opt{rotatefilemodtime}{$filename} = $remoterotatedfileinfo->{modification};
+            $opt{newrotatefilemodtime}{$filename} = $remoterotatedfileinfo->{modification};
         }
 
         ## Double check if we need the offset to be zero
@@ -2019,7 +2029,10 @@ sub call_pg_stat_file {
         seek $efh, 0, 0;
         my $errline = <$efh>;
         chomp $errline;
-        warn "Call to pg_stat_file failed for service $dbservice and file $dbfilename ($errline)\n";
+        ## This is handled elsewhere, so do not need to be noisy about it here:
+        if ($errline !~ /could not stat file/) {
+            warn "Call to pg_stat_file failed for service $dbservice and file $dbfilename ($errline)\n";
+        }
         return $errline;
     }
     close $efh;
@@ -3606,12 +3619,18 @@ sub final_cleanup {
                 $t->{modtime} = $newmodtime;
             }
         }
-        if (exists $opt{rotatefilemodtime}{$t->{latest}}) {
-            my $newrotatemodtime = $opt{rotatefilemodtime}{$t->{latest}};
-            $t->{rotatefilemodtime} ||= 0;
-            if ($t->{rotatefilemodtime} ne $newrotatemodtime) {
-                $changes++;
-                $t->{rotatefilemodtime} = $newrotatemodtime;
+        if (exists $opt{newrotatefilemodtime}{$t->{latest}}) {
+            my $newrotatemodtime = $opt{newrotatefilemodtime}{$t->{latest}};
+            ## Special case where the rotated file has disappeared: remove from config
+            if ($newrotatemodtime eq 'filegone') {
+                delete $t->{rotatefilemodtime};
+            }
+            else {
+                $t->{rotatefilemodtime} ||= 0;
+                if ($t->{rotatefilemodtime} ne $newrotatemodtime) {
+                    $changes++;
+                    $t->{rotatefilemodtime} = $newrotatemodtime;
+                }
             }
         }
     }

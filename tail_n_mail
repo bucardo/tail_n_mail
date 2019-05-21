@@ -26,6 +26,7 @@ use POSIX          qw( strftime localeconv );
 use 5.014_000;
 
 our $VERSION = '2.5.0';
+my $app_string = "/* tail_n_mail $VERSION */";
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
 
@@ -2011,7 +2012,7 @@ sub call_pg_stat_file {
     ## We need a place to store any errors that come up
     my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1);
 
-    my $COM = qq{psql service="$dbservice" -AX -qt -x -c "select * from pg_stat_file('$dbfilename')" 2>$errorfile};
+    my $COM = qq{psql service="$dbservice" -AX -qt -x -c "$app_string select * from pg_stat_file('$dbfilename')" 2>$errorfile};
     $arg{debug} and warn "Trying: $COM\n";
     my @fileinfo = qx/ $COM /;
     if (-s $errorfile) {
@@ -2080,7 +2081,7 @@ sub slurp_via_pg_read_file {
         $arg{debug} and warn "Round $round: offset $fileoffset, left to read is $sizeleft, bytes is $bytes\n";
 
         ## Note that we append the output, due to the chance of $oldstring above
-        my $SQL = "select * from pg_read_file('$dbfilename',$fileoffset,$bytes)";
+        my $SQL = "$app_string select * from pg_read_file('$dbfilename',$fileoffset,$bytes)";
         my $COM = qq{psql service="$dbservice" -AX -qt -c "$SQL" 2>$errorfile >>$outputfile};
         $arg{debug} and warn "Trying: $COM\n";
         system $COM;
@@ -2096,7 +2097,7 @@ sub slurp_via_pg_read_file {
             }
             ## If this was a UTF-8 error involving null bytes, try and filter them out
             elsif ($errline =~ /\b0x00\b/) {
-                $SQL = "select * from regexp_replace(encode(pg_read_binary_file('$dbfilename',$fileoffset,$bytes), 'escape'), '\\\\000', '~', 'g')";
+                $SQL = "$app_string select * from regexp_replace(encode(pg_read_binary_file('$dbfilename',$fileoffset,$bytes), 'escape'), '\\\\000', '~', 'g')";
             }
             ## For everything else, we give up right away
             else {

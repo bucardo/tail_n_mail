@@ -3624,6 +3624,7 @@ sub final_cleanup {
             ## Special case where the rotated file has disappeared: remove from config
             if ($newrotatemodtime eq 'filegone') {
                 delete $t->{rotatefilemodtime};
+                $changes++;
             }
             else {
                 $t->{rotatefilemodtime} ||= 0;

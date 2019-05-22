@@ -1709,7 +1709,7 @@ sub parse_file {
             ## In that case, we want to be safe and ignore any existing offsets!
             if ($remoterotatedfileinfo =~ /could not stat file/) {
                 $arg{verbose} and warn "File $newfilename.1 not found, so setting offset to 0\n";
-                $offset = 0;
+                $offset = 0 if $lfileinfo->{rotatefilemodtime};
                 ## We want to remove this from the rewritten config file entirely
                 $opt{newrotatefilemodtime}{$filename} = 'filegone';
             }

@@ -2335,9 +2335,8 @@ sub process_line {
 
     ## Make some adjustments to attempt to compress similar entries
     if ($arg{flatten} and $arg{type} ne 'duration') {
-
-        ## Simplistic SELECT func(arg1,arg2,...) or SELECT * FROM func(arg1,arg2,...) replacement
-        $string =~ s{(SELECT\s*(?:\*\s+FROM\s*)?[\w\.]+\s*\()([^*].*?)\)(?!['"])}{
+        ## SELECT func(arg1,arg2,...) or SELECT * FROM func(arg1,arg2,...) or SELECT foo, bar FROM func(arg1,arg2,..) replacement
+        $string =~ s{(SELECT\s*(?:\*\s+FROM\s*)?(?:[\w ,]+)?[\w\.]+\s*\()([^*].*?)\)(?!['"])}{
             my ($select,$args) = ($1,$2);
             my @arg;
             for my $arg (split /,/ => $args) {
@@ -2495,6 +2494,14 @@ sub process_line {
         $string =~ s{(invalid input syntax for [\w ]+): ".*?"(?: at character \d+)*}{$1: "?"}o;
         $string =~ s{value ".+?" (is out of range for type)}{value "?" $1}o;
         $string =~ s{(Failing row contains) \(.+?\)\.}{$1 \(?\)\.}go;
+
+        ## pg_hba.conf errors from similar hosts can get combined
+        ## e.g. Connection matched pg_hba.conf line 123: "hostssl all read,write 123.45.66.77/32 md5"
+        $string =~ s{(matched pg_hba.conf line )\d+:(.+?) \d+\.\d+\.\d+\.\d+/\d+}{$1 ?:$2 ?}go;
+
+        ## WAL segment errors can be combined
+        ## e.g. ERROR: requested WAL segment 0000000300002C3600000043 has already been removed
+        $string =~ s{(requested WAL segment) [A-F0-9]+}{$1 ?}go;
 
         ## Syntax error at a specific character
         $string =~ s{(syntax error at or near) "\w+" at character \d+}{$1 "?" at character ?}o;

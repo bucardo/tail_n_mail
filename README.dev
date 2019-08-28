@@ -15,14 +15,10 @@ Quick notes on the current release process:
 
 Login to the bucardo.org box, and then:
 
-* cd tmp/tail_n_mail; git pull
-* cp tail_n_mail * ~/www.downloads/
-* edit ~/www/tail_n_mail/latest_version.txt
-
-Update the wiki at http://bucardo.org/wiki/Tail_n_mail
-
-* Bump the version, plus any needed changes
+* cd ~/tmp/tail_n_mail; git checkout master; git pull
+* cp tail_n_mail* ~/downloads/
+* Update the ~/www/tail_n_mail/latest_version.txt file
+* In the bucardo_org repo, edit tail_n_mail/index.md (mostly bump the version at the top); git push
+* cd ~; make (this applied the chnages above)
 
 * Send an email to tnm-announce@bucardo.org. See previous emails for examples.
-
-

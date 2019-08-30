@@ -6,7 +6,7 @@ Additions are welcome!
 
 Quick notes on the current release process:
 
-* Increment the version number as needed: one place in the tail_n_mail file
+* Increment the version number as needed: one place in the tail_n_mail file, one in the README.md file
 * Update the Changes file: add the latest version, put a release date, and adjust the spacing.
 * Generate a new tail_n_mail.asc file
 * Make sure everything is committed in git

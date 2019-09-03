@@ -2859,6 +2859,7 @@ sub process_report {
     }
     if ($maxservice) {
         for my $file (@files_parsed) {
+            next if ! $file->[1];
             $file->[2] =~ s/(SERVICE=($servicenameregex))/$1 . ' 'x($maxservice - length $2)/e;
         }
     }

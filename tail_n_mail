@@ -2495,6 +2495,9 @@ sub process_line {
         $string =~ s{value ".+?" (is out of range for type)}{value "?" $1}o;
         $string =~ s{(Failing row contains) \(.+?\)\.}{$1 \(?\)\.}go;
 
+        ## Sometimes FATAL errors get prepended with IP and port
+        $string =~ s{\(\d+\.\d+\.\d+\.\d+\(\d+\)\) FATAL}{(?) FATAL};
+
         ## pg_hba.conf errors from similar hosts can get combined
         ## e.g. Connection matched pg_hba.conf line 123: "hostssl all read,write 123.45.66.77/32 md5"
         $string =~ s{(matched pg_hba.conf line )\d+:(.+?) \d+\.\d+\.\d+\.\d+/\d+}{$1 ?:$2 ?}go;

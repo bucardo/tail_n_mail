@@ -25,7 +25,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.014_000;
 
-our $VERSION = '2.5.0';
+our $VERSION = '2.5.1';
 my $app_string = "/* tail_n_mail version $VERSION */";
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";

@@ -161,6 +161,7 @@ my $result = GetOptions
    'debug_partial_read|debug-partial-read=i',
    'debug_force_rotated|debug-force-rotated',
    'dryrun|dry-run|dry_run',
+   'connect_timeout=i',
    'help',
    'nomail',
    'reset',
@@ -270,7 +271,7 @@ parse_config_file();
 parse_inherited_files();
 
 ## Set our timeout
-$ENV{PGCONNECT_TIMEOUT} = $opt{connect_timeout};
+$ENV{PGCONNECT_TIMEOUT} = $arg{connect_timeout};
 
 ## Allow whitespace in configurable items by wrapping in double quotes
 ## Here, we remove them

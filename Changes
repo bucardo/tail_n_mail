@@ -8,6 +8,9 @@ Version 2.5.1 (unreleased)
 
  * Add --connect_timeout option (defaults to 15 seconds)
 
+ * Add --skip-report-failing-host option, so reports are not sent if the only 
+   problem is a failed connection to a known down host.
+
  * More flattening improvements
 
 

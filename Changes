@@ -3,9 +3,13 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 2.5.1
+
+Version 2.5.1 (unreleased)
+
+ * Add --connect_timeout option (defaults to 15 seconds)
 
  * More flattening improvements
+
 
 
 Version 2.5.0, released August 28, 2019

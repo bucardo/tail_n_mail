@@ -152,6 +152,8 @@ for my $item (@ARGV) {
     if ($item =~ /^-+\?$/) {
         help();
     }
+    ## Allow dashes or underscores in our options
+    $item =~ s{^\-\-([\w_-]+)}{($a=$1) =~ s/[_-]/_/g; "--$a"}e;
 }
 
 my $result = GetOptions

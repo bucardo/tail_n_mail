@@ -2037,7 +2037,7 @@ sub call_pg_stat_file {
         chomp $errline;
         ## This is handled elsewhere, so do not need to be noisy about it here:
         if ($errline !~ /could not stat file/) {
-            warn "Call to pg_stat_file failed for service $dbservice and file $dbfilename ($errline)\n";
+            $opt{verbose} and warn "Call to pg_stat_file failed for service $dbservice and file $dbfilename ($errline)\n";
         }
         return $errline;
     }

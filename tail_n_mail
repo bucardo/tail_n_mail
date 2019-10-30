@@ -139,6 +139,8 @@ my %arg = (
               maxemailsize     => 10_000_000, ## bytes
 ## Do we skip lines that we cannot parse (e.g. rsync errors)?
               skip_non_parsed => 0,
+## Do not generate a report if the only errors are from a known failing host
+              skip_report_failing_host => '',
 ## Number of found errors resulting in a Nagios "CRITICAL" exit status
               critical => 0,
 ## Number of found errors resulting in a Nagios "WARNING" exit status
@@ -210,6 +212,7 @@ my $result = GetOptions
    'no-tailnmailrc|no_tailnmailrc',
    'maxemailsize=i',
    'skip_non_parsed|skip-non-parsed',
+   'skip_report_failing_host=s',
    'force-letter-output',
    'warning=i',
    'critical=i',
@@ -557,9 +560,14 @@ my %badservice;
     redo;
 }
 
+my $important_problem_files = 0;
+for my $problem (@problem_files) {
+    next if $arg{skip_report_failing_host} and $problem =~ /\b$arg{skip_report_failing_host}\b/;
+    $important_problem_files = 1;
+}
 
 ## We're done parsing the message, send an email if needed
-process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero} or @problem_files;
+process_report() if $opt{grand_total} or $arg{mailzero} or $opt{mailzero} or $important_problem_files;
 final_cleanup();
 
 $arg{critical} and $found_errors >= $arg{critical} and exit 2;

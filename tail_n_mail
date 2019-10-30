@@ -50,6 +50,8 @@ my %arg = (
               quiet            => 0,
 ## Heavy debugging output
               debug            => 0,
+## How long does psql keep trying to connect (in seconds)
+              connect_timeout  => 15,
 ## Stop reading log files after this many bytes. For debugging only!
               debug_partial_read => 0,
 ## Use the old rotation file
@@ -266,6 +268,9 @@ parse_rc_files();
 parse_config_file();
 ## Read in any inherited config files and merge their information in
 parse_inherited_files();
+
+## Set our timeout
+$ENV{PGCONNECT_TIMEOUT} = $opt{connect_timeout};
 
 ## Allow whitespace in configurable items by wrapping in double quotes
 ## Here, we remove them

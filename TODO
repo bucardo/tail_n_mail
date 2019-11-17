@@ -1,4 +1,8 @@
 
+TODO list for the tail_n_mail program.
+
+Also check: https://github.com/bucardo/tail_n_mail/issues
+
 * Reports in the wild say LATEST can sometimes re-read an older file. Investigate.
 
 * Currently we use a system call to a sorted /bin/ls call. Should be changed to
@@ -8,3 +12,12 @@ do an opendir/readdir instead, so LATEST will work on Windows
 until the last one we processed is found, the "LATEST" version is not
 
 * Rewrite the opt/arg/localopt thing to be clear and concise
+
+* Allow cleaner handling of older logrotated files beyond .1
+
+* Support different log_line_prefixes within the same config file
+
+* Allow regex exclusions to be host-based
+
+
+

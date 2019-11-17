@@ -13,16 +13,19 @@ Quick notes on the current release process:
 * Add a new tag: git tag -u 14964ac8 1.2.3 -m "Version 1.26.3, released September 24, 2013"
 * git push; git push --tags
 
+In the bucardo_org repo:
+* Edit tail_n_mail/index.md (mostly bump the version at the top)
+* Edit _data/projects.yml and update the version and release date
+* git commit and git push
+
 Login to the bucardo.org box, and then:
 
 * cd ~/tail_n_mail; git pull
 * cp tail_n_mail* ~/downloads/
 * Edit ~/www/tail_n_mail/latest_version.txt
-* (locally) In the bucardo_org repo, edit tail_n_mail/index.md (mostly bump the version at the top); git push
-* cd ~; make (this automatically applies the changes above)
+* cd ~; make (this automatically applies the bucardo_org changes above)
 
 * Send an email to tnm-announce@bucardo.org. See announcements/ for examples.
 
 * Put the new email into announcements/
-
 

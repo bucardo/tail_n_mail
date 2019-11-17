@@ -2,7 +2,7 @@
 # -*-mode:cperl; indent-tabs-mode: nil; cperl-indent-level: 4 -*-
 
 ## Tail one or more files, mail the new stuff to one or more emails
-## Developed at End Point Corporation by:
+## Created at End Point Corporation by:
 ## Greg Sabino Mullane <greg@turnstep.com>
 ## Selena Deckelmann <selena@chesnok.com>
 ## See more contributors in the 'Changes' file

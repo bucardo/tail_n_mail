@@ -2572,6 +2572,9 @@ sub process_line {
             $string =~ s{ transaction \d+;}{ transaction ?;}go;
         }
 
+        ## Array literals
+        $string =~ s{(malformed array literal:) ".+?"}{$1: ?}g;
+
     } ## end of flatten
 
     ## Format the final string (and rawstring) a little bit

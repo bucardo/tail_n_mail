@@ -2534,7 +2534,7 @@ sub process_line {
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
         $string =~ s{(invalid input syntax for [\w ]+): ".*?"(?: at character \d+)*}{$1: "?"}o;
         $string =~ s{value ".+?" (is out of range for type)}{value "?" $1}o;
-        $string =~ s{(field value out of range): ".+?"}{$1: "?"}g;
+        $string =~ s{(field value out of range): ".+?" at character \d+}{$1: "?" at character ?}g;
         $string =~ s{(Failing row contains) \(.+?\)\.}{$1 \(?\)\.}go;
 
         ## Sometimes FATAL errors get prepended with IP and port

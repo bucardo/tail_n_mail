@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 33;
+use Test::More tests => 34;
 
 use vars qw{ $info $t };
 
@@ -189,6 +189,10 @@ $t = q{Argument 'nofile' limits which FILE lines are used};
 $info = run('tests/config/testconfig-tail_n_mail.8 --nofile testlog2 ');
 $expected = q{!! File was not found: tests/logs/testlog2.txt};
 unlike ($info, qr{\Q$expected}s, $t);
+
+$t = q{Argument 'nofile' limits which FILE lines are used - multiple args};
+$info = run('tests/config/testconfig-tail_n_mail.8 --nofile testlog1 --nofile testlog2');
+is ($info, q{}, $t);
 
 exit;
 

@@ -146,9 +146,9 @@ my %arg = (
 ## Number of found errors resulting in a Nagios "WARNING" exit status
               warning => 0,
 ## Skip FILE entries from the config file unless they match this regex
-              yesfile => '',
+              yesfile => [],
 ## Skip FILE entries from the config file if they match this regex
-              nofile => '',
+              nofile => [],
 );
 
 ## Quick check for help items
@@ -222,8 +222,8 @@ my $result = GetOptions
    'force-letter-output',
    'warning=i',
    'critical=i',
-   'yesfile=s',
-   'nofile=s',
+   'yesfile=s@',
+   'nofile=s@',
   ) or help();
 ++$arg{verbose} if $arg{debug};
 
@@ -493,7 +493,7 @@ my $filenumber = 0;
 my $fileinfo = $opt{file}[$filenumber];
 my $found_errors = 0;
 my %badservice;
-{
+NEXTLOG: {
 
     ## Generate the next log file to parse
     my $logfile = pick_log_file($fileinfo);
@@ -503,36 +503,39 @@ my %badservice;
         ## Grab the next entry
         $fileinfo = $opt{file}[++$filenumber];
         ## No more file? We are done!
-        last if ! defined $fileinfo;
+        last NEXTLOG if ! defined $fileinfo;
         # Otherwise, loop back with the new fileinfo
-        redo;
+        redo NEXTLOG;
     }
+
+    $last_logfile = $logfile;
 
     ## If this was a service, don't try to connect again if we already failed
     my $servicename;
     if ($logfile =~ /service=($servicenameregex)/i) {
         $servicename = $1;
         if (exists $badservice{$servicename}) {
-            $last_logfile = $logfile;
-            redo;
+            redo NEXTLOG;
         }
     }
 
     ## If 'yesfile' is set, skip anything that does not match it
-    if ($arg{yesfile}) {
-        if ($logfile !~ /$arg{yesfile}/) {
-            $arg{debug} and warn "Skipping file due to --yesfile argument: $logfile\n";
-            $last_logfile = $logfile;
-            redo;
+    if (defined $arg{yesfile}->[0]) {
+        for my $regex (@{ $arg{yesfile} }) {
+            if ($logfile !~ /$regex/) {
+                $arg{debug} and warn qq{Skipping file due to --yesfile argument "$regex": $logfile\n};
+                redo NEXTLOG;
+            }
         }
     }
 
     ## If 'nofile' is set, skip anything that matches it
-    if ($arg{nofile}) {
-        if ($logfile =~ /$arg{nofile}/) {
-            $arg{debug} and warn "Skipping file due to --nofile argument: $logfile\n";
-            $last_logfile = $logfile;
-            redo;
+    if (defined $arg{nofile}->[0]) {
+        for my $regex (@{ $arg{nofile} }) {
+            if ($logfile =~ /$regex/) {
+                $arg{debug} and warn qq{Skipping file due to --nofile argument "$regex": $logfile\n};
+                redo NEXTLOG;
+            }
         }
     }
 
@@ -581,9 +584,7 @@ my %badservice;
         $fileorder{$logfile} = ++$filenum;
     }
 
-    $last_logfile = $logfile;
-
-    redo;
+    redo NEXTLOG;
 }
 
 my $important_problem_files = 0;

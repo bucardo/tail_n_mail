@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 28;
+use Test::More tests => 33;
 
 use vars qw{ $info $t };
 
@@ -166,9 +166,29 @@ CONTEXT: PL/pgSQL function dbdpg_test_error_handler(text) line 10 at RAISE
 STATEMENT: SELECT * FROM dbdpg_test_error_handler( $1 )};
 like ($start, qr{\Q$expected}s, $t);
 
+$t = q{Warning is given for a non-existent log file};
+$info = run('tests/config/testconfig-tail_n_mail.8');
+$expected = q{!! File was not found: tests/logs/testlog2.txt};
+like ($info, qr{\Q$expected}s, $t);
 
+$t = q{Argument 'yesfile' limits which FILE lines are used};
+$info = run('tests/config/testconfig-tail_n_mail.8 --yesfile testlog4');
+## No matches due to invalid LOG_LINE_PREFIX!
+is ($info, q{}, $t);
 
+$t = q{Argument 'yesfile' limits which FILE lines are used};
+$info = run('tests/config/testconfig-tail_n_mail.8 --yesfile testlog1');
+$expected = q{!! File was not found: tests/logs/testlog2.txt};
+unlike ($info, qr{\Q$expected}s, $t);
 
+$t = q{Argument 'nofile' limits which FILE lines are used};
+$info = run('tests/config/testconfig-tail_n_mail.8 --nofile "testlog[12]" ');
+is ($info, q{}, $t);
+
+$t = q{Argument 'nofile' limits which FILE lines are used};
+$info = run('tests/config/testconfig-tail_n_mail.8 --nofile testlog2 ');
+$expected = q{!! File was not found: tests/logs/testlog2.txt};
+unlike ($info, qr{\Q$expected}s, $t);
 
 exit;
 

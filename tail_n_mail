@@ -145,6 +145,10 @@ my %arg = (
               critical => 0,
 ## Number of found errors resulting in a Nagios "WARNING" exit status
               warning => 0,
+## Skip FILE entries from the config file unless they match this regex
+              yesfile => '',
+## Skip FILE entries from the config file if they match this regex
+              nofile => '',
 );
 
 ## Quick check for help items
@@ -218,6 +222,8 @@ my $result = GetOptions
    'force-letter-output',
    'warning=i',
    'critical=i',
+   'yesfile=s',
+   'nofile=s',
   ) or help();
 ++$arg{verbose} if $arg{debug};
 
@@ -507,6 +513,24 @@ my %badservice;
     if ($logfile =~ /service=($servicenameregex)/i) {
         $servicename = $1;
         if (exists $badservice{$servicename}) {
+            $last_logfile = $logfile;
+            redo;
+        }
+    }
+
+    ## If 'yesfile' is set, skip anything that does not match it
+    if ($arg{yesfile}) {
+        if ($logfile !~ /$arg{yesfile}/) {
+            $arg{debug} and warn "Skipping file due to --yesfile argument: $logfile\n";
+            $last_logfile = $logfile;
+            redo;
+        }
+    }
+
+    ## If 'nofile' is set, skip anything that matches it
+    if ($arg{nofile}) {
+        if ($logfile =~ /$arg{nofile}/) {
+            $arg{debug} and warn "Skipping file due to --nofile argument: $logfile\n";
             $last_logfile = $logfile;
             redo;
         }

@@ -121,11 +121,13 @@ config
 env
 hideflatten
 initdb
+nofile
 perl
 tmp
 tnm
 txt
 whitespace
+yesfile
 
 ## Changes:
 
@@ -230,4 +232,3 @@ turnstep
 usr
 wiki
 wrapline
-

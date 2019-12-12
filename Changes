@@ -3,7 +3,7 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 2.7.0, unreleased
+Version 2.7.0, released December 12, 2019
 
  * Add new EXCLUDE_VIA_FILE option, to narrow exclusions to specific files.
    Usage is EXCLUDE_VIA_FILE: exclusion_regex ~ filename_regex

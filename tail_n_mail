@@ -532,8 +532,7 @@ NEXTLOG: {
     if (defined $arg{nofile}->[0]) {
         if ( grep { $logfile =~ /$_/ } @{ $arg{nofile} } ) {
             my $regex = join ', ' => sort @{ $arg{nofile} };
-            $arg{debug} > 1 and warn qq{Skipping file due to --nofile argument "$regex": $logfile\n};
-            warn qq{Skipping file due to --nofile argument "$regex": $logfile\n};
+            $arg{debug} > 1 and warn qq{Skipping file due to --nofile arguments "$regex": $logfile\n};
             redo NEXTLOG;
         }
     }

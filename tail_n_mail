@@ -519,23 +519,22 @@ NEXTLOG: {
         }
     }
 
-    ## If 'yesfile' is set, skip anything that does not match it
+    ## If 'yesfile' is set, skip anything that does not match at least one
     if (defined $arg{yesfile}->[0]) {
-        for my $regex (@{ $arg{yesfile} }) {
-            if ($logfile !~ /$regex/) {
-                $arg{debug} and warn qq{Skipping file due to --yesfile argument "$regex": $logfile\n};
-                redo NEXTLOG;
-            }
+        if (! grep { $logfile =~ /$_/ } @{ $arg{yesfile} } ) {
+            my $regex = join ', ' => sort @{ $arg{yesfile} };
+            $arg{debug} > 1 and warn qq{Skipping file due to --yesfile arguments "$regex": $logfile\n};
+            redo NEXTLOG;
         }
     }
 
-    ## If 'nofile' is set, skip anything that matches it
+    ## If 'nofile' is set, skip anything that matches any of them
     if (defined $arg{nofile}->[0]) {
-        for my $regex (@{ $arg{nofile} }) {
-            if ($logfile =~ /$regex/) {
-                $arg{debug} and warn qq{Skipping file due to --nofile argument "$regex": $logfile\n};
-                redo NEXTLOG;
-            }
+        if ( grep { $logfile =~ /$_/ } @{ $arg{nofile} } ) {
+            my $regex = join ', ' => sort @{ $arg{nofile} };
+            $arg{debug} > 1 and warn qq{Skipping file due to --nofile argument "$regex": $logfile\n};
+            warn qq{Skipping file due to --nofile argument "$regex": $logfile\n};
+            redo NEXTLOG;
         }
     }
 

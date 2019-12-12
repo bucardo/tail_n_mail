@@ -987,6 +987,10 @@ sub parse_config_file {
         elsif (/^EXCLUDE_NON_PARSED:\s*(.+?)\s*$/) {
             push @{$localopt{exclude_non_parsed}}, $1;
         }
+        ## Which prefix lines to exclude from the report
+        elsif (/^EXCLUDE_VIA_FILE:\s*(.+?)\s*$/) {
+            push @{$localopt{exclude_via_file}}, $1;
+        }
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
             push @{$localopt{include}}, $1;
@@ -1216,6 +1220,10 @@ sub parse_inherit_file {
         ## Which lines to exclude from the report
         elsif (/^EXCLUDE_NON_PARSED:\s*(.+?)\s*$/) {
             push @{$opt{inherited_exclude_non_parsed}}, $1;
+        }
+        ## Which lines to exclude - but only for some files
+        elsif (/^EXCLUDE_VIA_FILE:\s*(.+?)\s*$/) {
+            push @{$opt{exclude_via_file}}, $1;
         }
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
@@ -2297,6 +2305,15 @@ sub process_line {
 
         ## Bail if it matches the prefix exclusion regex
         return 0 if $exclude_prefix and $pgprefix =~ $exclude_prefix;
+
+        ## Bail if it matches the exclusion regex for this file
+        if ($opt{exclude_via_file}) {
+            for my $ex (@{$opt{exclude_via_file}}) {
+                $ex =~ m{(.+?)\s*~\s*(.+)} or die "Invalid EXCLUDE_VIA_FILE entry: $ex\n";
+                my ($stringregex, $fileregex) = ($1,$2);
+                return 0 if $filename =~ /$fileregex/ and $string =~ /$stringregex/;
+            }
+        }
 
         ## Do the bonus regex checks
         for my $bonus (@$bonus_include) {

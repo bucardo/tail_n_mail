@@ -5,6 +5,15 @@ Please see http://bucardo.org/tail_n_mail for full documentation.
 
 Version 2.7.0, unreleased
 
+ * Add new EXCLUDE_VIA_FILE option, to narrow exclusions to specific files.
+   Usage is EXCLUDE_VIA_FILE: exclusion_regex ~ filename_regex
+   [Greg Sabino Mullane]
+
+ * Add new INCLUDE_VIA_FILE option, to narrow inclusions to specific files.
+   This will override generic INCLUDE entries.
+   Usage is INCLUDE_VIA_FILE: inclusion_regex ~ filename_regex
+   [Greg Sabino Mullane]
+
  * Add 'yesfile' and 'nofile' arguments to allow quick FILE filtering from the command line
    [Greg Sabino Mullane]
 

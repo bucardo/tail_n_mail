@@ -995,6 +995,10 @@ sub parse_config_file {
         elsif (/^INCLUDE:\s*(.+)/) {
             push @{$localopt{include}}, $1;
         }
+        ## Which lines to include in the report
+        elsif (/^INCLUDE_VIA_FILE:\s*(.+)/) {
+            push @{$localopt{include_via_file}}, $1;
+        }
         ## Custom flattening rules: format is FOO/BAR which maps to s/FOO/BAR/g;
         elsif (/^FLATTEN:\s*(.+)/) {
             push @{$localopt{flatten}}, $1;
@@ -1228,6 +1232,10 @@ sub parse_inherit_file {
         ## Which lines to include in the report
         elsif (/^INCLUDE:\s*(.+)/) {
             push @{$opt{inherited_include}}, $1;
+        }
+        ## Which lines to include in the report - limited to file
+        elsif (/^INCLUDE_VIA_FILE:\s*(.+)/) {
+            push @{$opt{inherited_via_file}}, $1;
         }
         ## Maximum file size
         elsif (/^MAXSIZE:\s*(\d+)/) {
@@ -2297,8 +2305,18 @@ sub process_line {
     ## A forced match skips both checks below
     else {
 
+        ## Bail if it does not match the file-specific regex
+        my $filematch = 0;
+        if ($opt{include_via_file}) {
+            for my $in (@{$opt{include_via_file}}) {
+                $in =~ m{(.+?)\s*~\s*(.+)} or die "Invalid INCLUDE_VIA_FILE entry: $in\n";
+                my ($stringregex, $fileregex) = ($1,$2);
+                $filematch = 1 if $filename =~ /$fileregex/ and $string =~ /$stringregex/;
+            }
+        }
+
         ## Bail if it does not match the inclusion regex
-        return 0 if $include and $string !~ $include;
+        return 0 if !$filematch and $include and $string !~ $include;
 
         ## Bail if it matches the exclusion regex
         return 0 if $exclude and $string =~ $exclude;
@@ -3786,10 +3804,16 @@ sub final_cleanup {
         add_comments("INCLUDE: $include");
         print "INCLUDE: $include\n";
     }
+    for my $includefile (@{$opt{include_via_file}}) {
+        print "INCLUDE_VIA_FILE: $includefile\n";
+    }
     for my $exclude (@{$opt{exclude}}) {
         next if ! exists $opt{configfile}{"exclude.$exclude"};
         add_comments("EXCLUDE: $exclude");
         print "EXCLUDE: $exclude\n";
+    }
+    for my $excludefile (@{$opt{exclude_via_file}}) {
+        print "EXCLUDE_VIA_FILE: $excludefile\n";
     }
     for my $exclude_prefix (@{$opt{exclude_prefix}}) {
         next if ! exists $opt{configfile}{"exclude_prefix.$exclude_prefix"};

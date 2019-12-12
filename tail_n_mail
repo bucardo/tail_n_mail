@@ -524,6 +524,7 @@ NEXTLOG: {
         if (! grep { $logfile =~ /$_/ } @{ $arg{yesfile} } ) {
             my $regex = join ', ' => sort @{ $arg{yesfile} };
             $arg{debug} > 1 and warn qq{Skipping file due to --yesfile arguments "$regex": $logfile\n};
+            $arg{skippedfile}{$logfile} = 1;
             redo NEXTLOG;
         }
     }
@@ -533,6 +534,7 @@ NEXTLOG: {
         if ( grep { $logfile =~ /$_/ } @{ $arg{nofile} } ) {
             my $regex = join ', ' => sort @{ $arg{nofile} };
             $arg{debug} > 1 and warn qq{Skipping file due to --nofile arguments "$regex": $logfile\n};
+            $arg{skippedfile}{$logfile} = 1;
             redo NEXTLOG;
         }
     }
@@ -2883,6 +2885,14 @@ sub process_report {
     }
     if ($arg{tempfile} >= 0) {
         push @msg => "Minimum tempfile size: $arg{tempfile} bytes";
+    }
+    if ($arg{skippedfile}) {
+        push @msg => 'Files skipped: ' . keys %{ $arg{skippedfile} };
+        if ($arg{verbose}) {
+            for my $file (sort keys %{ $arg{skippedfile} }) {
+                push @msg => "Skipped file: $file";
+            }
+        }
     }
 
     if ($arg{type} eq 'normal') {

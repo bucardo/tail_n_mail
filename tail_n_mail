@@ -178,6 +178,7 @@ my $result = GetOptions
    'offset=i',
    'duration=i',
    'tempfile=i',
+   'find_line_number=i',
    'file=s@',
    'skipfilebyregex=s@',
    'sqlstate',

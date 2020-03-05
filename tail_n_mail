@@ -197,6 +197,7 @@ my $result = GetOptions
    'sortby=s',
    'showonly=i',
    'mailmode=s',
+   'smtp',
    'mailcom=s',
    'mailserver=s',
    'mailuser=s',
@@ -205,7 +206,6 @@ my $result = GetOptions
    'mailzero',
    'mailsig=s@',
    'html',
-   'smtp',
    'tsep=s',
    'tsepnosub',
    'nolastfile',
@@ -240,8 +240,6 @@ sub help {
     exit 0;
 }
 $arg{help} and help();
-
-$arg{smtp} and $arg{mailmode} = 'smtp';
 
 ## First option is always the config file, which must exist.
 my $configfile = shift or die qq{Usage: $0 configfile\n};
@@ -3208,7 +3206,7 @@ sub process_report {
             $arg{quiet} or warn "  DRYRUN: $COM\n";
         }
         else {
-            my $mailmode = $opt{mailmode} || $arg{mailmode};
+            my $mailmode = $arg{smtp} ? 'smtp' : $opt{mailmode} || $arg{mailmode};
             if ($arg{mailmode} eq 'sendmail') {
                 system $COM;
             }

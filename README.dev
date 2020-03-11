@@ -26,6 +26,8 @@ Login to the bucardo.org box, and then:
 * Edit ~/www/tail_n_mail/latest_version.txt
 * cd ~; make (this automatically applies the bucardo_org changes above)
 
+All tests should now be passing
+
 * Send an email to tnm-announce@bucardo.org. See announcements/ for examples.
 
 * Put the new email into announcements/

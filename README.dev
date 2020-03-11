@@ -11,7 +11,7 @@ Quick notes on the current release process:
 * Generate a new tail_n_mail.asc file: gpg -ba tail_n_mail
 * Make sure everything is committed in git
 * Add a new tag: git tag -u 14964ac8 1.2.3 -m "Version 1.26.3, released September 24, 2013"
-* Make sure all the tests pass: make release_test
+* Make sure all the tests pass: make release_test (the latest_release.txt test will fail)
 * git push; git push --tags
 
 In the bucardo_org repo:

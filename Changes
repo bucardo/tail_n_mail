@@ -9,6 +9,9 @@ Version ??
   true, so typical use is --find_line_number=0
   [Greg Sabino Mullane]
 
+* Add TMPDIR => 1 to all tempfile() calls, use better template names.
+  [Greg Sabino Mullane]
+
 
 Version 2.7.0, released December 12, 2019
 

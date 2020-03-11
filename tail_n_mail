@@ -2076,7 +2076,7 @@ sub call_pg_stat_file {
     my ($dbservice, $dbfilename) = @_;
 
     ## We need a place to store any errors that come up
-    my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1, TMPDIR => 1);
+    my ($efh, $errorfile) = tempfile('tail_n_mail.pg_stat_file.errors.XXXXXXXX', SUFFIX => '.tnm', UNLINK => 1, TMPDIR => 1);
 
     my $COM = qq{psql service="$dbservice" -AX -qt -x -c "$app_string select * from pg_stat_file('$dbfilename')" 2>$errorfile};
     $arg{debug} and warn "Trying: $COM\n";
@@ -2116,10 +2116,10 @@ sub slurp_via_pg_read_file {
     my ($dbservice, $dbfilename, $fileoffset, $bytesneeded, $pidline, $filename, $lfileinfo) = @_;
 
     ## We need a place to store any errors that come up
-    my ($efh, $errorfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1, TMPDIR => 1);
+    my ($efh, $errorfile) = tempfile('tail_n_mail.pg_read_file.errors.XXXXXXXX', SUFFIX => '.tnm', UNLINK => 1, TMPDIR => 1);
 
     ## We also want to store the output, rather than creating extra scalars
-    my ($ofh, $outputfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm3', UNLINK => 1, TMPDIR => 1);
+    my ($ofh, $outputfile) = tempfile('tail_n_mail.pg_read_file.output.XXXXXXXX', SUFFIX => '.tnm', UNLINK => 1, TMPDIR => 1);
 
     ## Because pg_read_file has an upper limit, we may need more than one run through
     my $sizeleft = $bytesneeded - $fileoffset;
@@ -3043,7 +3043,7 @@ sub process_report {
     }
 
     ## Create the mail message
-    my ($bigfh, $bigfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm', TMPDIR => 1);
+    my ($bigfh, $bigfile) = tempfile('tail_n_mail.message.XXXXXXXX', SUFFIX => '.tnm', TMPDIR => 1);
 
     ## The meat of the message: save to the temporary file
     lines_of_interest($bigfh, $matchfiles);
@@ -3122,7 +3122,7 @@ sub process_report {
         }
 
         ## Prepend the header info to our new data file
-        my ($efh, $emailfile) = tempfile('tnmXXXXXXXX', SUFFIX => '.tnm2', TMPDIR => 1);
+        my ($efh, $emailfile) = tempfile('tail_n_mail.email.XXXXXXXX', SUFFIX => '.tnm', TMPDIR => 1);
         if ($dryrun) {
             close $efh or warn 'Could not close filehandle';
             $efh = \*STDOUT;

@@ -112,18 +112,19 @@ __DATA__
 
 ## Common:
 
-Deckelmann
-MAXSIZE
-Mullane
-Postgres
 bucardo
 config
+Deckelmann
 env
 hideflatten
 initdb
+MAXSIZE
+Mullane
 nofile
 perl
+Postgres
 tmp
+TMPDIR
 tnm
 txt
 whitespace
@@ -202,7 +203,6 @@ Zimmermann
 
 ## tail_n_mail:
 
-GetOptions
 bucardo
 chesnok
 clusterwide
@@ -211,6 +211,7 @@ cperl
 cron
 filename
 filenames
+GetOptions
 globals
 greg
 hostname

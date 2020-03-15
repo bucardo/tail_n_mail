@@ -3799,7 +3799,7 @@ sub final_cleanup {
             ## But also save any log_line_prefix_regex items
             if ($item eq 'log_line_prefix') {
                 for my $regex (grep { /^[a-zA-Z]/ } sort keys %{ $opt{$item} }) {
-                    printf qq{%s: %s\n}, uc $item, $opt{$item}{$regex};
+                    printf qq{%s: %s = %s\n}, 'LOG_LINE_PREFIX_REGEX', $regex, $opt{$item}{$regex};
                 }
             }
         }

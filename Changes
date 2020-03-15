@@ -3,6 +3,15 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
+Version 2.8.0
+
+* Added the LOG_LINE_PREFIX_REGEX option, to allow changing the 
+  log_line_prefix for files on the fly. Format is regex = log_line_prefix 
+  and the 'regex' must start with a letter. Example:
+  LOG_LINE_PREFIX_REGEX: warehouse = '%m %t [%p]'
+  [Greg Sabino Mullane]
+
+
 Version 2.7.1, released March 11, 2020
 
 * Allow find_line_number to be set from the command line. It defaults to 

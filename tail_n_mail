@@ -190,6 +190,7 @@ my $result = GetOptions
    'pgmode=s',
    'pglog=s',
    'log_line_prefix|log-line-prefix=s',
+   'log_line_prefix_regex|log-line-prefix-regex=s@',
    'service_conf_file=s',
    'pgpass_file=s',
    'pg_read_file_limit=i',
@@ -952,11 +953,19 @@ sub parse_config_file {
                 $arg{tempfile_limit} = $localopt{tempfile_limit} = $1;
             }
         }
-        elsif (/^LOG_LINE_PREFIX(\d*):\s*(.+)/) {
+        elsif (/^LOG.LINE.PREFIX(\d*):\s*(.+)/) {
           my $suffix = $1 || 0;
           ## Force arg to new style if needed
-          $arg{log_line_prefix} = {};
+          $arg{log_line_prefix} = {} if ! ref $arg{log_line_prefix};
           $arg{log_line_prefix}{$suffix} = $localopt{log_line_prefix}{$suffix} = $2;
+        }
+        elsif (/^LOG.LINE.PREFIX.REGEX:\s*(.+)/) {
+          my $regex = $1;
+          if ($regex !~ /([a-zA-z].*) = (.+)/) {
+              die "Invalid regex given for $_\n";
+          }
+          $arg{log_line_prefix} = {} if ! ref $arg{log_line_prefix};
+          $arg{log_line_prefix}{$1} = $localopt{log_line_prefix}{$1} = $2;
         }
         ## How to sort the output
         elsif (/^SORTBY:\s*(\w+)/) {
@@ -1306,8 +1315,16 @@ sub parse_inherit_file {
         ## The log line prefix
         elsif (/^LOG.LINE.PREFIX(\d*):\s*(.+)/o) {
           my $suffix = $1 || 0;
-          $opt{log_line_prefix} = {};
+          $opt{log_line_prefix} = {} if ! ref $opt{log_line_prefix};
           $opt{log_line_prefix}{$suffix} = $2;
+        }
+        elsif (/^LOG.LINE.PREFIX.REGEX:\s*(.+)/) {
+          my $regex = $1;
+          if ($regex !~ /([a-zA-z].*) = (.+)/) {
+              die "Invalid regex given for $_\n";
+          }
+          $opt{log_line_prefix} = {} if ! ref $opt{log_line_prefix};
+          $opt{log_line_prefix}{$1} = $2;
         }
         ## Size at which we cutoff long statements
         elsif (/^STATEMENT_SIZE:\s*(.+)/) {
@@ -1441,6 +1458,15 @@ sub parse_filehandle {
         my $ignore_indent = 0; ## ignore indented lines, e.g. continuations after a skipped LOG
 
         my $prefixnumber = $lfileinfo->{suffix};
+
+        ## A regex llp will override any number-based matching
+        for my $regexname (grep { /^[a-zA-Z]/ } sort keys %pgpidre) {
+            if ($filename =~ /$regexname/) {
+                $prefixnumber = $regexname;
+                last;
+            }
+        }
+
         $prefixnumber = 0 if ! exists $pgpidre{$prefixnumber};
 
         my $pgpidre1 = $pgpidre{$prefixnumber}{1};
@@ -3766,10 +3792,16 @@ sub final_cleanup {
             }
         }
         elsif (ref $opt{$item} eq 'HASH') {
-          ## Only print the 0 one if it exists
-          if (exists $opt{$item}{0}) {
-            printf qq{%s: %s\n}, uc $item, $opt{$item}{0};
-          }
+            ## Only print the 0 one if it exists
+            if (exists $opt{$item}{0}) {
+                printf qq{%s: %s\n}, uc $item, $opt{$item}{0};
+            }
+            ## But also save any log_line_prefix_regex items
+            if ($item eq 'log_line_prefix') {
+                for my $regex (grep { /^[a-zA-Z]/ } sort keys %{ $opt{$item} }) {
+                    printf qq{%s: %s\n}, uc $item, $opt{$item}{$regex};
+                }
+            }
         }
         elsif (! ref $opt{item}) {
             ## If it has leading or trailing whitespace, quote it

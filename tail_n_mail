@@ -25,7 +25,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.014_000;
 
-our $VERSION = '2.7.1';
+our $VERSION = '2.8.0';
 my $app_string = "/* tail_n_mail version $VERSION */";
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
@@ -294,19 +294,11 @@ my $pglog = $opt{pglog} || $arg{pglog};
 my $pgmode = $opt{pgmode} // $arg{pgmode};
 
 ## Figure out each log_line_prefix, then create regexes for it
-my $default_llp = '%t [%p]';
-my $default_pgbouncer_llp = '%tb %p ';
+my $default_llp = ($pglog =~ /syslog/ ? '' : $pglog eq 'pgbouncer' ? '%tb %p ' : '%t [%p]');
 
-my $llprefix = $opt{log_line_prefix}
-    || $arg{log_line_prefix}
-    ||($pglog =~ /syslog/ ? '' : $pglog eq 'pgbouncer' ? $default_pgbouncer_llp : $default_llp);
+my $llprefix = $opt{log_line_prefix} || $arg{log_line_prefix} || {};
 
-## This may be a collection. Number "0" becomes the global default
-if (! ref $llprefix) {
-  my $val = $llprefix;
-  $llprefix = {};
-  $llprefix->{0} = $val;
-}
+$llprefix->{0} ||= $default_llp;
 
 my $timezone_regex = '(?:[A-Z]{3,5}|[+-][0-9][0-9:]*)';
 

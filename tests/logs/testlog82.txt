@@ -1,0 +1,4 @@
+buffy@sunnydale [29867] LOG:  duration: 0.019 ms  statement: commit
+buffy@sunnydale [29867] LOG:  duration: 0.023 ms  statement: begin
+buffy@sunnydale [29867] LOG:  duration: 0.042 ms  statement: begin
+buffy@sunnydale [29867] FATAL:  database "spike" does not exist

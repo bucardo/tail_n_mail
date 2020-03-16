@@ -1,0 +1,47 @@
+#!perl
+
+## Test different log_line_prefixes in the same config file
+
+use strict;
+use warnings;
+use Data::Dumper;
+use lib 't','.';
+use Test::More tests => 3;
+
+use vars qw{ $info $t };
+
+sub run {
+
+	my $conf = shift or die "Must supply a config file!\n";
+
+	my $options = shift || '';
+
+	my $COM = "perl tail_n_mail --dryrun --no-tailnmailrc --offset=0 $conf $options";
+
+	my $result = '';
+	eval {
+		$result = qx{$COM 2>&1};
+	};
+	return $@ ? "OOPS: $@\n" : $result;
+}
+
+$info = run('tests/config/testconfig-tail_n_mail.9');
+my $start = substr($info,0,100);
+$t = q{Test config 1 gives correct subject line};
+my $host = qx{hostname};
+chomp $host;
+like ($start, qr{^Subject: Acme $host Postgres errors 3 : 7\n}, $t);
+
+$t = q{Proper number of matches appears};
+$start = substr($info,0,400);
+like ($start, qr{
+\QMatches from [A] tests/logs/testlog91.txt: 3
+Matches from [B] tests/logs/testlog92.txt: 1
+Matches from [C] tests/logs/testlog93.txt: 3
+}s, $t);
+
+$t = q{The log_line_prefix_regex works as intended};
+$start = substr($info,1100,100);
+like ($start, qr{From B\nbuffy\@sunnydale \[\d+\]\nFATAL: database}, $t);
+
+exit;

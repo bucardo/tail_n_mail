@@ -1,0 +1,9 @@
+2010-12-22 19:17:38 EST [29867] (127.0.0.1(54321)) LOG:  duration: 0.042 ms  statement: begin
+2010-12-22 19:17:38 EST [29867] (127.0.0.1(54321)) ERROR:  syntax error at or near "Testing" at character 1
+2010-12-22 19:17:38 EST [29867] (127.0.0.1(54321)) STATEMENT:  Testing the ShowErrorStatement attribute
+2010-12-22 19:17:38 EST [29867] (127.0.0.1(54321)) ERROR:  syntax error at or near "Testing" at character 1
+2010-12-22 19:17:38 EST [29867] (127.0.0.1(54321)) STATEMENT:  Testing the ShowErrorStatement attribute
+2010-12-22 19:17:38 EST [29867] (127.0.0.1(54321)) ERROR:  current transaction is aborted, commands ignored until end of transaction block
+2010-12-22 19:17:38 EST [29867] (127.0.0.1(54321)) STATEMENT:  SELECT 'Another ShowErrorStatement Test' FROM pg_class WHERE relname = $1 AND reltuples = $2
+2010-12-22 19:17:38 EST [29867] (127.0.0.1(54321)) LOG:  duration: 0.019 ms  statement: commit
+2010-12-22 19:17:38 EST [29867] (127.0.0.1(54321)) LOG:  duration: 0.023 ms  statement: begin

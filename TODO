@@ -15,7 +15,6 @@ until the last one we processed is found, the "LATEST" version is not
 
 * Allow cleaner handling of older logrotated files beyond .1
 
-* Support different log_line_prefixes within the same config file
 
 
 

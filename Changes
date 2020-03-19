@@ -3,6 +3,12 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
+Version 2.8.1
+
+* Better folding of timestamps
+  [Greg Sabino Mullane]
+
+
 Version 2.8.0, released March 16, 2020
 
 * Added the LOG_LINE_PREFIX_REGEX option, to allow changing the 

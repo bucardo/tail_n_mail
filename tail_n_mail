@@ -2645,6 +2645,9 @@ sub process_line {
         ## Timestamps as values
         $string =~ s{\s*=\s*'\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d\.\d\d\d\d\d\d'}{=?}go;
 
+        ## Precision timestamps anywhere
+        $string =~ s{\b\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d\.\d+\b}{?}g;
+
         ## Deadlocks - don't worry about process ids to help flattening
         if ($string =~ /deadlock detected/i) {
             $string =~ s{\b([Pp]rocess) \d+}{$1 ?}go;

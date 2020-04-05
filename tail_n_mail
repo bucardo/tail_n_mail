@@ -3563,7 +3563,7 @@ sub lines_of_interest {
                     print " (between lines $f->{line} and $latest->{line}, occurs $pcount times)";
                 }
                 else {
-                    print " Count: $f->{count}";
+                    print " Count: $pcount";
                 }
                 print "\n";
             }

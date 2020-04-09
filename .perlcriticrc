@@ -1,6 +1,7 @@
 ## Perl::Critic things we are not going to worry about:
 
 verbose = 8
+verbose = %F [%p] %m at line %l, column %c.  (Severity: %s)\n
 severity = 1
 profile-strictness = quiet
 
@@ -36,12 +37,14 @@ profile-strictness = quiet
 [-InputOutput::RequireCheckedClose]
 [-Lax::ProhibitEmptyQuotes::ExceptAsFallback]
 [-logicLAB::ProhibitShellDispatch]
+[-logicLAB::ProhibitUseLib]
 [-logicLAB::RequireParamsValidate]
 [-logicLAB::RequireSheBang]
 [-logicLAB::RequireVersionFormat]
 [-Miscellanea::ProhibitUnrestrictedNoCritic]
 [-Miscellanea::RequireRcsKeywords]
 [-Modules::ProhibitExcessMainComplexity]
+[-Modules::RequireVersionVar]
 [-OTRS::ProhibitDumper]
 [-OTRS::ProhibitLocaltime]
 [-OTRS::ProhibitLowPrecedenceOps]
@@ -84,4 +87,7 @@ profile-strictness = quiet
 ## Things that do not work well:
 [-InputOutput::RequireBriefOpen]
 [-ErrorHandling::RequireCheckingReturnValueOfEval]
+[-TooMuchCode::ProhibitUnnecessaryUTF8Pragma]
 
+[Subroutines::ProhibitCallsToUndeclaredSubs]
+exempt_subs = Test::More::diag Test::More::is Test::More::fail Test::More::like Test::More::ok Test::More::pass Test::More::plan Test::More::skip Test::More::unlike Test::More::BAIL_OUT

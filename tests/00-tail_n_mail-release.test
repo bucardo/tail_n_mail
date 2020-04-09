@@ -18,7 +18,7 @@ if (! $ENV{RELEASE_TESTING}) {
 plan tests => 5;
 
 my %v;
-my $vre = qr{(\d+\.\d+\.\d+\_?\d*)};
+my $vre = qr{([0-9]+\.[0-9]+\.[0-9]+\_?[0-9]*)};
 my $found = 0;
 
 my $file = 'tail_n_mail';
@@ -49,7 +49,7 @@ my $good = 1;
 my $lastver;
 for my $filename (keys %v) {
 	for my $glob (@{$v{$filename}}) {
-		my ($ver,$line) = @$glob;
+		my ($ver) = @$glob;
 		if (! defined $lastver) {
 			$lastver = $ver;
 		}
@@ -116,9 +116,9 @@ my $url = 'http://bucardo.org/tail_n_mail/latest_version.txt';
 my $get = qx{wget -q -O - $url};
 
 my $t = 'latest_version.txt contains a version number';
-like ($get, qr{^\d+\.\d+\.\d+}, $t);
+like ($get, qr{^[0-9]+\.[0-9]+\.[0-9]+}, $t);
 
-$get =~ /(\d+\.\d+\.\d+)/;
+$get =~ /([0-9]+\.[0-9]+\.[0-9]+)/;
 my $onlineversion = $1;
 
 $t = 'latest_version.txt contains the proper version';

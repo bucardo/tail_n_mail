@@ -2,6 +2,7 @@
 
 ## Test different log_line_prefixes in the same config file
 
+use 5.006;
 use strict;
 use warnings;
 use Data::Dumper;
@@ -42,6 +43,6 @@ Matches from [C] tests/logs/testlog93.txt: 3
 
 $t = q{The log_line_prefix_regex works as intended};
 $start = substr($info,1100,100);
-like ($start, qr{From B\nbuffy\@sunnydale \[\d+\]\nFATAL: database}, $t);
+like ($start, qr{From B\nbuffy\@sunnydale \[[0-9]+\]\nFATAL: database}, $t);
 
 exit;

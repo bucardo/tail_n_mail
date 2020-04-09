@@ -74,7 +74,7 @@ for my $filename (qw{ tail_n_mail }) {
 		next;
 	}
 
-	-e $filename or die qq{Could not find "$filename"!};
+	-e $filename or die qq{Could not find "$filename"!}; ## no critic (Subroutines::ProhibitCallsToUndeclaredSubs)
 	open my $oldstderr, '>&', \*STDERR or die 'Could not dupe STDERR';
 	close STDERR or die qq{Could not close STDERR: $!};
 	my @vio = $critic->critique($filename);
@@ -136,7 +136,6 @@ my $testmoreok = qr{Subroutine "$tm" is neither};
 ## Create a new critic for the tests
 $critic = Perl::Critic->new(-severity => 1);
 
-my $count = 1;
 for my $filename (sort @testfiles) {
 	-e $filename or die qq{Could not find "$filename"!};
 	my @vio = $critic->critique($filename);

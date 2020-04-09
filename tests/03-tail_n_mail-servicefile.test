@@ -1,5 +1,6 @@
 #!perl
 
+use 5.006;
 use strict;
 use warnings;
 use autodie;
@@ -19,7 +20,7 @@ sub cleanup {
 
     if (-e $pidfile) {
         open my $fh, '<', $pidfile;
-        <$fh> =~ /(\d+)/ or die "Could nto find PID inside $pidfile!\n";
+        <$fh> =~ /([0-9]+)/ or die "Could nto find PID inside $pidfile!\n";
         my $pid = $1;
         close $fh;
         kill 'KILL', $pid;
@@ -124,12 +125,12 @@ for my $number (1 .. $numerrors-1) {
 
 $t = q{Correct number of unique errors is found};
 $info = run('tests/config/config_service_1.txt');
-my $count = $info =~ /(Unique items: \d+)/ ? $1 : '';
+my $count = $info =~ /(Unique items: [0-9]+)/ ? $1 : '';
 is ($count, "Unique items: $numerrors", $t);
 
 $t = q{Correct number of unique errors is found with multiple pg_read_file chunks};
 $info = run('tests/config/config_service_1.txt', '--pg_read_file_limit=200');
-$count = $info =~ /(Unique items: \d+)/ ? $1 : '';
+$count = $info =~ /(Unique items: [0-9]+)/ ? $1 : '';
 is ($count, "Unique items: $numerrors", $t);
 
 exit;

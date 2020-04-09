@@ -1,5 +1,6 @@
 #!perl
 
+use 5.006;
 use strict;
 use warnings;
 use Data::Dumper;
@@ -29,8 +30,8 @@ like ($info, qr{Could not open}, $t);
 
 $t = q{Program outputs version information correctly};
 my $verinfo = run('--version');
-like ($verinfo, qr{^tail_n_mail version \d+\.\d+\.\d+}, $t);
-$verinfo =~ /(\d+\.\d+\.\d+)/ or die;
+like ($verinfo, qr{^tail_n_mail version [0-9]+\.[0-9]+\.[0-9]+}, $t);
+$verinfo =~ /([0-9]+\.[0-9]+\.[0-9]+)/ or die;
 my $ver = $1;
 
 $info = run('tests/config/testconfig-tail_n_mail.1');
@@ -50,7 +51,7 @@ $t = q{Test config 1 inserts a 'To' header};
 like ($start, qr{\nTo: someone\@example.com\n}, $t);
 
 $t = q{Test config 1 inserts a 'Date' line with newlines before it};
-like ($start, qr{\n\n\Date: \w\w\w \w\w\w [\d ]\d}, $t);
+like ($start, qr{\n\n\Date: \w\w\w \w\w\w [0-9 ][0-9]}, $t);
 
 $t = q{Test config 1 inserts a 'Host' line};
 like ($start, qr{\nHost: \w}, $t);

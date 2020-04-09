@@ -1,5 +1,6 @@
 #!perl
 
+use 5.006;
 use strict;
 use warnings;
 use Data::Dumper;
@@ -26,12 +27,12 @@ sub run {
 
 $t = q{By default we see two 'conflict with recovery' errors};
 $info = run('tests/config/testconfig-tail_n_mail.6');
-my $unique = $info =~ /Unique items: (\d+)/ ? $1 : 0;
+my $unique = $info =~ /Unique items: ([0-9]+)/ ? $1 : 0;
 is ($unique, 2, $t);
 
 $t = q{When the '' argument is set, errors are flattened};
 $info = run('tests/config/testconfig-tail_n_mail.6', '--hide_conflict_error_details');
-$unique = $info =~ /Unique items: (\d+)/ ? $1 : 0;
+$unique = $info =~ /Unique items: ([0-9]+)/ ? $1 : 0;
 is ($unique, 1, $t);
 
 exit;

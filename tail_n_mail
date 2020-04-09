@@ -160,7 +160,7 @@ for my $item (@ARGV) {
     $item =~ s{^\-\-([\w_-]+)}{($a=$1) =~ s/[_-]/_/g; "--$a"}e;
 }
 
-my $result = GetOptions
+GetOptions
  (
      \%arg,
    'verbose',
@@ -321,18 +321,18 @@ while (($llp_num,$llp1) = each %$llprefix) {
 
   ## Some non-Postgres timestamps
   ## Example: Sun Oct 29 08:50:53.691196 2017
-  $llp1 =~ s/%ts/(\\w\\w\\w \\w\\w\\w\\s+\\d+ \\d\\d:\\d\\d:\\d\\d\\.\\d+ \\d\\d\\d\\d)/ and $havetime=1;
+  $llp1 =~ s/%ts/(\\w\\w\\w \\w\\w\\w\\s+[0-9]+ [0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9]+ [0-9][0-9][0-9][0-9])/ and $havetime=1;
 
   ## For pgbouncer logs
-  $llp1 =~ s/%tb/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\.\\d+)/ and $havetime=1;
+  $llp1 =~ s/%tb/([0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.[0-9]+)/ and $havetime=1;
 
   ## This assumes timestamp comes before the pid!
-  $llp1 =~ s/%t/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d $timezone_regex)/ and $havetime=1;
-  $llp1 =~ s/%m/(\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ $timezone_regex)/ and $havetime=1;
+  $llp1 =~ s/%t/([0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9] $timezone_regex)/ and $havetime=1;
+  $llp1 =~ s/%m/([0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9]+ $timezone_regex)/ and $havetime=1;
   if (!$havetime and $pglog !~ /syslog/) {
     $llp1 = "()$llp1";
   }
-  $llp1 =~ s/%p/(\\d+)/ and $havepid = 1;
+  $llp1 =~ s/%p/([0-9]+)/ and $havepid = 1;
   if ($havepid) {
       ## We want to capture only one of %p or %c
       $llp1 =~ s/%c/(?:\\S+)/;
@@ -343,7 +343,7 @@ while (($llp_num,$llp1) = each %$llprefix) {
   if (!$havepid and $pglog !~ /syslog/) {
     $llp1 = "()$llp1";
   }
-  $llp1 =~ s/%l/\\d+/;
+  $llp1 =~ s/%l/[0-9]+/;
   $llp1 =~ s/%u/[\\[\\w\\-\\.\\]]*/;
   $llp1 =~ s/%d/[\\[\\w\\-\\.\\]]*/;
   $llp1 =~ s/%r/\\S*/;
@@ -371,8 +371,8 @@ while (($llp_num,$llp1) = each %$llprefix) {
     ## This will probably break if your log_line_prefix has a timestamp,
     ## but why would you do that if using syslog? :)
     $llp1 = $pglog eq 'syslog'
-      ? "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\-\\d+\\] $llp1"
-        : "(.+?\\d) \\S+ \\S+\\[(\\d+)\\]: \\[\\d+\\] $llp1";
+      ? "(.+?[0-9]) \\S+ \\S+\\[([0-9]+)\\]: \\[[0-9]+\\-[0-9]+\\] $llp1"
+        : "(.+?[0-9]) \\S+ \\S+\\[([0-9]+)\\]: \\[[0-9]+\\] $llp1";
     $havetime = $havepid = 1;
   }
 
@@ -382,10 +382,10 @@ while (($llp_num,$llp1) = each %$llprefix) {
   ## And a separate one for cluster-wide notices
 
   ## Items set clusterwide: %t %m %p
-  $llp2 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d $timezone_regex/;
-  $llp2 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ $timezone_regex/;
-  $llp2 =~ s/%p/\\d+/;
-  $llp2 =~ s/%l/\\d+/;
+  $llp2 =~ s/%t/[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9] $timezone_regex/;
+  $llp2 =~ s/%m/[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9]+ $timezone_regex/;
+  $llp2 =~ s/%p/[0-9]+/;
+  $llp2 =~ s/%l/[0-9]+/;
   $llp2 =~ s/%q.*//;
   ## Items not set clusterwide: %u %d %r %h %i %c %s %v %x
   for my $char (qw/ u d r h i cs v x /) {
@@ -403,10 +403,10 @@ while (($llp_num,$llp1) = each %$llprefix) {
   $llp3 =~ s/\%q.*// or $llp3 =~ s/(.*?%\w).+/$1/;
 
   ## Convert %t and %m and %l and %p
-  $llp3 =~ s/%t/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d $timezone_regex/;
-  $llp3 =~ s/%m/\\d\\d\\d\\d\-\\d\\d\-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d+ $timezone_regex/;
-  $llp3 =~ s/%l/\\d+/;
-  $llp3 =~ s/%p/\\d+/;
+  $llp3 =~ s/%t/[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9] $timezone_regex/;
+  $llp3 =~ s/%m/[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9]+ $timezone_regex/;
+  $llp3 =~ s/%l/[0-9]+/;
+  $llp3 =~ s/%p/[0-9]+/;
 
   ## Remove any other escapes
   $llp3 =~ s/%\w//g;
@@ -442,9 +442,6 @@ my %fancyoutput;
 
 ## Map filenames to "A", "B", etc. for clean output of multiple matches
 my %fab;
-
-## Did we handle more than one file this round?
-my $multifile = 0;
 
 ## Total matches across all files
 $opt{grand_total} = 0;
@@ -841,7 +838,7 @@ sub parse_config_file {
         }
 
         ## What file(s) are we checking on?
-        if (/^FILE(\d*):\s*(.+?)\s*$/) {
+        if (/^FILE([0-9]*):\s*(.+?)\s*$/) {
 
             my $suffix = $1 || 0;
             my $filename = $2;
@@ -896,12 +893,12 @@ sub parse_config_file {
         } ## end of FILE:
 
         ## The last filename we used
-        elsif (/^LASTFILE(\d*):\s*(.+?)\s*$/) {
+        elsif (/^LASTFILE([0-9]*):\s*(.+?)\s*$/) {
             my $suffix = $1 || 1;
             $localopt{lastfile}{$suffix} = $2;
         }
         ## The rotation file modification time
-        elsif (/^ROTATEFILEMODTIME(\d*):\s*(.+?)\s*$/) {
+        elsif (/^ROTATEFILEMODTIME([0-9]*):\s*(.+?)\s*$/) {
             my $suffix = $1 || 1;
             $localopt{rotatefilemodtime}{$suffix} = $2;
         }
@@ -918,34 +915,34 @@ sub parse_config_file {
             $arg{type} = $1;
         }
         ## Exclude durations below this number
-        elsif (/^DURATION:\s*(\d+)/) {
+        elsif (/^DURATION:\s*([0-9]+)/) {
             ## Command line still wins
             if ($arg{duration} < 0) {
                 $arg{duration} = $localopt{duration} = $1;
             }
         }
         ## Limit how many duration matches we show
-        elsif (/^DURATION_LIMIT:\s*(\d+)/) {
+        elsif (/^DURATION_LIMIT:\s*([0-9]+)/) {
             ## Command line still wins
             if (!$arg{duration_limit}) {
                 $arg{duration_limit} = $localopt{duration_limit} = $1;
             }
         }
         ## Exclude tempfiles below this number
-        elsif (/^TEMPFILE:\s*(\d+)/) {
+        elsif (/^TEMPFILE:\s*([0-9]+)/) {
             ## Command line still wins
             if ($arg{tempfile} < 0) {
                 $arg{tempfile} = $localopt{tempfile} = $1;
             }
         }
         ## Limit how many tempfile matches we show
-        elsif (/^TEMPFILE_LIMIT:\s*(\d+)/) {
+        elsif (/^TEMPFILE_LIMIT:\s*([0-9]+)/) {
             ## Command line still wins
             if (!$arg{tempfile_limit}) {
                 $arg{tempfile_limit} = $localopt{tempfile_limit} = $1;
             }
         }
-        elsif (/^LOG.LINE.PREFIX(\d*):\s*(.+)/) {
+        elsif (/^LOG.LINE.PREFIX([0-9]*):\s*(.+)/) {
           my $suffix = $1 || 0;
           ## Force arg to new style if needed
           $arg{log_line_prefix} = {} if ! ref $arg{log_line_prefix};
@@ -964,7 +961,7 @@ sub parse_config_file {
             $localopt{sortby} = $1;
         }
         ## Force line number lookup on or off
-        elsif (/^FIND_LINE_NUMBER:\s*(\d+)/) {
+        elsif (/^FIND_LINE_NUMBER:\s*([0-9]+)/) {
             $arg{find_line_number} = $localopt{find_line_number} = $1;
         }
         ## What type of Postgres log file
@@ -1004,17 +1001,17 @@ sub parse_config_file {
             push @{$localopt{flatten}}, $1;
         }
         ## The current offset into a file
-        elsif (/^OFFSET(\d*):\s*(\d+)/) {
+        elsif (/^OFFSET([0-9]*):\s*([0-9]+)/) {
             my $suffix = $1 || 1;
             $localopt{offset}{$suffix} = $2;
         }
         ## The last modification time for this file
-        elsif (/^MODTIME(\d*):\s*(.+)/) {
+        elsif (/^MODTIME([0-9]*):\s*(.+)/) {
             my $suffix = $1 || 1;
             $localopt{modtime}{$suffix} = $2;
         }
         ## The custom maxsize for all files
-        elsif (/^MAXSIZE:\s*(\d+)/) {
+        elsif (/^MAXSIZE:\s*([0-9]+)/) {
             $localopt{maxsize} = $1;
         }
         ## The subject line
@@ -1197,7 +1194,7 @@ sub parse_inherit_file {
         chomp;
         next if /^#/ or ! /\w/;
         ## Only a few things are allowed in here
-        if (/^FIND_LINE_NUMBER:\s*(\d+)/) {
+        if (/^FIND_LINE_NUMBER:\s*([0-9]+)/) {
             ## We adjust the global here and now
             $arg{find_line_number} = $1;
         }
@@ -1238,30 +1235,30 @@ sub parse_inherit_file {
             push @{$opt{inherited_via_file}}, $1;
         }
         ## Maximum file size
-        elsif (/^MAXSIZE:\s*(\d+)/) {
+        elsif (/^MAXSIZE:\s*([0-9]+)/) {
             $opt{maxsize} = $1;
         }
         ## Exclude durations below this number
-        elsif (/^DURATION:\s*(\d+)/) {
+        elsif (/^DURATION:\s*([0-9]+)/) {
             ## Command line still wins
             if ($arg{duration} < 0) {
                 $arg{duration} = $1;
             }
         }
         ## Duration limit
-        elsif (/^DURATION_LIMIT:\s*(\d+)/) {
+        elsif (/^DURATION_LIMIT:\s*([0-9]+)/) {
             ## Command line still wins
             $arg{duration_limit} ||= $1;
         }
         ## Exclude tempfiles below this number
-        elsif (/^TEMPFILE:\s*(\d+)/) {
+        elsif (/^TEMPFILE:\s*([0-9]+)/) {
             ## Command line still wins
             if ($arg{tempfile} < 0) {
                 $arg{tempfile} = $1;
             }
         }
         ## Tempfile limit
-        elsif (/^TEMPFILE_LIMIT:\s*(\d+)/) {
+        elsif (/^TEMPFILE_LIMIT:\s*([0-9]+)/) {
             ## Command line still wins
             $arg{tempfile_limit} ||= $1;
         }
@@ -1278,7 +1275,7 @@ sub parse_inherit_file {
             $opt{mailzero} = $1;
         }
         ## The file to use
-        elsif (/^FILE(\d*):\s*(.+)/) {
+        elsif (/^FILE([0-9]*):\s*(.+)/) {
 
             my $suffix = $1 || 0;
             my $lfilename = $2;
@@ -1305,7 +1302,7 @@ sub parse_inherit_file {
             push @{$opt{mailsig}}, $1;
         }
         ## The log line prefix
-        elsif (/^LOG.LINE.PREFIX(\d*):\s*(.+)/o) {
+        elsif (/^LOG.LINE.PREFIX([0-9]*):\s*(.+)/o) {
           my $suffix = $1 || 0;
           $opt{log_line_prefix} = {} if ! ref $opt{log_line_prefix};
           $opt{log_line_prefix}{$suffix} = $2;
@@ -1400,7 +1397,7 @@ sub parse_filehandle {
 
     my $fh = shift or die;
     my $filename = shift;
-    my $pidline = shift;
+    my $pids = shift;
     my $lfileinfo = shift;
     my $current_pid_num = shift;
     my $linenumber = shift || 0;
@@ -1430,7 +1427,6 @@ sub parse_filehandle {
         }
         $linenumber = 1;
         while (my $line = $csv->getline($fh)) {
-            my @cols = @$line;
             my $prefix = "$line->[0] [$line->[3]]";
             my $context = length $line->[18] ? "CONTEXT: $line->[18] " : '';
             my $raw = "$line->[11]:  $line->[13] ${context}STATEMENT:  $line->[19]";
@@ -1510,18 +1506,18 @@ sub parse_filehandle {
 
                     $pgprefix =~ s/\s+$//o;
                     if ($pglog =~ /syslog/) {
-                        if ($pgprefix =~ /: \[(\d+)/) {
+                        if ($pgprefix =~ /: \[([0-9]+)/) {
                             $pgnum = $1;
                         }
                     }
                     $lastpid = $pgpid;
 
                     ## Have we seen this PID before?
-                    if (exists $pidline->{$pgpid}) {
+                    if (exists $pids->{$pgpid}) {
                         if ($pglog =~ /syslog/) {
                             if ($pglog eq 'syslog' and $syslognum and $syslognum != $pgnum) {
                                 ## Got a new statement, so process the old
-                                $count += process_line(delete $pidline->{$pgpid}, 0, $filename);
+                                $count += process_line(delete $pids->{$pgpid}, 0, $filename);
                             }
                         }
                         else {
@@ -1533,7 +1529,7 @@ sub parse_filehandle {
                             else {
                                 ## Process the old one
                                 ## Delete it so it gets recreated afresh below
-                                $count += process_line(delete $pidline->{$pgpid}, 0, $filename);
+                                $count += process_line(delete $pids->{$pgpid}, 0, $filename);
                             }
                         }
                     }
@@ -1551,14 +1547,14 @@ sub parse_filehandle {
                     }
 
                     ## Assign this string to the current pgnum slot
-                    $pidline->{$pgpid}{string}{$pgnum} = $_;
+                    $pids->{$pgpid}{string}{$pgnum} = $_;
                     $current_pid_num->{$pgpid} = $pgnum;
 
                     ## If we don't yet have a line, store it, plus the prefix and timestamp
-                    if (! $pidline->{$pgpid}{line}) {
-                        $pidline->{$pgpid}{line} = ($linenumber + $newlines);
-                        $pidline->{$pgpid}{pgprefix} = $pgprefix;
-                        $pidline->{$pgpid}{pgtime} = $pgts;
+                    if (! $pids->{$pgpid}{line}) {
+                        $pids->{$pgpid}{line} = ($linenumber + $newlines);
+                        $pids->{$pgpid}{pgprefix} = $pgprefix;
+                        $pids->{$pgpid}{pgtime} = $pgts;
                     }
 
                     ## Remember this line
@@ -1590,7 +1586,7 @@ sub parse_filehandle {
                     $current_pid_num->{$lastpid} = $pgnum;
 
                     ## Store this string
-                    $pidline->{$lastpid}{string}{$pgnum} = $_;
+                    $pids->{$lastpid}{string}{$pgnum} = $_;
                 }
                 ## May be a special LOG entry with no %u@%d etc.
                 ## We simply skip these ones if they go into a LOG:
@@ -1792,9 +1788,6 @@ sub parse_file {
             }
         }
 
-        ## Throw one or more files into this scalar:
-        my $slurp = '';
-
         ## If there is an offset, it will be from the older file: which is probably the rotated file
         ## Thus, we keep any offset, and read the entire "current" file
         if (
@@ -1936,7 +1929,7 @@ sub parse_file {
                         $chunksize = $pos - $current;
                     }
                     my $foobar;
-                    my $res = read $fh, $foobar, $chunksize;
+                    read $fh, $foobar, $chunksize;
                     ## How many newlines in there?
                     $newlines += $foobar =~ y/\n/\n/;
                     $current += $chunksize;
@@ -1957,7 +1950,7 @@ sub parse_file {
         $original_offset and <$fh>;
 
         my $current_pid_num = {};
-        my ($retcount, $retlines, $retval) = parse_filehandle($fh, $filename, \%pidline, $lfileinfo, $current_pid_num, $newlines);
+        my ($retcount) = parse_filehandle($fh, $filename, \%pidline, $lfileinfo, $current_pid_num, $newlines);
 
         $count += $retcount;
 
@@ -2098,7 +2091,7 @@ sub call_pg_stat_file {
 
     my $COM = qq{psql service="$dbservice" -AX -qt -x -c "$app_string select * from pg_stat_file('$dbfilename')" 2>$errorfile};
     $arg{debug} and warn "Trying: $COM\n";
-    my @fileinfo = qx/ $COM /;
+    my @statfileinfo = qx/ $COM /;
     if (-s $errorfile) {
         seek $efh, 0, 0;
         my $errline = <$efh>;
@@ -2111,9 +2104,9 @@ sub call_pg_stat_file {
     }
     close $efh;
 
-    my %fileinfo = map { chomp; split /\|/, $_, 2 } @fileinfo;
+    my %fileinfohash = map { chomp; split /\|/, $_, 2 } @statfileinfo;
 
-    return \%fileinfo;
+    return \%fileinfohash;
 
 } ## end of call_pg_stat_file
 
@@ -2131,7 +2124,7 @@ sub slurp_via_pg_read_file {
     ## 6. Final filename
     ## 7. Local file info
 
-    my ($dbservice, $dbfilename, $fileoffset, $bytesneeded, $pidline, $filename, $lfileinfo) = @_;
+    my ($dbservice, $dbfilename, $fileoffset, $bytesneeded, $pidinfo, $filename, $lfileinfo) = @_;
 
     ## We need a place to store any errors that come up
     my ($efh, $errorfile) = tempfile('tail_n_mail.pg_read_file.errors.XXXXXXXX', SUFFIX => '.tnm', UNLINK => 1, TMPDIR => 1);
@@ -2206,7 +2199,7 @@ sub slurp_via_pg_read_file {
 
         ## Pass the temp filehandle directly to parse_filehandle
         seek $ofh, 0, 0;
-        my ($retcount, $retlines, $retval) = parse_filehandle($ofh, $filename, $pidline, $lfileinfo, $current_pid_num, $linenumber);
+        my ($retcount, $retlines, $retval) = parse_filehandle($ofh, $filename, $pidinfo, $lfileinfo, $current_pid_num, $linenumber);
         $count += $retcount;
 
         $sizeleft -= $bytes;
@@ -2369,7 +2362,7 @@ sub process_line {
 
     ## If in duration mode, and we have a minimum cutoff, discard faster ones
     if ($arg{type} eq 'duration' and $arg{duration} >= 0) {
-        return 0 if ($string =~ / duration: (\d+)/o and $1 < $arg{duration});
+        return 0 if ($string =~ / duration: ([0-9]+)/o and $1 < $arg{duration});
     }
 
     $arg{debug} > 2 and warn "MATCH at line $line of $filename\n";
@@ -2391,7 +2384,7 @@ sub process_line {
         ## WARNING C-0x2ae3c50: myserver/alice@unix(18550):6432 Taking connection from reserve_pool<<
         ## WARNING S-0x10d6320: myserver/alice@123.45.67.80:5432 got packet 'E' from server when not linked
         $string =~ s/(\w+) [A-Z]\-0x.+?: /$1 /;
-        $string =~ s/\(\d+\):/:/;
+        $string =~ s/\([0-9]+\):/:/;
         goto PGPREFIX;
     }
 
@@ -2416,7 +2409,7 @@ sub process_line {
     ## For tempfiles, strip out the size information and store it
     my $tempfilesize = 0;
     if ($arg{type} eq 'tempfile') {
-        if ($string =~ s/LOG: temporary file:.+?size (\d+)\s*//o) {
+        if ($string =~ s/LOG: temporary file:.+?size ([0-9]+)\s*//o) {
             $tempfilesize = $1;
         }
         else {
@@ -2435,7 +2428,7 @@ sub process_line {
             my @arg;
             for my $arg (split /,/ => $args) {
                 $arg =~ s/^\s*(.+?)\s*$/$1/;
-                $arg = '?' if $arg !~ /^\$\d/;
+                $arg = '?' if $arg !~ /^\$[0-9]/;
                 push @arg => $arg;
             }
             "$select" . (join ',' => @arg) . ')';
@@ -2566,16 +2559,16 @@ sub process_line {
                 "$sword (?)";
             }
         }geix;
-        $string =~ s{(\bWHERE\s+\w+\s*=\s*)\d+}{$1?}gio;
+        $string =~ s{(\bWHERE\s+\w+\s*=\s*)[0-9]+}{$1?}gio;
         $string =~ s{(\bWHERE\s+\w+[\.\w]*\s+IN\s*\((?!\s*SELECT))[^)]+\)}{$1?)}gio;
         $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)'.+?'}{$1'?')}gio;
-        $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)\d+}{$1'?')}gio;
+        $string =~ s{(\bWHERE\s+\w+[\.\w]*\s*=\s*)[0-9]+}{$1'?')}gio;
         $string =~ s{(,\s*)'.+?'(\s*AS\s*\w+\b)}{$1'?'$2)}gio;
         $string =~ s{\(\s+}{(}go;
 
         if ($string =~ s{(UPDATE\s+[\w\.]+\s+SET\s+)(.+?)(\s+WHERE)}{${1}$UNIQSTRING${3}}) {
             my $sets = $2;
-            $sets =~ s{([\w\.]+\s*=\s*)\d+}{$1?}g;
+            $sets =~ s{([\w\.]+\s*=\s*)[0-9]+}{$1?}g;
             $sets =~ s{([\w\.]+\s*=\s*)'[^']*?'}{$1?}g;
             $string =~ s/$UNIQSTRING/$sets/e;
         }
@@ -2583,75 +2576,75 @@ sub process_line {
         $string =~ s/(invalid byte sequence for encoding "UTF8": 0x)[a-f0-9]+/$1????/o;
         $string =~ s{(\(simple_geom,)'.+?'}{$1'???'}gio;
         $string =~ s{(DETAIL: Key \(.+?\))=\(.+?\)}{$1=(?)}go;
-        $string =~ s{Failed on request of size \d+}{Failed on request of size ?}go;
+        $string =~ s{Failed on request of size [0-9]+}{Failed on request of size ?}go;
         $string =~ s{ARRAY\[.+?\]}{ARRAY[?]}go;
-        $string =~ s{(invalid input syntax for [\w ]+): ".*?"(?: at character \d+)*}{$1: "?"}o;
+        $string =~ s{(invalid input syntax for [\w ]+): ".*?"(?: at character [0-9]+)*}{$1: "?"}o;
         $string =~ s{value ".+?" (is out of range for type)}{value "?" $1}o;
-        $string =~ s{(field value out of range): ".+?" at character \d+}{$1: "?" at character ?}g;
+        $string =~ s{(field value out of range): ".+?" at character [0-9]+}{$1: "?" at character ?}g;
         $string =~ s{(Failing row contains) \(.+?\)\.}{$1 \(?\)\.}go;
 
         ## Sometimes FATAL errors get prepended with IP and port
-        $string =~ s{\(\d+\.\d+\.\d+\.\d+\(\d+\)\) FATAL}{(?) FATAL};
+        $string =~ s{\([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\([0-9]+\)\) FATAL}{(?) FATAL};
 
         ## pg_hba.conf errors from similar hosts can get combined
         ## e.g. Connection matched pg_hba.conf line 123: "hostssl all read,write 123.45.66.77/32 md5"
-        $string =~ s{(matched pg_hba.conf line )\d+:(.+?) \d+\.\d+\.\d+\.\d+/\d+}{$1 ?:$2 ?}go;
+        $string =~ s{(matched pg_hba.conf line )[0-9]+:(.+?) [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+}{$1 ?:$2 ?}go;
 
         ## WAL segment errors can be combined
         ## e.g. ERROR: requested WAL segment 0000000300002C3600000043 has already been removed
         $string =~ s{(requested WAL segment) [A-F0-9]+}{$1 ?}go;
 
         ## Syntax error at a specific character
-        $string =~ s{(syntax error at or near) "\w+" at character \d+}{$1 "?" at character ?}o;
+        $string =~ s{(syntax error at or near) "\w+" at character [0-9]+}{$1 "?" at character ?}o;
 
         ## Ambiguity at a specific character
-        $string =~ s{(" is ambiguous at character )\d+}{$1 ?}o;
+        $string =~ s{(" is ambiguous at character )[0-9]+}{$1 ?}o;
 
         ## Missing alias at a specific character
-        $string =~ s{( must have an alias at character )\d+}{$1 ?}o;
+        $string =~ s{( must have an alias at character )[0-9]+}{$1 ?}o;
 
         ## Case of hard-coded numbers at the start of an inner SELECT
-        $string =~ s{(\bSELECT\s*)\d+,\s*\d+,}{$1 ?,?,}gio;
+        $string =~ s{(\bSELECT\s*)[0-9]+,\s*[0-9]+,}{$1 ?,?,}gio;
 
         ## Some PostGIS functions
-        $string =~ s{(\bST_GeomFromText\(').*?',\d+\)}{$1(?,?)}gio;
+        $string =~ s{(\bST_GeomFromText\(').*?',[0-9]+\)}{$1(?,?)}gio;
 
         ## Declaring a named cursor
         $string =~ s{\b(DECLARE\s*(\S+)\s*CURSOR\b)}{DECLARE ? CURSOR}gio;
 
         ## Simple numbers after an AND
-        $string =~ s{(\s+AND\s+\w+)\s*=\d+(\b)}{$1=?$2}gio;
+        $string =~ s{(\s+AND\s+\w+)\s*=[0-9]+(\b)}{$1=?$2}gio;
 
         ## Simple numbers after a SELECT
-        $string =~ s{(\bSELECT\s+)\d+(\b)}{$1?$2}gio;
+        $string =~ s{(\bSELECT\s+)[0-9]+(\b)}{$1?$2}gio;
 
         ## Raw number surrounded by commas
-        $string =~ s{(,\s*)\d+(\s*,)}{$1?$2}go;
+        $string =~ s{(,\s*)[0-9]+(\s*,)}{$1?$2}go;
 
         ## Single-quoted items after an AND
         $string =~ s{(\s+AND\s+\w+)\s*([<>=]+)\s*'.*?'}{$1 $2 ?}gio;
 
         ## Variable limit and offset clauses
-        $string =~ s{\bLIMIT\s+(\d+)}{LIMIT ?}gi;
-        $string =~ s{\bOFFSET\s+(\d+)}{OFFSET ?}gi;
+        $string =~ s{\bLIMIT\s+([0-9]+)}{LIMIT ?}gi;
+        $string =~ s{\bOFFSET\s+([0-9]+)}{OFFSET ?}gi;
 
         ## Simple castings
         $string =~ s{'.*?'::(BOOLEAN|BIGINT|INTEGER|JSONB|NUMERIC|TIMESTAMP|TIMESTAMPTZ)}{?::$1}g;
 
         if ($string =~ /JSON/) {
-            $string =~ s{("\w+"):"[\d\.e\-]+"}{$1:"?"}g;
+            $string =~ s{("\w+"):"[[0-9]\.e\-]+"}{$1:"?"}g;
         }
 
         ## Timestamps as values
-        $string =~ s{\s*=\s*'\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d\.\d\d\d\d\d\d'}{=?}go;
+        $string =~ s{\s*=\s*'[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.[0-9][0-9][0-9][0-9][0-9][0-9]'}{=?}go;
 
         ## Precision timestamps anywhere
-        $string =~ s{\b\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d\.\d+\b}{?}g;
+        $string =~ s{\b[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.[0-9]+\b}{?}g;
 
         ## Deadlocks - don't worry about process ids to help flattening
         if ($string =~ /deadlock detected/i) {
-            $string =~ s{\b([Pp]rocess) \d+}{$1 ?}go;
-            $string =~ s{ transaction \d+;}{ transaction ?;}go;
+            $string =~ s{\b([Pp]rocess) [0-9]+}{$1 ?}go;
+            $string =~ s{ transaction [0-9]+;}{ transaction ?;}go;
         }
 
         ## Array literals
@@ -2666,8 +2659,8 @@ sub process_line {
             $rawstring =~ s/ *$word: /\n$word: /;
         }
         if ($arg{type} eq 'duration') {
-            $string =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
-            $rawstring =~ s/LOG: duration: (\d+\.\d+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
+            $string =~ s/LOG: duration: ([0-9]+\.[0-9]+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
+            $rawstring =~ s/LOG: duration: ([0-9]+\.[0-9]+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
         }
         $rawstring =~ s/^([A-Z]+: ) +/$1/gmo;
     }
@@ -2763,10 +2756,10 @@ sub process_line {
         return 0 if ! length $string;
 
         ## Seen this string before?
-        my $seenit = 0;
+        my $seenstring = 0;
 
         if (exists $similar{$string}) {
-            $seenit = 1;
+            $seenstring = 1;
             ## This becomes the new latest one
             $similar{$string}{latest} =
                 {
@@ -2779,7 +2772,7 @@ sub process_line {
             $similar{$string}{count}++;
         }
 
-        if (!$seenit) {
+        if (!$seenstring) {
             ## Store as the earliest and latest version we've seen
             $similar{$string}{earliest} = $similar{$string}{latest} =
                 {
@@ -2957,13 +2950,13 @@ sub process_report {
     ## Attempt to line up all the SERVICE= entries
     my $maxservice = 0;
     my $allservice = 1;
-    my %servicename;
+    my %service_name;
     for my $file (@files_parsed) {
         $file->[2] = $file->[0];
         next if ! $file->[1];
         if ($file->[0] =~ /SERVICE=($servicenameregex)/) {
             $maxservice = length $1 if length $1 > $maxservice;
-            $servicename{$1}++;
+            $service_name{$1}++;
         }
         else {
             $allservice = 0;
@@ -2977,7 +2970,7 @@ sub process_report {
     }
 
     ## If any service names are identical (e.g. different log files), do not show just the name
-    $allservice = 0 if grep { $_ > 1 } values %servicename;
+    $allservice = 0 if grep { $_ > 1 } values %service_name;
 
     ## Just in case anyone needs the old behavior:
     $allservice = 0 if $arg{'force-letter-output'};
@@ -3118,7 +3111,7 @@ sub process_report {
 
                       while (<$bigfh>) {
                           ## Got a match? Rewind to just before the opening number
-                          if ($_ =~ /(.*?)^\[\d/ms) {
+                          if ($_ =~ /(.*?)^\[[0-9]/ms) {
                               my $rewind = length($_) - length($1);
                               $stop_point = tell($bigfh) - $rewind;
                               seek $bigfh, $stop_point, 0;
@@ -3284,7 +3277,7 @@ sub send_smtp_email {
     # perl-Net-SMTP-SSL package
     # perl-Authen-SASL
 
-    my ($from_addr,$emails,$subject,$tempfile) = @_;
+    my ($from_addr,$emails,$tempfile) = @_;
 
     require Net::SMTP;
 
@@ -3357,12 +3350,12 @@ sub lines_of_interest {
             if (! exists $sorthelp{$a}) {
                 my $lstring = $a->{string} || $a->{earliest}{string};
                 $sorthelp{$a} =
-                    $lstring =~ /duration: (\d+\.\d+)/o ? $1 : 0;
+                    $lstring =~ /duration: ([0-9]+\.[0-9]+)/o ? $1 : 0;
             }
             if (! exists $sorthelp{$b}) {
                 my $lstring = $b->{string} || $b->{earliest}{string};
                 $sorthelp{$b} =
-                    $lstring =~ /duration: (\d+\.\d+)/o ? $1 : 0;
+                    $lstring =~ /duration: ([0-9]+\.[0-9]+)/o ? $1 : 0;
             }
             return ($sorthelp{$b} <=> $sorthelp{$a})
                     || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
@@ -3418,8 +3411,6 @@ sub lines_of_interest {
             $row->{mean} = int ($row->{total} / $row->{count});
             ## Mode is meaningless, median too hard to compute
         }
-
-        my $totalitems = @sorted;
 
         ## We want to show the top X means
 
@@ -3918,7 +3909,7 @@ sub pretty_number {
 
     my $number = shift;
 
-    return $number if $number !~ /^\d+$/ or $number < 1000;
+    return $number if $number !~ /^[0-9]+$/ or $number < 1000;
 
     ## If this is our first time here, find the correct separator
     if (! defined $arg{tsep}) {
@@ -3929,7 +3920,7 @@ sub pretty_number {
     ## No formatting at all
     return $number if '' eq $arg{tsep} or ! $arg{tsep};
 
-    (my $reverse = reverse $number) =~ s/(...)(?=\d)/$1$arg{tsep}/g;
+    (my $reverse = reverse $number) =~ s/(...)(?=[0-9])/$1$arg{tsep}/g;
     $number = reverse $reverse;
     return $number;
 

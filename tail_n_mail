@@ -755,6 +755,7 @@ sub parse_rc_files {
             my ($name,$value) = (lc $1,$2);
             ## Special case for leading and trailing whitespace
             $value =~ s/^"(.+)"$/$1/;
+            $name =~ s/\-/_/g;
             $opt{$name} = $value;
             $arg{$name} = $value;
             ## If we are disabled, simply exit quietly
@@ -769,6 +770,12 @@ sub parse_rc_files {
             }
             if ($name eq 'tempfile_limit') {
                 $arg{tempfile_limit} = $value;
+            }
+            if ($name =~ /^log_line_prefix([0-9]*)/) {
+                my $suffix = $1 || 0;
+                $opt{$name} = $arg{$name} = {} if ! ref $opt{$name};
+                $opt{$name}{$suffix} = $value;
+                $arg{$name}{$suffix} = $value;
             }
         }
         close $rc or die;

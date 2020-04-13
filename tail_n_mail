@@ -2597,6 +2597,9 @@ sub process_line {
         ## e.g. Connection matched pg_hba.conf line 123: "hostssl all read,write 123.45.66.77/32 md5"
         $string =~ s{(matched pg_hba.conf line )[0-9]+:(.+?) [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+}{$1 ?:$2 ?}go;
 
+        ## Combine similar login attemtps but leave the host as unique
+        $string =~ s{(no pg_hba.conf entry for host ".+?", user) ".+?"(, database) ".+?"}{$1 ? $2 ?}g;
+
         ## WAL segment errors can be combined
         ## e.g. ERROR: requested WAL segment 0000000300002C3600000043 has already been removed
         $string =~ s{(requested WAL segment) [A-F0-9]+}{$1 ?}go;

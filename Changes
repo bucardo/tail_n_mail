@@ -3,6 +3,13 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
+
+Version 2.8.2
+
+* Minor adjustments to folding in failed connection attempts
+  [Greg Sabino Mullane]
+
+
 Version 2.8.1, released April 10, 2020
 
 * Fix usage of log_line_prefix in RC files

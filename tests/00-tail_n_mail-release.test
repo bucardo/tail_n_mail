@@ -3,6 +3,7 @@
 ## Make sure the version number is consistent in all places
 ## Make sure no tabs have crept into the files
 ## Make sure the git tags are correct
+## Do some more lint checking
 
 use 5.006;
 use strict;
@@ -73,6 +74,7 @@ else {
 }
 
 ## Make sure all tabs and invalid characters are removed
+## Plus a few other checks
 for my $file (qw/ tail_n_mail /) {
 	open $fh, '<', $file or die qq{Could not open "$file": $!\n};
 	$good = 1;
@@ -85,6 +87,12 @@ for my $file (qw/ tail_n_mail /) {
 			diag "Invalid character at line $. of $file: $_\n";
 			$good = 0;
 		}
+        chomp;
+        if ( /\s$/ and ! /^[A-Z]/ ) {
+            diag "Found trailing whitespace at line $. of $file\n";
+            $good = 0;
+        }
+
 	}
 	close $fh or warn qq{Could not close "$file": $!\n};
 

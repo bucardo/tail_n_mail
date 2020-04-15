@@ -25,7 +25,7 @@ use File::Basename qw( dirname             );
 use POSIX          qw( strftime localeconv );
 use 5.014_000;
 
-our $VERSION = '2.8.2';
+our $VERSION = '3.0.0';
 my $app_string = "/* tail_n_mail version $VERSION */";
 
 my $UNIQSTRING = "TAILNMAIL$VERSION";
@@ -244,6 +244,7 @@ $arg{help} and help();
 
 ## First option is always the config file, which must exist.
 my $configfile = shift or die qq{Usage: $0 configfile\n};
+my $statefile = "$configfile.state";
 
 ## If the file has the name 'duration' in it, or we have set the duration parameter,
 ## switch to that type as the default
@@ -280,6 +281,9 @@ parse_rc_files();
 parse_config_file();
 ## Read in any inherited config files and merge their information in
 parse_inherited_files();
+## Read in the state file and merge it in
+parse_state_file();
+
 
 ## Set our timeout
 $ENV{PGCONNECT_TIMEOUT} = $arg{connect_timeout};
@@ -1389,6 +1393,73 @@ sub parse_inherit_file {
     return;
 
 } ## end of parse_inherited_file
+
+
+sub parse_state_file {
+
+    ## Gather ephemeral information for this run
+
+    ## This file is just the config file with an addition of ".state"
+    if (! -e $statefile) {
+        $arg{verbose} and print "No state file found: $statefile\n";
+        return;
+    }
+
+    open my $sfh, '<', $statefile or die qq{Could not open "$statefile": $!\n};
+    $arg{debug} and warn qq{Opened state file "$statefile"\n};
+    my %stateinfo;
+    while (<$sfh>) {
+
+        ## Skip comments
+        next if /^#/;
+
+        ## We do not technically need this, but it is included anyway to make
+        ## the state file more readable
+        if (/^FILE([0-9]*):\s*(.+?)\s*$/) {
+            my $suffix = $1 || 1;
+            $stateinfo{$suffix}{file} = $2;
+        }
+        ## The last version of this file we used
+        elsif (/^LASTFILE([0-9]*):\s*(.+?)\s*$/) {
+            my $suffix = $1 || 1;
+            $stateinfo{$suffix}{lastfile} = $2;
+        }
+        ## The last modification time for this file
+        elsif (/^MODTIME([0-9]*):\s*(.+)/) {
+            my $suffix = $1 || 1;
+            $stateinfo{$suffix}{modtime} = $2;
+        }
+        ## The current offset into a file
+        elsif (/^OFFSET([0-9]*):\s*([0-9]+)/) {
+            my $suffix = $1 || 1;
+            $stateinfo{$suffix}{offset} = $2;
+        }
+        ## The rotation file modification time
+        elsif (/^ROTATEFILEMODTIME([0-9]*):\s*(.+?)\s*$/) {
+            my $suffix = $1 || 1;
+            $stateinfo{$suffix}{rotatefilemodtime} = $2;
+        }
+        elsif (/[a-zA-Z]/) {
+            warn qq{Unknown item in state file "$statefile": $_\n};
+        }
+
+    }
+    close $sfh or warn qq{Could not close file "$statefile": $!\n};
+
+    ## Walk through our existing ones and see if we can find state information for it
+    for my $file (@{ $opt{file} }) {
+        my $suffix = $file->{'suffix'} or next;
+        next if ! exists $stateinfo{$suffix};
+        for my $info (qw/ lastfile modtime offset rotatefilemodtime /) {
+            if (exists $stateinfo{$suffix}{$info}) {
+                $file->{$info} = delete $stateinfo{$suffix}{$info};
+            }
+        }
+    }
+
+    return;
+
+} ## end of parse_state_file
 
 
 sub parse_filehandle {
@@ -2889,17 +2960,17 @@ sub process_report {
     ## Sometimes we go dryrun for this section only!
     my $dryrun = $arg{dryrun};
 
-    ## If our email field is all caps or has example.com, force to dryrun mode
+    ## If our email field is all caps or has example.com, force to mostly dryrun mode
     if (! $dryrun) {
         for my $email (@{ $opt{email} }) {
             if ($email =~ /\@example.com/i) {
                 $opt{verbose} and print "Switching to dry-run mode because email is 'example.com'\n";
-                $dryrun = 1;
+                $dryrun = 2;
                 last;
             }
             if ($email =~ /^[A-Z]+$/) { ## e.g. no '@' sign
                 $opt{verbose} and print "Switching to dry-run mode because email is only all-caps\n";
-                $dryrun = 1;
+                $dryrun = 2;
                 last;
             }
         }
@@ -3756,111 +3827,23 @@ sub final_cleanup {
             }
         }
     }
-    ## No rewriting if in dryrun mode, but reset always trumps dryrun
+    ## No rewriting if in regular dryrun mode, but reset always trumps dryrun
     ## Otherwise, do nothing if there have been no changes
-    return if (!$changes or $arg{dryrun}) and !$arg{reset};
+    return if (!$changes or 1==$arg{dryrun}) and !$arg{reset};
 
     $arg{verbose} and warn "  Saving new config file\n";
-    open my $fh, '>', $configfile or die qq{Could not write "$configfile": $!\n};
-    my $oldselect = select $fh;
+    open my $sfh, '>', $statefile or die qq{Could not write "$statefile": $!\n};
+    my $oldselect = select $sfh;
     my $now = localtime;
-    print qq{## Config file for the tail_n_mail program
+    print qq{## State file for the tail_n_mail program
+## Please see this file for complete information: $configfile
 ## This file is automatically updated
 ## Last updated: $now
+
 };
-    for my $item (qw/ log_line_prefix pglog email from type mailsig duration tempfile find_line_number
-                      sortby duration_limit tempfile_limit statement_size nonparsed_statement_size pgmode flatten /) {
-        next if ! exists $opt{$item};
-
-        next if $item eq 'duration' and $arg{duration} < 0;
-        next if $item eq 'duration_limit' and ! $arg{duration_limit};
-
-        next if $item eq 'tempfile' and $arg{tempfile} < 0;
-        next if $item eq 'tempfile_limit' and ! $arg{tempfile_limit};
-
-        ## Only rewrite if it came from this config file, not tailnmailrc or command line
-        next if ! exists $opt{configfile}{$item};
-        add_comments(uc $item);
-        if (ref $opt{$item} eq 'ARRAY') {
-            for my $itemz (@{$opt{$item}}) {
-                next if ! exists $opt{configfile}{"$item.$itemz"};
-                printf "%s: %s\n", uc $item, $itemz;
-            }
-        }
-        elsif (ref $opt{$item} eq 'HASH') {
-            ## Only print the 0 one if it exists
-            if (exists $opt{$item}{0}) {
-                printf qq{%s: %s\n}, uc $item, $opt{$item}{0};
-            }
-            ## But also save any log_line_prefix_regex items
-            if ($item eq 'log_line_prefix') {
-                for my $regex (grep { /^[a-zA-Z]/ } sort keys %{ $opt{$item} }) {
-                    printf qq{%s: %s = %s\n}, 'LOG_LINE_PREFIX_REGEX', $regex, $opt{$item}{$regex};
-                }
-            }
-        }
-        elsif (! ref $opt{item}) {
-            ## If it has leading or trailing whitespace, quote it
-            if ($opt{$item} =~ /^\s/ or $opt{$item} =~ /\s$/) {
-                printf qq{%s: "%s"\n}, uc $item, $opt{$item};
-            }
-            else {
-                printf "%s: %s\n", uc $item, $opt{$item};
-            }
-        }
-        else {
-          die "Invalid opt item $item\n";
-        }
-    }
-
-    if ($opt{configfile}{maxsize}) {
-        print "MAXSIZE: $opt{maxsize}\n";
-    }
-    if ($opt{customsubject}) {
-        add_comments('MAILSUBJECT');
-        print "MAILSUBJECT: $opt{mailsubject}\n";
-    }
-
-    print "\n";
-    for my $inherit (@{$opt{inherit}}) {
-        add_comments("INHERIT: $inherit");
-        print "INHERIT: $inherit\n";
-    }
-    for my $include (@{$opt{include}}) {
-        next if ! exists $opt{configfile}{"include.$include"};
-        add_comments("INCLUDE: $include");
-        print "INCLUDE: $include\n";
-    }
-    for my $includefile (@{$opt{include_via_file}}) {
-        print "INCLUDE_VIA_FILE: $includefile\n";
-    }
-    for my $exclude (@{$opt{exclude}}) {
-        next if ! exists $opt{configfile}{"exclude.$exclude"};
-        add_comments("EXCLUDE: $exclude");
-        print "EXCLUDE: $exclude\n";
-    }
-    for my $excludefile (@{$opt{exclude_via_file}}) {
-        print "EXCLUDE_VIA_FILE: $excludefile\n";
-    }
-    for my $exclude_prefix (@{$opt{exclude_prefix}}) {
-        next if ! exists $opt{configfile}{"exclude_prefix.$exclude_prefix"};
-        add_comments("EXCLUDE_PREFIX: $exclude_prefix");
-        print "EXCLUDE_PREFIX: $exclude_prefix\n";
-    }
-    for my $exclude_non_parsed (@{$opt{exclude_non_parsed}}) {
-        next if ! exists $opt{configfile}{"exclude_non_parsed.$exclude_non_parsed"};
-        add_comments("EXCLUDE_NON_PARSED: $exclude_non_parsed");
-        print "EXCLUDE_NON_PARSED: $exclude_non_parsed\n";
-    }
-
-    print "\n";
-    add_comments('FILE');
 
     for my $f (sort { $a->{suffix} <=> $b->{suffix} }
                @{ $opt{file} }) {
-
-        ## Skip inherited files
-        next if exists $f->{inherited};
 
         printf "\nFILE%d: %s\n", $f->{suffix}, $f->{original};
 
@@ -3883,17 +3866,11 @@ sub final_cleanup {
         if ($f->{modtime}) {
             printf "MODTIME%d: %s\n", $f->{suffix}, $f->{modtime};
         }
-
-        ## May have its own log_line_prefix
-        if (exists $opt{log_line_prefix}{ $f->{suffix} }) {
-            printf "LOG_LINE_PREFIX%d: %s\n", $f->{suffix}, $opt{log_line_prefix}{ $f->{suffix} };
-        }
-
     }
     print "\n";
 
     select $oldselect;
-    close $fh or die qq{Could not close "$configfile": $!\n};
+    close $sfh or die qq{Could not close "$statefile": $!\n};
 
     return;
 

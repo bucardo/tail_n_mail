@@ -4,7 +4,14 @@ This file describes the changes made in each version of the tail_n_mail program.
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
 
-Version 2.8.2
+Version 3.0.0
+
+* Major version bump!
+
+* Config files are now static, and will not get rewritten. Instead, 
+  we start using "state" files to track information that changes 
+  each run. With this change, config files to be easily tracked in git.
+  [Greg Sabino Mullane]
 
 * Minor adjustments to folding in failed connection attempts
   [Greg Sabino Mullane]

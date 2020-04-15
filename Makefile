@@ -4,5 +4,5 @@ TEST_FILES = tests/*.test
 test:
 	$(NOECHO) prove $(TEST_FILES)
 
-release_test:
+fulltest:
 	$(NOECHO) RELEASE_TESTING=1 prove $(TEST_FILES)

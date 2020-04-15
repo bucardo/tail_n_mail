@@ -1383,6 +1383,8 @@ sub parse_inherit_file {
                  original  => $file->{original},
                  suffix    => $file->{suffix},
                  inherited => 1,
+                 lastfile  => '',
+                 offset    => 0,
                  };
         }
 

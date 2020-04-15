@@ -139,6 +139,7 @@ autovac
 autovacuum
 chunked
 config
+Config
 CSV
 devbox
 dsn

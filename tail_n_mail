@@ -2178,7 +2178,7 @@ sub call_pg_stat_file {
         chomp $errline;
         ## This is handled elsewhere, so do not need to be noisy about it here:
         if ($errline !~ /could not stat file/) {
-            $opt{verbose} and warn "Call to pg_stat_file failed for service $dbservice and file $dbfilename ($errline)\n";
+            $arg{verbose} and warn "Call to pg_stat_file failed for service $dbservice and file $dbfilename ($errline)\n";
         }
         return $errline;
     }
@@ -2966,12 +2966,12 @@ sub process_report {
     if (! $dryrun) {
         for my $email (@{ $opt{email} }) {
             if ($email =~ /\@example.com/i) {
-                $opt{verbose} and print "Switching to dry-run mode because email is 'example.com'\n";
+                $arg{verbose} and print "Switching to dry-run mode because email is 'example.com'\n";
                 $dryrun = 2;
                 last;
             }
             if ($email =~ /^[A-Z]+$/) { ## e.g. no '@' sign
-                $opt{verbose} and print "Switching to dry-run mode because email is only all-caps\n";
+                $arg{verbose} and print "Switching to dry-run mode because email is only all-caps\n";
                 $dryrun = 2;
                 last;
             }

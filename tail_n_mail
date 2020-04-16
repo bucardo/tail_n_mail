@@ -2241,10 +2241,11 @@ sub get_latest_service_file {
     }
     close $efh;
 
-    my %files = map { chomp; (split /\|/, $_, 2)[1], {} } grep { /\S/ } @lsdirinfo;
+
+    my %files = map { chomp; (split /\|/, $_, 2)[1] => {} } grep { /\S/ } @lsdirinfo;
 
     ## If these look like the default postgres log_line_format endings, we can sort it ourselves
-    if ( ! grep { !/\d_\d+\.log/ } keys %files) {
+    if ( ! grep { !/[0-9]_[0-9]+\.log/ } keys %files) {
         $arg{debug} and warn "Doing a natural sort as all files look to be standard format\n";
         for my $first (reverse sort keys %files) {
             return "$dbfiledir/$first";
@@ -2262,6 +2263,8 @@ sub get_latest_service_file {
     for my $first (sort { $files{$b}{mod} cmp $files{$a}{mod} } keys %files) {
         return "$dbfiledir/$first";
     }
+
+    die "Could not determine a filename for service $dbservice\n";
 
 } ## end of get_latest_service_file
 

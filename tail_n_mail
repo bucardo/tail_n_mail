@@ -273,7 +273,10 @@ my $hostname = qx{hostname};
 chomp $hostname;
 
 ## Global option variables
-my (%opt, %itemcomment);
+my %opt = (
+    no_inherit => '',
+);
+my %itemcomment;
 
 ## Read in any rc files
 parse_rc_files();
@@ -1042,6 +1045,10 @@ sub parse_config_file {
         ## Size at which we cutoff long statements
         elsif (/^STATEMENT_SIZE:\s*(.+)/) {
             $localopt{statement_size} = $1;
+        }
+        ## Prevent the inherited file from setting certain things
+        elsif (/NO.INHERIT:\s*(.+)/) {
+            $opt{no_inherit} = $1;
         }
         ## Size at which we cutoff nonparsed long statements
         elsif (/^NONPARSED_STATEMENT_SIZE:\s*(.+)/) {
@@ -2109,6 +2116,9 @@ sub generate_regexes {
 
     ## Build an exclusion regex
     my $lexclude = '';
+    if ($opt{no_inherit} =~ /exclude\b/i) {
+        $opt{inherited_exclude} = [];
+    }
     for my $ex (@{$opt{exclude}}, @{$opt{inherited_exclude}}) {
         $arg{debug} and warn "  Adding exclusion: $ex\n";
         my $regex = qr{$ex};
@@ -2119,6 +2129,9 @@ sub generate_regexes {
 
     ## Build an exclusion non-parsed regex
     my $lexclude_non_parsed = '';
+    if ($opt{no_inherit} =~ /exclude_non_parsed/i) {
+        $opt{inherited_exclude_non_parsed} = [];
+    }
     for my $ex (@{$opt{exclude_non_parsed}}, @{$opt{inherited_exclude_non_parsed}}) {
         $arg{debug} and warn "  Adding exclusion_non_parsed: $ex\n";
         my $regex = qr{$ex};
@@ -2129,6 +2142,9 @@ sub generate_regexes {
 
     ## Build a prefix exclusion regex
     my $lexclude_prefix = '';
+    if ($opt{no_inherit} =~ /exclude_prefix/i) {
+        $opt{inherited_exclude_prefix} = [];
+    }
     for my $ex (@{$opt{exclude_prefix}}, @{$opt{inherited_exclude_prefix}}) {
         $arg{debug} and warn "  Adding exclusion_prefix: $ex\n";
         my $regex = qr{$ex};
@@ -2140,6 +2156,9 @@ sub generate_regexes {
     ## Build an inclusion regex, and possibly some bonus inclusion items
     my $linclude = '';
     my $lbonus_include = [];
+    if ($opt{no_inherit} =~ /include\b/i) {
+        $opt{inherited_include} = [];
+    }
     for my $in (@{$opt{include}}, @{$opt{inherited_include}}) {
         $arg{debug} and warn "  Adding inclusion: $in\n";
         my $lin = $in;

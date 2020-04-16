@@ -614,7 +614,7 @@ sub pick_log_file {
     ## Then walk forward until we hit the most recent one
 
     ## Handle the LATEST case right away
-    if ($orig =~ s{([^/\\]*)LATEST([^/\\]*)$}{}o) {
+    if ($orig !~ /SERVICE=/ and $orig =~ s{([^/\\]*)LATEST([^/\\]*)$}{}o) {
 
         my ($prefix,$postfix) = ($1,$2);
 
@@ -1583,7 +1583,6 @@ sub parse_filehandle {
                 if ($_ =~ s/$pgpidre1/$4/) {
                     ## We want the timestamp and the pid, even if we have to fake it
                     ($pgprefix,$pgts,$pgpid,$pgnum) = ($1, $2||'', $3||1, 1);
-
                     $pgprefix =~ s/\s+$//o;
                     if ($pglog =~ /syslog/) {
                         if ($pgprefix =~ /: \[([0-9]+)/) {
@@ -1781,6 +1780,13 @@ sub parse_file {
         (my $newfilename = $filename) =~ s/SERVICE=($servicenameregex)\s*//;
         my $service = $1;
 
+        if ($newfilename =~ m{(.+)/LATEST}) { ## Note: a directory is mandatory
+            my $logdir = $1;
+            ## Quick sanity check: may exclude some real-world cases (raise a github issue!)
+            $logdir =~ m{^[A-Za-z0-9/_]+$} or die "Invalid directory: >>$logdir<<\n";
+            $newfilename = get_latest_service_file($service, $logdir);
+            $arg{debug} and warn "Setting newfilename to $newfilename via get_latest_service_file\n";
+        }
         my $remotefileinfo = call_pg_stat_file($service, $newfilename);
         return -2 if ! ref $remotefileinfo;
 
@@ -2189,6 +2195,56 @@ sub call_pg_stat_file {
     return \%fileinfohash;
 
 } ## end of call_pg_stat_file
+
+
+sub get_latest_service_file {
+
+    ## Figure out the most recent file inside a directory reached via a service file
+    ## Arguments: two
+    ## 1. Database service name
+    ## 2. Remote file directory
+    ## Returns: new file name
+
+    my ($dbservice, $dbfiledir) = @_;
+
+    ## We need a place to store any errors that come up
+    my ($efh, $errorfile) = tempfile('tail_n_mail.pg_ls_dir.errors.XXXXXXXX', SUFFIX => '.tnm', UNLINK => 1, TMPDIR => 1);
+
+    my $COM = qq{psql service="$dbservice" -AX -qt -x -c "$app_string select pg_ls_dir('$dbfiledir')" 2>$errorfile};
+    $arg{debug} and warn "Trying: $COM\n";
+    my @lsdirinfo = qx/ $COM /;
+    if (-s $errorfile) {
+        seek $efh, 0, 0;
+        my $errline = <$efh>;
+        chomp $errline;
+        $arg{verbose} and warn "Call to pg_ls_dir failed for service $dbservice and dir $dbfiledir ($errline)\n";
+        return $errline;
+    }
+    close $efh;
+
+    my %files = map { chomp; (split /\|/, $_, 2)[1], {} } grep { /\S/ } @lsdirinfo;
+
+    ## If these look like the default postgres log_line_format endings, we can sort it ourselves
+    if ( ! grep { !/\d_\d+\.log/ } keys %files) {
+        $arg{debug} and warn "Doing a natural sort as all files look to be standard format\n";
+        for my $first (reverse sort keys %files) {
+            return "$dbfiledir/$first";
+        }
+    }
+
+    ## Get information about each one
+    for my $filename (keys %files) {
+        my $remotefileinfo = call_pg_stat_file($dbservice, "$dbfiledir/$filename");
+        ref $remotefileinfo or die "Failed to find information on file $dbfiledir/$filename\n";
+        $files{$filename}{mod} = $remotefileinfo->{modification}
+            or die "No modification time found for $dbfiledir/$filename\n";
+    }
+
+    for my $first (sort { $files{$b}{mod} cmp $files{$a}{mod} } keys %files) {
+        return "$dbfiledir/$first";
+    }
+
+} ## end of get_latest_service_file
 
 
 sub slurp_via_pg_read_file {

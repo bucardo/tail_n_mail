@@ -2806,6 +2806,8 @@ sub process_line {
         if ($string =~ /deadlock detected/i) {
             $string =~ s{\b([Pp]rocess) [0-9]+}{$1 ?}go;
             $string =~ s{ transaction [0-9]+;}{ transaction ?;}go;
+            $string =~ s{ locking tuple \([0-9]+,[0-9]+\)}{ locking tuple(?)}go;
+            $string =~ s/'\{".+ (HINT: See server log)/$1/go;
         }
 
         ## Array literals

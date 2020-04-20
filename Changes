@@ -23,6 +23,11 @@ Version 3.0.0
 * Add new config file option "NO_INHERIT" to prevent the inherited 
   files from setting things (esp. 'include' and 'exclude')
 
+* New command line option "--start_time", in the format YYYY-MM-DD HH:MI:SS, 
+  which ignores existing offsets and tries to do things by date only.
+  Requires your log files start with the same format.
+  [Greg Sabino Mullane]
+
 * Minor adjustments to folding in failed connection attempts, and in deadlock errors.
   [Greg Sabino Mullane]
 

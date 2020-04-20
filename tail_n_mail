@@ -176,6 +176,7 @@ GetOptions
    'rewind=i',
    'version',
    'offset=i',
+   'start_time=s',
    'duration=i',
    'tempfile=i',
    'find_line_number=i',
@@ -266,6 +267,11 @@ if ($configfile =~ /bouncer/i) {
 ## Quick expansion of leading tildes for the file argument
 for (@{ $arg{file} }) {
     s{^~/?}{$ENV{HOME}/};
+}
+
+## The start_time must be in a specific format for now
+if ($arg{start_time} and $arg{start_time} =~ s/[^0-9]//g) {
+    14 == length $arg{start_time} or die "Argument start_time must be in the format YYYY-MM-DD HH:MI:SS\n";
 }
 
 ## Save away our hostname
@@ -1488,6 +1494,7 @@ sub parse_filehandle {
     my $lfileinfo = shift;
     my $current_pid_num = shift;
     my $linenumber = shift || 0;
+    my $start_time = $arg{start_time} || 0;
 
     my $newlines = 0;
     my $count = 0;
@@ -1582,6 +1589,12 @@ sub parse_filehandle {
                 }
                 ## Success! Finish up this line, but then abandon any further slurping
                 $bailout = 1;
+            }
+
+            if ($start_time and /^([0-9: -]+)/) {
+                my $current = $1 =~ s/\D//gr;
+                next LOGLINE if $current < $start_time;
+                $start_time = 0;
             }
 
             if ($pgmode) {
@@ -1841,6 +1854,12 @@ sub parse_file {
                     $offset = 0;
                 }
             }
+        }
+        ## If start_time was set, read in both files from the start
+        elsif ($arg{start_time}) {
+            $read_rotated = 3;
+            $offset = 0;
+            delete $lfileinfo->{rotatefilemodtime};
         }
         ## If the file is smaller than our offset, assume it's a new file
         elsif ($filesize < $offset) {

@@ -17,6 +17,9 @@ Version 3.0.0
   Format is: SERVICE=name LATEST
   [Greg Sabino Mullane]
 
+* Improve sorting of items to use the timestamp before the line number.
+  [Greg Sabino Mullane]
+
 * Add new config file option "NO_INHERIT" to prevent the inherited 
   files from setting things (esp. 'include' and 'exclude')
 

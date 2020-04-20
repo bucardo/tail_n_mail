@@ -2064,7 +2064,11 @@ sub parse_file {
     }
 
     ## Now add in any pids that have not been processed yet
-    for my $pid (sort { $pidline{$a}{line} <=> $pidline{$b}{line} } keys %pidline) {
+    for my $pid (sort {
+        $pidline{$a}{pgtime} cmp $pidline{$b}{pgtime}
+        or
+        $pidline{$a}{line} <=> $pidline{$b}{line}
+    } keys %pidline) {
         $count += process_line($pidline{$pid}, 0, $filename);
     }
 

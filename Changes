@@ -20,7 +20,7 @@ Version 3.0.0
 * Add new config file option "NO_INHERIT" to prevent the inherited 
   files from setting things (esp. 'include' and 'exclude')
 
-* Minor adjustments to folding in failed connection attempts
+* Minor adjustments to folding in failed connection attempts, and in deadlock errors.
   [Greg Sabino Mullane]
 
 

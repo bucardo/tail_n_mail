@@ -28,6 +28,9 @@ Version 3.0.0
   Requires your log files start with the same format.
   [Greg Sabino Mullane]
 
+* Allow 'all' as an option to the --skip_report_failing_host option.
+  [Greg Sabino Mullane]
+
 * Minor adjustments to folding in failed connection attempts, and in deadlock errors.
   [Greg Sabino Mullane]
 

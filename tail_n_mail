@@ -139,7 +139,7 @@ my %arg = (
               maxemailsize     => 10_000_000, ## bytes
 ## Do we skip lines that we cannot parse (e.g. rsync errors)?
               skip_non_parsed => 0,
-## Do not generate a report if the only errors are from a known failing host
+## Do not generate a report if the only errors are from a known failing host. Can be 'all'
               skip_report_failing_host => '',
 ## Number of found errors resulting in a Nagios "CRITICAL" exit status
               critical => 0,
@@ -591,7 +591,9 @@ NEXTLOG: {
 
 my $important_problem_files = 0;
 for my $problem (@problem_files) {
-    next if $arg{skip_report_failing_host} and $problem =~ /\b$arg{skip_report_failing_host}\b/;
+    next if $arg{skip_report_failing_host} and 
+        ($arg{skip_report_failing_host} eq 'all'
+         or $problem =~ /\b$arg{skip_report_failing_host}\b/);
     $important_problem_files = 1;
 }
 
@@ -2538,7 +2540,6 @@ sub process_line {
             }
         }
 
-
     }
 
     ## If in duration mode, and we have a minimum cutoff, discard faster ones
@@ -2882,7 +2883,6 @@ sub process_line {
 
             ## Store the summary of all sizes so we can compute medians, stddev, etc.
             $similar{$string}{total} = $tempfilesize;
-
 
             ## Store this away for eventual output
             $find{$filename}{$line} = $similar{$string};

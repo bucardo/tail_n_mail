@@ -2561,6 +2561,13 @@ sub process_line {
     ## Strip leading whitespace
     $string =~ s/^\s+//o;
 
+    ## Replace EXECUTE foobar(x,y,z...) with dirt-simple param replacement
+    $string =~ s{(STATEMENT: EXECUTE \w.+?)\((.+)\)}{
+        my ($name,$args)=($1,$2);
+        $args = join ',' => map { '?' } split /,/ => $args;
+        "$1 ($args)"
+    }ge;
+
     ## PgBouncer logs are fairly simple
     if ($arg{pglog} eq 'pgbouncer') {
         ## WARNING C-0x2ae3c50: myserver/alice@unix(18550):6432 Taking connection from reserve_pool<<

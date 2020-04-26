@@ -34,6 +34,9 @@ Version 3.0.0
 * Minor adjustments to folding in failed connection attempts, and in deadlock errors.
   [Greg Sabino Mullane]
 
+* Better flattening of EXECUTE arguments
+  [Greg Sabino Mullane]
+
 
 Version 2.8.1, released April 10, 2020
 

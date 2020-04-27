@@ -19,6 +19,7 @@
 use strict;
 use warnings;
 use Data::Dumper   qw( Dumper              );
+$Data::Dumper::Sortkeys = 1;
 use Getopt::Long   qw( GetOptions          );
 use File::Temp     qw( tempfile            );
 use File::Basename qw( dirname             );
@@ -591,7 +592,7 @@ NEXTLOG: {
 
 my $important_problem_files = 0;
 for my $problem (@problem_files) {
-    next if $arg{skip_report_failing_host} and 
+    next if $arg{skip_report_failing_host} and
         ($arg{skip_report_failing_host} eq 'all'
          or $problem =~ /\b$arg{skip_report_failing_host}\b/);
     $important_problem_files = 1;
@@ -2453,12 +2454,6 @@ sub process_line {
                 };
             $similar{$lookup}{count} = 1; ## Stays at 1
 
-            ## Store this away for eventual output
-            $find{$filename}{$line} = $similar{$lookup};
-
-            ## Copy filename and line up a level for later sorting ease
-            $find{$filename}{$line}{filename} = $similar{$lookup}{earliest}{filename};
-            $find{$filename}{$line}{line} = $similar{$lookup}{earliest}{line};
         }
         else {
             my $oldstring = $similar{$lookup}{latest}{npstring};
@@ -2560,6 +2555,13 @@ sub process_line {
 
     ## Strip leading whitespace
     $string =~ s/^\s+//o;
+
+    ## Replace EXECUTE foobar(x,y,z...) with dirt-simple param replacement
+    $string =~ s{(STATEMENT: EXECUTE \w.+?)\((.+)\)}{
+        my ($name,$args)=($1,$2);
+        $args = join ',' => map { '?' } split /,/ => $args;
+        "$1 ($args)"
+    }ge;
 
     ## PgBouncer logs are fairly simple
     if ($arg{pglog} eq 'pgbouncer') {
@@ -2884,14 +2886,6 @@ sub process_line {
             ## Store the summary of all sizes so we can compute medians, stddev, etc.
             $similar{$string}{total} = $tempfilesize;
 
-            ## Store this away for eventual output
-            $find{$filename}{$line} = $similar{$string};
-            $find{$filename}{$line}{string} = $string;
-            $find{$filename}{$line}{rawstring} = $rawstring;
-
-            ## Copy filename and line up a level for later sorting ease
-            $find{$filename}{$line}{filename} = $similar{$string}{earliest}{filename};
-            $find{$filename}{$line}{line} = $similar{$string}{earliest}{line};
             return 1;
 
         } ## end if we have not seen this statement before in tempfile mode
@@ -2942,23 +2936,50 @@ sub process_line {
         return 0 if ! length $string;
 
         ## Seen this string before?
-        my $seenstring = 0;
 
         if (exists $similar{$string}) {
-            $seenstring = 1;
-            ## This becomes the new latest one
-            $similar{$string}{latest} =
-                {
-                 filename => $filename,
-                 line     => $line,
-                 pgprefix => $pgprefix,
-                 time     => $time,
-                 };
-            ## Increment the count
-            $similar{$string}{count}++;
-        }
 
-        if (!$seenstring) {
+            my $old = $similar{$string};
+
+            ## We need to determine if this is a new variant of this string
+            ## We only need to confirm this once, ever
+            if (! exists $old->{foundvariant}) {
+                if ($rawstring ne $old->{earliest}{rawstring}) {
+                    $old->{foundvariant} = 1;
+                }
+            }
+
+            ## We need to see if this becomes the winner of the "earliest" contest
+            ## Switching files can cause this, but we assume entries inside the
+            ## same file are always chronological
+            if (! exists $old->{filecount}{$filename}) {
+                ## We have one chance to claim the earliest prize from another file
+                if ($old->{earliest}{filename} ne $filename and $time lt $old->{earliest}{time}) {
+                    $old->{earliest} =
+                        {
+                            filename => $filename,
+                            line     => $line,
+                            pgprefix => $pgprefix,
+                            time     => $time,
+                            rawstring => $rawstring,
+                        };
+                }
+            }
+
+            ## We need to check the latest prize each time
+            if ($old->{latest}{filename} eq $filename or $time gt $old->{latest}{time}) {
+                $old->{latest} =
+                    {
+                        filename => $filename,
+                        line     => $line,
+                        pgprefix => $pgprefix,
+                        time     => $time,
+                        ## Do not need rawstring here
+                    };
+            }
+
+        }
+        else {
             ## Store as the earliest and latest version we've seen
             $similar{$string}{earliest} = $similar{$string}{latest} =
                 {
@@ -2966,19 +2987,16 @@ sub process_line {
                  line     => $line,
                  pgprefix => $pgprefix,
                  time     => $time,
+                 rawstring => $rawstring,
                  };
-            ## Start counting these items
-            $similar{$string}{count} = 1;
 
-            ## Store this away for eventual output
-            $find{$filename}{$line} = $similar{$string};
-            $find{$filename}{$line}{string} = $string;
-            $find{$filename}{$line}{rawstring} = $rawstring;
-
-            ## Copy filename and line up a level for later sorting ease
-            $find{$filename}{$line}{filename} = $similar{$string}{earliest}{filename};
-            $find{$filename}{$line}{line} = $similar{$string}{earliest}{line};
         }
+
+        ## Increment the total count for this string
+        $similar{$string}{count}++;
+
+        ## Increment the count for this string in this file
+        $similar{$string}{filecount}{$filename}++;
 
         ## At this point we have an earliest
         ## Store all filenames in case we need them
@@ -3013,11 +3031,9 @@ sub process_report {
     ## How many files actually had things?
     my $matchfiles = 0;
     ## How many unique items?
-    my $unique_matches = 0;
-    for my $f (values %find) {
-        $unique_matches += keys %{$f};
-    }
+    my $unique_matches = keys %similar;
     my $pretty_unique_matches = pretty_number($unique_matches);
+
     ## Which was the latest to contain something?
     my $last_file_parsed;
     for my $file (@files_parsed) {
@@ -3519,6 +3535,9 @@ sub send_smtp_email {
 
 sub lines_of_interest {
 
+
+#die Dumper keys %similar;
+
     ## Given a file handle, print all our current lines to it
 
     my ($lfh,$matchfiles) = @_;
@@ -3532,55 +3551,238 @@ sub lines_of_interest {
 
         my $sorttype = $opt{sortby} || $arg{sortby};
 
+        my $aa = $similar{$a};
+        my $bb = $similar{$b};
+
         if ($arg{type} eq 'duration') {
-            if (! exists $sorthelp{$a}) {
-                my $lstring = $a->{string} || $a->{earliest}{string};
-                $sorthelp{$a} =
+            if (! exists $sorthelp{$aa}) {
+                my $lstring = $aa->{string} || $aa->{earliest}{string};
+                $sorthelp{$aa} =
                     $lstring =~ /duration: ([0-9]+\.[0-9]+)/o ? $1 : 0;
             }
-            if (! exists $sorthelp{$b}) {
-                my $lstring = $b->{string} || $b->{earliest}{string};
-                $sorthelp{$b} =
+            if (! exists $sorthelp{$bb}) {
+                my $lstring = $bb->{string} || $bb->{earliest}{string};
+                $sorthelp{$bb} =
                     $lstring =~ /duration: ([0-9]+\.[0-9]+)/o ? $1 : 0;
             }
-            return ($sorthelp{$b} <=> $sorthelp{$a})
-                    || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
-                    || ($a->{line} <=> $b->{line});
+            return ($sorthelp{$bb} <=> $sorthelp{$aa})
+                    || ($fileorder{$aa->{filename}} <=> $fileorder{$bb->{filename}})
+                    || ($aa->{line} <=> $bb->{line});
         }
+
         ## For tempfile, we want to sort by largest overall tempfile
         ## In a tie, we do the highest mean, count, filename, then line number!
         elsif ($arg{type} eq 'tempfile') {
-            return ($b->{largest}{filesize} <=> $a->{largest}{filesize})
-                    || $b->{mean} <=> $a->{mean}
-                    || $b->{count} <=> $a->{count}
-                    || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
-                    || ($a->{line} <=> $b->{line});
+            return ($bb->{largest}{filesize} <=> $aa->{largest}{filesize})
+                    || $bb->{mean} <=> $aa->{mean}
+                    || $bb->{count} <=> $aa->{count}
+                    || ($fileorder{$aa->{filename}} <=> $fileorder{$bb->{filename}})
+                    || ($aa->{line} <=> $bb->{line});
         }
+
         ## Special sorting for the display of means
         elsif ($arg{type} eq 'tempfilemean') {
-            return ($b->{mean} <=> $a->{mean})
-                    || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
-                    || ($a->{line} <=> $b->{line});
+            return ($bb->{mean} <=> $aa->{mean})
+                    || ($fileorder{$aa->{filename}} <=> $fileorder{$bb->{filename}})
+                    || ($aa->{line} <=> $bb->{line});
         }
-        ## Special sorting for the display of means
+
+        ## Special sorting for the display of temp files
         elsif ($arg{type} eq 'tempfiletotal') {
-            return ($b->{total} <=> $a->{total})
-                    || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
-                    || ($a->{line} <=> $b->{line});
+            return ($bb->{total} <=> $aa->{total})
+                    || ($fileorder{$aa->{filename}} <=> $fileorder{$bb->{filename}})
+                    || ($aa->{line} <=> $bb->{line});
         }
+
         elsif ($sorttype eq 'count') {
-            return ($b->{count} <=> $a->{count})
-                    || ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
-                    || ($a->{line} <=> $b->{line});
+#            warn Dumper $aa;
+            if (! defined $aa->{earliest}{time}) {
+                warn "NOGOOD:\n";
+                warn Dumper $aa;
+                exit;
+            }
+            return ($bb->{count} <=> $aa->{count})
+                    || scalar keys %{ $aa->{filecount} } <=> scalar keys %{ $bb->{filecount} }
+                    ##|| ($fileorder{$aa->{filename}} <=> $fileorder{$bb->{filename}})
+                    || ($aa->{earliest}{time} cmp $bb->{earliest}{time})
+                    || ($aa->{earliest}{line} <=> $bb->{earliest}{line});
         }
+
         elsif ($sorttype eq 'date') {
-            return ($fileorder{$a->{filename}} <=> $fileorder{$b->{filename}})
-                || ($a->{line} <=> $b->{line});
+            return ($fileorder{$aa->{filename}} <=> $fileorder{$bb->{filename}})
+                || ($aa->{line} <=> $bb->{line});
 
         }
 
-        return $a <=> $b;
+        return $aa <=> $bb;
     }
+
+    my $count = 0;
+
+#die Dumper keys %similar;
+
+    for my $string (sort sortsub keys %similar) {
+
+        my $f = $similar{$string};
+
+        $count++;
+
+        if ($arg{find_line_number}) {
+            ### $f->{line} = pretty_number($f->{line});
+        }
+
+        last if $arg{showonly} and $count > $arg{showonly};
+
+        ## Sometimes we don't want to show all the durations
+        if ($arg{type} eq 'duration' and $arg{duration_limit}) {
+            last if $count > $arg{duration_limit};
+        }
+
+        ## Sometimes we don't want to show all the tempfiles
+        if ($arg{type} eq 'tempfile' and $arg{tempfile_limit}) {
+            last if $count > $arg{tempfile_limit};
+        }
+
+        print "\n[$count]";
+
+        my $earliest = $f->{earliest};
+        my $filename = $earliest->{filename};
+
+        ## If only a single entry, simpler output
+        if (exists $f->{latest}{npstring} or (1 == $f->{count} and $arg{hideflatten})) {
+            if (exists $f->{latest}{npstring}) {
+                if ($f->{earliest}{line} != $f->{latest}{line}) {
+                    $f->{line} = "$f->{earliest}{line} - $f->{latest}{line}";
+                }
+                $earliest->{rawstring} = $f->{latest}{npstring};
+            }
+
+            if ($matchfiles > 1) {
+                printf " From %s%s\n",
+                    $fab{$filename},
+                    $arg{find_line_number}
+                       ? (sprintf ' (%s %s)', $earliest->{line} =~ / / ? 'lines' : 'line', $earliest->{line})
+                       : '';
+            }
+            elsif ($arg{find_line_number}) {
+                printf " (from %s %s)\n", $earliest->{line} =~ / / ? 'lines' : 'line', $earliest->{line};
+            }
+            else {
+                print "\n";
+            }
+
+            ## If in tempfile mode, show the prettified information here
+            if ($arg{type} eq 'tempfile') {
+                printf "Temp file size: %s\n", pretty_size($f->{largest}{filesize});
+            }
+
+            ## If we are using prefixes, show it here
+            if (exists $f->{earliest}{pgprefix} and length $f->{earliest}{pgprefix} and $f->{earliest}{pgprefix} ne '?') {
+                print "$f->{earliest}{pgprefix}\n";
+            }
+
+            ## Show the actual string, not the flattened version (unless pgbouncer)
+            my $nonparsed = exists $f->{latest}{npstring} ? 1 : 0;
+            my $lstring = wrapline( ($arg{pglog} eq 'pgbouncer' ? $string : ($earliest->{rawstring} || $string) || ''), $nonparsed );
+            print "$lstring\n";
+
+            next;
+        }
+
+        ## More than one entry means we have an earliest and latest to look at
+        my $latest = $f->{latest};
+        my $pcount = pretty_number($f->{count});
+
+        if ($arg{find_line_number}) {
+            $earliest->{line} = pretty_number($earliest->{line});
+            $latest->{line} = pretty_number($latest->{line});
+        }
+
+        ## How many files did this span?
+        my $filecount = scalar keys %{ $f->{filecount} // {} };
+
+        my $filelist = join ', ' => sort map { $fab{$_} } keys %{ $f->{filecount} };
+
+        print " From $filelist" if $filecount > 1;
+        if ($arg{find_line_number}) {
+            if (1 == $filecount) {
+                ## All matches came from a single file
+                printf " (between lines %s and %s, occurs %d times)\n",
+                    $earliest->{line}, $latest->{line}, $pcount;
+            }
+            else {
+                ## Matches came from multiple files
+                printf " (between lines %s of %s and %s of %s, occurs %d times)\n",
+                    $earliest->{line}, $fab{ $earliest->{file} },
+                    $latest->{line}, $fab{ $latest->{file} },
+                        $pcount;
+            }
+        }
+        else {
+            print "  Count: $pcount\n";
+        }
+
+        if ($arg{type} eq 'tempfile') {
+
+            ## If there was more than one, show some summary information
+            if ($f->{count} > 1) {
+                printf "Arithmetic mean is %s, total size is %s\n",
+                    pretty_size($f->{mean}), pretty_size($f->{total});
+            }
+
+            ## Show the exact size, or the smallest and largest if both available
+            if ($f->{smallest}{filesize} == $f->{largest}{filesize}) {
+                printf "Temp file size: %s\n", pretty_size($f->{largest}{filesize});
+            }
+            else {
+                ## Show the smallest and the largest temp files used for this statement
+                ## Show the prefix (e.g. timestamp) when it occurred if available
+
+                my $s = $f->{smallest};
+                printf "Smallest temp file size: %s%s\n",
+                    pretty_size($s->{filesize}),
+                    (exists $s->{pgprefix} and $s->{pgprefix} ne '?') ? " ($s->{pgprefix})" : '';
+
+                my $l = $f->{largest};
+                printf "Largest temp file size: %s%s\n",
+                    pretty_size($l->{filesize}),
+                    (exists $l->{pgprefix} and $l->{pgprefix} ne '?') ? " ($l->{pgprefix})" : '';
+            }
+        }
+
+        ## If we have prefixes available, show those
+        my $estring = exists $f->{foundvariant} ? $string : $earliest->{rawstring};
+        if (exists $earliest->{pgprefix}) {
+            if ($earliest->{pgprefix} ne '?') { ## Skip direct lines
+                printf "First: %s%s\nLast:  %s%s\n",
+                    1 == $filecount ? '' : "[$fab{$earliest->{filename}}] ",
+                    $earliest->{pgprefix},
+                    1 == $filecount ? '' : "[$fab{$latest->{filename}}] ",
+                    $latest->{pgprefix};
+            }
+            $estring =~ s/^\s+//o;
+            print wrapline($estring);
+            print "\n";
+        }
+        else {
+            print " Earliest and latest:\n";
+            print wrapline($estring);
+            print "\n";
+            print wrapline($latest->{string});
+            print "\n";
+        }
+
+        ## Show the first actual error if we've flattened things out (unless pgbouncer)
+        if (exists $f->{foundvariant} and $arg{pglog} ne 'pgbouncer' and length $earliest->{rawstring}) {
+            print "-\n";
+            print wrapline($earliest->{rawstring});
+            print "\n";
+        }
+
+
+
+    } ## end each item
+
 
     ## Flatten the items for ease of sorting
     my @sorted;
@@ -3655,184 +3857,6 @@ sub lines_of_interest {
         }
 
     } ## end of tempfile mode
-
-    my $count = 0;
-    for my $f (sort sortsub @sorted) {
-
-        $count++;
-
-        if ($arg{find_line_number}) {
-            $f->{line} = pretty_number($f->{line});
-        }
-
-        last if $arg{showonly} and $count > $arg{showonly};
-
-        ## Sometimes we don't want to show all the durations
-        if ($arg{type} eq 'duration' and $arg{duration_limit}) {
-            last if $count > $arg{duration_limit};
-        }
-
-        ## Sometimes we don't want to show all the tempfiles
-        if ($arg{type} eq 'tempfile' and $arg{tempfile_limit}) {
-            last if $count > $arg{tempfile_limit};
-        }
-
-        print "\n[$count]";
-
-        my $filename = exists $f->{earliest} ? $f->{earliest}{filename} : $f->{filename};
-
-        ## If only a single entry, simpler output
-        if (exists $f->{latest}{npstring} or (1 == $f->{count} and $arg{hideflatten})) {
-            if (exists $f->{latest}{npstring}) {
-                if ($f->{earliest}{line} != $f->{latest}{line}) {
-                    $f->{line} = "$f->{earliest}{line} - $f->{latest}{line}";
-                }
-                $f->{rawstring} = $f->{latest}{npstring};
-            }
-
-            if ($matchfiles > 1) {
-                printf " From %s%s\n",
-                    $fab{$filename},
-                    $arg{find_line_number}
-                       ? (sprintf ' (%s %s)', $f->{line} =~ / / ? 'lines' : 'line', $f->{line})
-                       : '';
-            }
-            elsif ($arg{find_line_number}) {
-                printf " (from %s %s)\n", $f->{line} =~ / / ? 'lines' : 'line', $f->{line};
-            }
-            else {
-                print "\n";
-            }
-
-            ## If in tempfile mode, show the prettified information here
-            if ($arg{type} eq 'tempfile') {
-                printf "Temp file size: %s\n", pretty_size($f->{largest}{filesize});
-            }
-
-            ## If we are using prefixes, show it here
-            if (exists $f->{earliest}{pgprefix} and length $f->{earliest}{pgprefix} and $f->{earliest}{pgprefix} ne '?') {
-                print "$f->{earliest}{pgprefix}\n";
-            }
-
-            ## Show the actual string, not the flattened version (unless pgbouncer)
-            my $nonparsed = exists $f->{latest}{npstring} ? 1 : 0;
-            my $lstring = wrapline( ($arg{pglog} eq 'pgbouncer' ? $f->{string} : ($f->{rawstring} || $f->{string}) || ''), $nonparsed );
-            print "$lstring\n";
-
-            next;
-        }
-
-        ## More than one entry means we have an earliest and latest to look at
-        my $earliest = $f->{earliest};
-        my $latest = $f->{latest};
-        my $pcount = pretty_number($f->{count});
-
-        if ($arg{find_line_number}) {
-            $latest->{line} = pretty_number($latest->{line});
-        }
-
-        ## Does it span multiple files?
-        my $samefile = $earliest->{filename} eq $latest->{filename} ? 1 : 0;
-        if ($samefile) {
-            if ($matchfiles > 1) {
-                print " From $fab{$filename}";
-                if ($arg{find_line_number}) {
-                    print " (between lines $f->{line} and $latest->{line}, occurs $pcount times)";
-                }
-                else {
-                    print " Count: $pcount";
-                }
-                print "\n";
-            }
-            else {
-                if ($arg{find_line_number}) {
-                    print " (between lines $f->{line} and $latest->{line}, occurs $pcount times)";
-                }
-                else {
-                    print " Count: $pcount";
-                }
-                print "\n";
-            }
-        }
-        else {
-            my ($A,$B) = ($fab{$earliest->{filename}}, $fab{$latest->{filename}});
-
-            ## Ranges only make sense for time-sequential files
-            ## If any are not (e.g. service files), simply output all matching filenames
-            my $time_based = ! grep { /SERVICE=/ } @{ $earliest->{allfiles} };
-            if ($time_based) {
-                print " From $A to $B";
-            }
-            else {
-                print ' From files: ' . join ', ' => map { $fab{$_} } @{ $earliest->{allfiles} };
-            }
-            if ($arg{find_line_number} and $time_based) {
-                printf " (between lines $f->{line} of $A and $latest->{line} of $B, occurs $pcount times)",;
-            }
-            else {
-                print "  Count: $pcount";
-            }
-            print "\n";
-        }
-
-        if ($arg{type} eq 'tempfile') {
-
-            ## If there was more than one, show some summary information
-            if ($f->{count} > 1) {
-                printf "Arithmetic mean is %s, total size is %s\n",
-                    pretty_size($f->{mean}), pretty_size($f->{total});
-            }
-
-            ## Show the exact size, or the smallest and largest if both available
-            if ($f->{smallest}{filesize} == $f->{largest}{filesize}) {
-                printf "Temp file size: %s\n", pretty_size($f->{largest}{filesize});
-            }
-            else {
-                ## Show the smallest and the largest temp files used for this statement
-                ## Show the prefix (e.g. timestamp) when it occurred if available
-
-                my $s = $f->{smallest};
-                printf "Smallest temp file size: %s%s\n",
-                    pretty_size($s->{filesize}),
-                    (exists $s->{pgprefix} and $s->{pgprefix} ne '?') ? " ($s->{pgprefix})" : '';
-
-                my $l = $f->{largest};
-                printf "Largest temp file size: %s%s\n",
-                    pretty_size($l->{filesize}),
-                    (exists $l->{pgprefix} and $l->{pgprefix} ne '?') ? " ($l->{pgprefix})" : '';
-            }
-        }
-
-        ## If we have prefixes available, show those
-        my $estring = $f->{string};
-        if (exists $earliest->{pgprefix}) {
-            if ($earliest->{pgprefix} ne '?') { ## Skip direct lines
-                printf "First: %s%s\nLast:  %s%s\n",
-                    $samefile ? '' : "[$fab{$earliest->{filename}}] ",
-                    $earliest->{pgprefix},
-                    $samefile ? '' : "[$fab{$latest->{filename}}] ",
-                    $latest->{pgprefix};
-            }
-            $estring =~ s/^\s+//o;
-            print wrapline($estring);
-            print "\n";
-        }
-        else {
-            print " Earliest and latest:\n";
-            print wrapline($estring);
-            print "\n";
-            print wrapline($latest->{string});
-            print "\n";
-        }
-
-        ## Show the first actual error if we've flattened things out (unless pgbouncer)
-        if ($estring ne $f->{rawstring} and $arg{pglog} ne 'pgbouncer' and length $f->{rawstring}) {
-            print "-\n";
-            print wrapline($f->{rawstring});
-            print "\n";
-        }
-
-    } ## end each item
 
     select $oldselect;
 
@@ -4000,6 +4024,8 @@ sub pretty_number {
     ## Format a raw number in a more readable style
 
     my $number = shift;
+
+    die caller() if ! defined $number;
 
     return $number if $number !~ /^[0-9]+$/ or $number < 1000;
 

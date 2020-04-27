@@ -1,0 +1,22 @@
+2020-03-25 21:32:52.996 EST [8015] LOG:  database system was shut down at 2020-03-25 21:32:52 EST
+2020-03-25 21:32:52.999 EST [8013] LOG:  database system is ready to accept connections
+2020-03-25 21:32:53.732 EST [8030] LOG:  statement: select * from pg_class limit 1
+2020-03-25 21:32:53.752 EST [8033] LOG:  statement: select * from pg_class limit 1
+2020-03-25 21:32:55.038 EST [8038] LOG:  statement: select * from pg_class limit 1
+2020-03-25 21:32:55.059 EST [8041] LOG:  statement: select * from pg_class limit 9
+2020-03-25 21:32:56.155 EST [8044] LOG:  statement: SELECT 1/0
+2020-03-25 21:32:56.155 EST [8044] ERROR:  division by zero
+2020-03-25 21:32:56.155 EST [8044] STATEMENT:  SELECT 1/0
+2020-03-25 21:32:56.431 EST [8049] LOG:  statement: 
+2020-03-25 21:32:56.451 EST [8052] LOG:  statement: 
+2020-03-25 21:34:56.155 EST [2842] LOG:  statement: SELECT 1/0
+2020-03-25 21:34:56.155 EST [2842] ERROR:  division by zero
+2020-03-25 21:34:56.155 EST [2842] STATEMENT:  SELECT 3/0
+2020-03-25 21:35:57.805 EST [8060] LOG:  statement: select * from pg_class limit 9
+2020-03-25 21:36:57.826 EST [8063] LOG:  statement: select * from pg_class limit 1
+2020-03-25 21:37:59.183 EST [8068] LOG:  statement: select * from pg_class limit 9
+2020-03-25 21:38:59.209 EST [8071] LOG:  statement: select * from pg_class limit 1
+2020-03-25 21:39:59.232 EST [8074] LOG:  statement: select * from pg_class limit 8
+2020-03-26 07:12:26.341 EST [3987] LOG:  statement: SELECT 1/0
+2020-03-26 07:12:26.341 EST [3987] ERROR:  division by zero
+2020-03-26 07:12:26.341 EST [3987] STATEMENT:  SELECT 1/0

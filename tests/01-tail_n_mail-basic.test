@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 34;
+use Test::More tests => 39;
 
 use vars qw{ $info $t };
 
@@ -24,6 +24,9 @@ sub run {
 	return $@ ? "OOPS: $@\n" : $result;
 }
 
+my $host = qx{hostname};
+chomp $host;
+
 $t = q{Running with non-existent config file gives an error};
 $info = run('tests/nosuch.config');
 like ($info, qr{Could not open}, $t);
@@ -34,148 +37,202 @@ like ($verinfo, qr{^tail_n_mail version [0-9]+\.[0-9]+\.[0-9]+}, $t);
 $verinfo =~ /([0-9]+\.[0-9]+\.[0-9]+)/ or die;
 my $ver = $1;
 
+###
 $info = run('tests/config/testconfig-tail_n_mail.1');
-my $start = substr($info,0,300);
-$t = q{Test config 1 gives correct subject line};
-my $host = qx{hostname};
-chomp $host;
-like ($start, qr{^Subject: Acme $host Postgres errors 45 : 60\n}, $t);
+###
 
-$t = q{Test config 1 gives correct bulk email headers};
-like ($start, qr{\nAuto-Submitted: auto-generated\nPrecedence: bulk\n}, $t);
+$t = q{Test config 1 produces correct Subject line};
+my $headers = $info =~ /(Subject: .+?)\n\n/s ? $1 : '<no headers>';
+like ($headers, qr{^Subject: Acme $host Postgres errors 39 : 60$}m, $t);
 
-$t = q{Test config 1 gives correct version header};
-like ($start, qr{\nX-TNM-VERSION: $ver\n}, $t);
+$t = q{Test config 1 produces correct bulk email header 1};
+like ($headers, qr{^Auto-Submitted: auto-generated$}m, $t);
 
-$t = q{Test config 1 inserts a 'To' header};
-like ($start, qr{\nTo: someone\@example.com\n}, $t);
+$t = q{Test config 1 produces correct bulk email header 2};
+like ($headers, qr{^Precedence: bulk$}m, $t);
 
-$t = q{Test config 1 inserts a 'Date' line with newlines before it};
-like ($start, qr{\n\n\Date: \w\w\w \w\w\w [0-9 ][0-9]}, $t);
+$t = q{Test config 1 produces correct tnm version in header};
+like ($headers, qr{^X-TNM-VERSION: $ver$}m, $t);
 
-$t = q{Test config 1 inserts a 'Host' line};
-like ($start, qr{\nHost: \w}, $t);
+$t = q{Test config 1 produces expected 'To' value};
+my $email = 'someone@example.com';
+like ($headers, qr{^To: $email$}m, $t);
 
-$t = q{Test config 1 inserts a 'Unique items' line};
-like ($start, qr{\nUnique items: 45\n}, $t);
+$t = q{Test config 1 produces a valid 'Date' line};
+my $summary = $info =~ /(Date: .+?)\n\n/s ? $1 : '<no summary>';
+like ($summary, qr{^Date: \w\w\w \w\w\w [0-9 ][0-9]}m, $t);
 
-$t = q{Test config 1 inserts a 'Matches from' line};
-like ($start, qr{\nMatches from tests/logs/testlog1.txt: 60\n}, $t);
+$t = q{Test config 1 produces a valid 'Host' line};
+like ($summary, qr{^Host: [\w\.]+$}m, $t);
 
-$t = q{Test config 1 gives a 'DRYRUN' line};
-like ($info, qr{DRYRUN: }, $t);
+$t = q{Test config 1 produces correct 'Unique items' line};
+like ($summary, qr{^Unique items: 39$}m, $t);
 
-$t = q{Test config 1 gives correct first item match};
-$start = substr($info,0,9000);
-like ($start, qr{\n\Q[1] (between lines 9,542 and 9,586, occurs 5 times)}, $t);
+$t = q{Test config 1 produces correct 'Matches from' line};
+like ($summary, qr{^Matches from tests/logs/testlog1.txt: 60$}m, $t);
 
-$t = q{Test config 1 gives correct first item "First" timestamp};
-like ($start, qr{\n\QFirst: 2010-12-22 19:17:53 EST [29929]\E\n}, $t);
+$t = q{Test config 1 produces a valid 'DRYRUN' line};
+my $dryrun = $info =~ /(DRYRUN: .+)/ ? $1 : '<no dryrun>';
+like ($info, qr{DRYRUN: .+$email}, $t);
 
-$t = q{Test config 1 gives correct first item "Last" timestamp};
-like ($start, qr{\n\QLast:  2010-12-22 19:17:53 EST [29929]\E\n}, $t);
+$t = q{Test config 1 produces correct first item match};
+my $between = $info =~ /(.+?between.+)/ ? $1 : '<no between>';
+is ($between, '[1] (between lines 9,542 and 9,586, occurs 5 times)', $t);
 
-$t = q{Test config 1 gives correct normalized output};
-like ($start, qr{\nERROR: type "line" not yet implemented
-\QSTATEMENT: INSERT INTO dbd_pg_test_geom(xline) VALUES (?)\E\n\-\n}, $t);
+$t = q{Test config 1 produces correct "First" timestamp};
+my $first = $info =~ /(First.+)/ ? $1 : '<no First>';
+is ($first, 'First: 2010-12-22 19:17:53 EST [29929]', $t);
 
-$t = q{Test config 1 gives correct literal output};
-like ($start, qr{\n\-\nERROR: type "line" not yet implemented
-\QSTATEMENT: INSERT INTO dbd_pg_test_geom(xline) VALUES (\E\$1\)}, $t);
+$t = q{Test config 1 produces correct "Last" timestamp};
+my $last = $info =~ /(Last.+)/ ? $1 : '<no Last>';
+is ($last, 'Last:  2010-12-22 19:17:53 EST [29929]', $t);
 
-## Second match is a simple COPY error with a CONTEXT
-$t = q{Test config 1 gives correct second match};
-$start = substr($info,500,800);
-like ($start, qr{\Q
-[3] (between lines 8,187 and 8,200, occurs 3 times)
+$t = q{Test config 1 produces correct normalized output for the ERROR};
+my $error = $info =~ /(ERROR: .+)/ ? $1 : '<no error>';
+is ($error, 'ERROR: invalid input syntax for type point: "?"', $t);
+
+$t = q{Test config 1 produces correct normalized output for the STATEMENT};
+my $statement = $info =~ /(STATEMENT: .+)/ ? $1 : '<no statement>';
+is ($statement, 'STATEMENT: INSERT INTO dbd_pg_test_geom(xpoint) VALUES (?)', $t);
+
+$t = q{Test config 1 produces correct literal output for the ERROR};
+$error = $info =~ /\-\n(ERROR: .+)/ ? $1 : '<no error>';
+is ($error, 'ERROR: invalid input syntax for type point: "123,abc"', $t);
+
+$t = q{Test config 1 produces correct literal output for the STATEMENT};
+$statement = $info =~ /(STATEMENT: .+)\n\n/ ? $1 : '<no statement>';
+is ($statement, 'STATEMENT: INSERT INTO dbd_pg_test_geom(xpoint) VALUES ($1)', $t);
+
+$t = q{Test config 1 produces correct output for second match};
+my $chunk = $info =~ /(\[2\].+?\n)\n/s ? $1 : '<no second match>';
+my $expected = << 'EOT';
+[2] (between lines 9,598 and 9,643, occurs 5 times)
+First: 2010-12-22 19:17:53 EST [29929]
+Last:  2010-12-22 19:17:53 EST [29929]
+ERROR: type "line" not yet implemented at character 17
+STATEMENT: EXECUTE geotest (?,?)
+EOT
+is ($chunk, $expected, $t);
+
+$t = q{Test config 1 produces correct output for third match};
+$chunk = $info =~ /(\[3\].+?\n)\n/s ? $1 : '<no third match>';
+$expected = << 'EOT';
+[3] (between lines 9,603 and 9,647, occurs 5 times)
+First: 2010-12-22 19:17:53 EST [29929]
+Last:  2010-12-22 19:17:53 EST [29929]
+ERROR: type "line" not yet implemented
+STATEMENT: INSERT INTO dbd_pg_test_geom(xline) VALUES ($1)
+EOT
+is ($chunk, $expected, $t);
+
+$t = q{Test config 1 produces correct output for fourth match};
+$chunk = $info =~ /(\[4\].+?\n)\n/s ? $1 : '<no fourth match>';
+$expected = << 'EOT';
+[4] (between lines 8,187 and 8,200, occurs 3 times)
 First: 2010-12-22 19:17:41 EST [29896]
 Last:  2010-12-22 19:17:41 EST [29896]
 ERROR: COPY from stdin failed: COPY terminated by new PQexec
 CONTEXT: COPY dbd_pg_test4, line 1
 STATEMENT: COPY dbd_pg_test4 FROM STDIN
-\E}, $t);
+EOT
+is ($chunk, $expected, $t);
 
-## Third match has a "character X" substitution
-$t = q{Test config 1 gives correct third match};
-$start = substr($info,600,1000);
-like ($start, qr{\Q
-[4] (between lines 1,013 and 1,015, occurs 2 times)
+$t = q{Test config 1 produces correct output for fifth match};
+$chunk = $info =~ /(\[5\].+?\n)\n/s ? $1 : '<no fifth match>';
+$expected = << 'EOT';
+[5] (between lines 1,013 and 1,015, occurs 2 times)
 First: 2010-12-22 19:17:38 EST [29867]
 Last:  2010-12-22 19:17:38 EST [29867]
-ERROR: syntax error at or near "?" at character ?
-STATEMENT: Testing the ShowErrorStatement attribute
--
 ERROR: syntax error at or near "Testing" at character 1
 STATEMENT: Testing the ShowErrorStatement attribute
-\E}, $t);
+EOT
+is ($chunk, $expected, $t);
 
-## Fifth match has no normalization
-$t = q{Test config 1 gives correct fifth match};
-$start = substr($info,1300,900);
-like ($start, qr{\Q
-[6] (between lines 7,093 and 7,526, occurs 2 times)
-First: 2010-12-22 19:17:40 EST [29878]
-Last:  2010-12-22 19:17:40 EST [29882]
-ERROR: column "dbdpg_throws_an_error" does not exist at character 8
-STATEMENT: SELECT dbdpg_throws_an_error
-\E}, $t);
-
+###
 $info = run('tests/config/testconfig-tail_n_mail.3');
-$start = substr($info,0,300);
-$t = q{Test config 3 gives correct subject line};
-$host = qx{hostname};
-chomp $host;
-like ($start, qr{^Subject: Acme $host Postgres errors 3 : 5\n}, $t);
+###
 
-$t = q{Test config 3 gives correct first item match};
-$start = substr($info,0,800);
-like ($start, qr{\n\Q[1] (between lines 236 and 238, occurs 2 times)}, $t);
+$t = q{Test config 3 produces correct Subject line};
+$headers = $info =~ /(Subject: .+?)\n\n/s ? $1 : '<no headers>';
+like ($headers, qr{^Subject: Acme $host Postgres errors 3 : 5$}m, $t);
 
-my $who = 'greg@space-tower.com';
-$t = q{Test config 3 gives correct first item "First" timestamp};
-like ($start, qr{\n\QFirst: 2012-08-29 11:21:22.327 EDT [32343] $who\E\n}, $t);
+$t = q{Test config 3 produces correct first item match};
+$between = $info =~ /(.+?between.+)/ ? $1 : '<no between>';
+is ($between, '[1] (between lines 236 and 238, occurs 2 times)', $t);
 
-$t = q{Test config 3 gives correct first item "Last" timestamp};
-like ($start, qr{\n\QLast:  2012-08-29 11:21:22.328 EDT [32343] $who\E\n}, $t);
+$t = q{Test config 3 produces correct "First" timestamp};
+$first = $info =~ /(First.+)/ ? $1 : '<no First>';
+is ($first, 'First: 2012-08-29 11:21:22.327 EDT [32343] greg@space-tower.com', $t);
 
-$t = q{Test config 3 gives correct normalized output};
-like ($start, qr{\n\QERROR: syntax error at or near "?" at character ?
-STATEMENT: Testing the ShowErrorStatement attribute\E\n\-\n}, $t);
+$t = q{Test config 3 produces correct "Last" timestamp};
+$last = $info =~ /(Last.+)/ ? $1 : '<no Last>';
+is ($last, 'Last:  2012-08-29 11:21:22.328 EDT [32343] greg@space-tower.com', $t);
 
-$t = q{Test config 3 gives correct literal output};
-like ($start, qr{\n\-\nERROR: syntax error at or near "Testing" at character 1}, $t);
+$t = q{Test config 3 produces correct literal output for the ERROR};
+$error = $info =~ /(ERROR: .+)/ ? $1 : '<no error>';
+is ($error, 'ERROR: syntax error at or near "Testing" at character 1', $t);
 
+$t = q{Test config 3 produces correct literal output for the STATEMENT};
+$statement = $info =~ /(STATEMENT: .+)/ ? $1 : '<no statement>';
+is ($statement, 'STATEMENT: Testing the ShowErrorStatement attribute', $t);
+
+$t = q{Test config 3 produces correct output for second match};
+$chunk = $info =~ /(\[2\].+?\n)\n/s ? $1 : '<no second match>';
+$expected = << 'EOT';
+[2] (between lines 327 and 334, occurs 2 times)
+First: 2012-08-29 11:21:22.556 EDT [32348] greg@space-tower.com
+Last:  2012-08-29 11:21:22.558 EDT [32348] greg@space-tower.com
+ERROR: cannot execute INSERT in a read-only transaction
+STATEMENT: INSERT INTO dbd_pg_test (id) VALUES (50)
+EOT
+is ($chunk, $expected, $t);
+
+###
 $info = run('tests/config/testconfig-tail_n_mail.4');
-$start = substr($info,0,300);
-$t = q{Test config 4 gives correct subject line};
-$host = qx{hostname};
-chomp $host;
-## They are the same, but the space in the application name makes it appear otherwise
-like ($start, qr{^Subject: Acme $host Postgres errors 2 : 2\n}, $t);
+###
 
-$t = q{Test config 4 gives correct first item match};
-$start = substr($info,0,600);
-like ($start, qr{\n\Q[1] (from line 13)}, $t);
+$t = q{Test config 4 produces correct Subject line};
+$headers = $info =~ /(Subject: .+?)\n\n/s ? $1 : '<no headers>';
+like ($headers, qr{^Subject: Acme $host Postgres errors 2 : 2$}m, $t);
 
-$t = q{Test config 7 gives correct first item match};
+## This is slightly broken due to the app name issue
+$t = q{Test config 4 produces correct output for first match};
+$chunk = $info =~ /(\[1\].+?\n)\n/s ? $1 : '<no first match>';
+$expected = << 'EOT';
+[1] (from line 13)
+2014-04-17 10:11:42.261 EDT [31988]:  [13-1] greg greg@[local] bobapp
+ERROR: syntax error at or near "being" at character 1
+STATEMENT: being;
+EOT
+is ($chunk, $expected, $t);
+
+###
 $info = run('tests/config/testconfig-tail_n_mail.7');
-$start = substr($info,260,350);
-my $expected = q{[1] (from line 138)
+###
+
+$t = q{Test config 7 produces correct output for first match};
+$chunk = $info =~ /(\[1\].+?\n)\n/s ? $1 : '<no first match>';
+$expected = << 'EOT';
+[1] (from line 138)
 [local] [13295] 5ccc4c4d.33ef 2019-05-03 10:12:29.584 EDT [unknown] greg@postgres line:67
 ERROR: RAISE EXCEPTION FROM dbdpg_test_error_handler
 CONTEXT: PL/pgSQL function dbdpg_test_error_handler(text) line 10 at RAISE
-STATEMENT: SELECT * FROM dbdpg_test_error_handler( $1 )};
-like ($start, qr{\Q$expected}s, $t);
+STATEMENT: SELECT * FROM dbdpg_test_error_handler( $1 )
+EOT
+is ($chunk, $expected, $t);
 
-$t = q{Warning is given for a non-existent log file};
+###
 $info = run('tests/config/testconfig-tail_n_mail.8');
-$expected = q{!! File was not found: tests/logs/testlog2.txt};
-like ($info, qr{\Q$expected}s, $t);
+###
+
+$t = q{Test config 8 gives a warning for a non-existent log file};
+$summary = $info =~ /(Date: .+?)\n\n/s ? $1 : '<no summary>';
+like ($summary, qr{!! File was not found: tests/logs/testlog2.txt}, $t);
 
 $t = q{Argument 'yesfile' limits which FILE lines are used};
 $info = run('tests/config/testconfig-tail_n_mail.8 --yesfile testlog4');
 ## No matches due to invalid LOG_LINE_PREFIX!
-is ($info, q{}, $t);
+is (length $info, 0, $t);
 
 $t = q{Argument 'yesfile' limits which FILE lines are used};
 $info = run('tests/config/testconfig-tail_n_mail.8 --yesfile testlog1');
@@ -184,7 +241,7 @@ unlike ($info, qr{\Q$expected}s, $t);
 
 $t = q{Argument 'nofile' limits which FILE lines are used};
 $info = run('tests/config/testconfig-tail_n_mail.8 --nofile "testlog[12]" ');
-is ($info, q{}, $t);
+is (length $info, 0, $t);
 
 $t = q{Argument 'nofile' limits which FILE lines are used};
 $info = run('tests/config/testconfig-tail_n_mail.8 --nofile testlog2 ');
@@ -193,7 +250,6 @@ unlike ($info, qr{\Q$expected}s, $t);
 
 $t = q{Argument 'nofile' limits which FILE lines are used - multiple args};
 $info = run('tests/config/testconfig-tail_n_mail.8 --nofile testlog1 --nofile testlog2');
-is ($info, q{}, $t);
+is (length $info, 0, $t);
 
 exit;
-

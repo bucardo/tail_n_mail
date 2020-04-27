@@ -1,0 +1,13 @@
+## Config file for the tail_n_mail program
+## This file is automatically updated
+## Last updated: Tue Dec 31 23:59:59 2019
+## Test config file #8
+EMAIL: someone@example.com
+MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
+FIND_LINE_NUMBER: 0
+LOG_LINE_PREFIX: %m [%p]
+
+FILE1: tests/logs/testlog72.txt
+FILE2: tests/logs/testlog_longname_73.txt
+
+INCLUDE: ERROR:  

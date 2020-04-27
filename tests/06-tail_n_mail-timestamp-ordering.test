@@ -1,0 +1,62 @@
+#!perl
+
+## Test correct sorting of timestamp-prefixed logs
+
+use 5.006;
+use strict;
+use warnings;
+use Data::Dumper;
+use lib 't','.';
+use Test::More tests => 7;
+
+use vars qw{ $info $t };
+
+sub run {
+
+	my $conf = shift or die "Must supply a config file!\n";
+
+	my $options = shift || '';
+
+	my $COM = "perl tail_n_mail --dryrun --no-tailnmailrc --offset=0 $conf $options";
+
+	my $result = '';
+	eval {
+		$result = qx{$COM 2>&1};
+	};
+	return $@ ? "OOPS: $@\n" : $result;
+}
+
+$info = run('tests/config/testconfig-tail_n_mail.10');
+my $subject = $info =~ /Subject: (.+)/ ? $1 : '<no subject>';
+$t = q{Test config 10 gives correct subject line};
+my $host = qx{hostname};
+chomp $host;
+like ($subject, qr{^Acme $host Postgres errors 1 : 7$}, $t);
+
+$t = q{Test config 10 gives correct number of matches per file};
+my $matches = $info =~ /(Matches from.+?)\n\n/s ? $1 : '<no matches>';
+my $match1 = 'Matches from [A] tests/logs/testlog72.txt:           3';
+my $match2 = 'Matches from [B] tests/logs/testlog_longname_73.txt: 4';
+is ($matches, "$match1\n$match2", $t);
+
+$t = q{Test config 10 gives correct ordering and number in header line};
+my $headerline = $info =~ /(From .+)/ ? $1 : '<no header>';
+is ($headerline, 'From A, B  Count: 7', $t);
+
+$t = q{Test config 10 gives correct 'First' entries};
+my $first = $info =~ /(First:.+)/ ? $1 : '<no first prefix>';
+is ($first, 'First: [B] 2020-03-21 12:34:56.177 EST [3712]', $t);
+
+$t = q{Test config 10 gives correct 'Last' entries};
+my $last = $info =~ /(Last:.+)/ ? $1 : '<no last prefix>';
+is ($last, 'Last:  [B] 2020-04-01 07:28:04.232 EST [5311]', $t);
+
+$t = q{Test config 10 gives correct string};
+my $string = $info =~ /Last:.+?\n(.+?)\n^\-/ms ? $1 : '<no string>';
+is ($string, "ERROR: division by zero\nSTATEMENT: SELECT ?/0", $t);
+
+$t = q{Test config 10 gives correct raw string};
+$string = $info =~ /^\-\n(.+?)\n\n/ms ? $1 : '<no string>';
+is ($string, "ERROR: division by zero\nSTATEMENT: SELECT 1/0", $t);
+
+exit;

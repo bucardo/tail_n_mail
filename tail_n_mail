@@ -3787,10 +3787,10 @@ sub lines_of_interest {
         ## We want to show the top X means
 
         ## Assign our numbers so we can display the list of means
-        my $count = 0;
+        my $tempcount = 0;
         for my $f (sort sortsub @sorted) {
-            $count++;
-            $f->{displaycount} = $count;
+            $tempcount++;
+            $f->{displaycount} = $tempcount;
         }
 
         ## Gather the means
@@ -3823,12 +3823,12 @@ sub lines_of_interest {
         ## Print out both the mean and the total
         print "  Top items by arithmetic mean    |   Top items by total size\n";
         print "----------------------------------+-------------------------------\n";
-        $count = 0;
+        $tempcount = 0;
         {
-            last if ! defined $mean[$count] and ! defined $totaltemp[$count];
-            printf '%-s |', defined $mean[$count] ? $mean[$count] : '';
-            printf "%s\n", defined $totaltemp[$count] ? $totaltemp[$count] : '';
-            $count++;
+            last if ! defined $mean[$tempcount] and ! defined $totaltemp[$tempcount];
+            printf '%-s |', defined $mean[$tempcount] ? $mean[$tempcount] : '';
+            printf "%s\n", defined $totaltemp[$tempcount] ? $totaltemp[$tempcount] : '';
+            $tempcount++;
             redo;
         }
 

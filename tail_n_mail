@@ -3535,9 +3535,6 @@ sub send_smtp_email {
 
 sub lines_of_interest {
 
-
-#die Dumper keys %similar;
-
     ## Given a file handle, print all our current lines to it
 
     my ($lfh,$matchfiles) = @_;
@@ -3595,15 +3592,8 @@ sub lines_of_interest {
         }
 
         elsif ($sorttype eq 'count') {
-#            warn Dumper $aa;
-            if (! defined $aa->{earliest}{time}) {
-                warn "NOGOOD:\n";
-                warn Dumper $aa;
-                exit;
-            }
             return ($bb->{count} <=> $aa->{count})
                     || scalar keys %{ $aa->{filecount} } <=> scalar keys %{ $bb->{filecount} }
-                    ##|| ($fileorder{$aa->{filename}} <=> $fileorder{$bb->{filename}})
                     || ($aa->{earliest}{time} cmp $bb->{earliest}{time})
                     || ($aa->{earliest}{line} <=> $bb->{earliest}{line});
         }
@@ -3619,17 +3609,11 @@ sub lines_of_interest {
 
     my $count = 0;
 
-#die Dumper keys %similar;
-
     for my $string (sort sortsub keys %similar) {
 
         my $f = $similar{$string};
 
         $count++;
-
-        if ($arg{find_line_number}) {
-            ### $f->{line} = pretty_number($f->{line});
-        }
 
         last if $arg{showonly} and $count > $arg{showonly};
 

@@ -101,7 +101,7 @@ is ($error, 'ERROR: invalid input syntax for type point: "123,abc"', $t);
 
 $t = q{Test config 1 produces correct literal output for the STATEMENT};
 $statement = $info =~ /(STATEMENT: .+)\n\n/ ? $1 : '<no statement>';
-is ($statement, 'STATEMENT: INSERT INTO dbd_pg_test_geom(xpoint) VALUES ($1)', $t);
+is ($statement, 'STATEMENT: INSERT INTO dbd_pg_test_geom(xpoint) VALUES ($1)', $t); ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
 
 $t = q{Test config 1 produces correct output for second match};
 my $chunk = $info =~ /(\[2\].+?\n)\n/s ? $1 : '<no second match>';

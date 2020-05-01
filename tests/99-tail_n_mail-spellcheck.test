@@ -88,7 +88,6 @@ SKIP: {
 		push @files, "$_";
 	}
 
-
 	for my $file (@testfiles, 'tail_n_mail') {
 		if (! -e $file) {
 			fail (qq{Could not find the file "$file"!});
@@ -100,6 +99,9 @@ SKIP: {
 		}
 		$string = join "\n" => @$string;
 		$string =~ s/=head1.+//sm;
+        ## Exclude Perl::Critic stuff
+        $string =~ s{RequireInterpolationOfMetachars}{};
+        $string =~ s{ValuesAndExpressions}{};
 		spellcheck ("comments from $file" => $string, $file);
 	}
 

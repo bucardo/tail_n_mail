@@ -45,6 +45,7 @@ profile-strictness = quiet
 [-Miscellanea::RequireRcsKeywords]
 [-Modules::ProhibitExcessMainComplexity]
 [-Modules::RequireVersionVar]
+[-NamingConventions::ProhibitAmbiguousNames]
 [-OTRS::ProhibitDumper]
 [-OTRS::ProhibitLocaltime]
 [-OTRS::ProhibitLowPrecedenceOps]

@@ -5,13 +5,13 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 39;
+use Test::More tests => 48;
 
 use vars qw{ $info $t };
 
 sub run {
 
-	my $conf = shift or die "Must supply a config file!\n";
+	my $conf = shift || '';
 
 	my $options = shift || '';
 
@@ -37,8 +37,30 @@ like ($verinfo, qr{^tail_n_mail version [0-9]+\.[0-9]+\.[0-9]+}, $t);
 $verinfo =~ /([0-9]+\.[0-9]+\.[0-9]+)/ or die;
 my $ver = $1;
 
+$t = q{Program outputs help information when given no args};
+$info = run();
+like ($info, qr{Usage:}, $t);
+
+for my $arg (qw/ -h --h --help -? --? /) {
+    $t = qq{Program outputs help information when given arg: $arg};
+    $info = run($arg);
+    like ($info, qr{Usage:}, $t);
+}
+
+my $config1 = 'tests/config/testconfig-tail_n_mail.1';
+
+$t = qq{Program will not accept a start_time with an invalid format};
+$info = run("$config1 --start_time=never");
+like ($info, qr{format YYYY}, $t);
+$info = run("$config1 --start_time=123456789");
+like ($info, qr{format YYYY}, $t);
+
+$t = qq{Program works with a correct start_time of 14 digits};
+$info = run("$config1 --start_time='2009-04-01 22:33:44'");
+like ($info, qr{Subject:}, $t);
+
 ###
-$info = run('tests/config/testconfig-tail_n_mail.1');
+$info = run($config1);
 ###
 
 $t = q{Test config 1 produces correct Subject line};

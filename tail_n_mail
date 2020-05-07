@@ -271,7 +271,8 @@ for (@{ $arg{file} }) {
 }
 
 ## The start_time must be in a specific format for now
-if ($arg{start_time} and $arg{start_time} =~ s/[^0-9]//g) {
+if ($arg{start_time}) {
+    $arg{start_time} =~ s/[^0-9]//g;
     14 == length $arg{start_time} or die "Argument start_time must be in the format YYYY-MM-DD HH:MI:SS\n";
 }
 

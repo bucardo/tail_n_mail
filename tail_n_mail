@@ -484,7 +484,7 @@ if (defined $arg{mailsig}->[0]) {
             exit 1;
         }
         { local $/; $sigstring .= <$fh>; }
-        close $fh or warn qq{Could not close "$sigfile": $!\n};
+        close $fh;
     }
     $arg{mailsignature} = $sigstring;
 }

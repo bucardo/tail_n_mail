@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 48;
+use Test::More tests => 51;
 
 use vars qw{ $info $t };
 
@@ -58,6 +58,20 @@ like ($info, qr{format YYYY}, $t);
 $t = qq{Program works with a correct start_time of 14 digits};
 $info = run("$config1 --start_time='2009-04-01 22:33:44'");
 like ($info, qr{Subject:}, $t);
+
+$t = q{Program fails when an invalid mailsig argument is given};
+$info = run("$config1 --mailsig=nosuchfile");
+like($info, qr{nosuchfile}, $t);
+
+$t = q{Correct custom mail sig is read in and sent out};
+$info = run("$config1 --mailsig=tests/test.mail.sig");
+my $tail = substr($info, -200, 200);
+like($tail, qr{Love,\nMe}, $t);
+
+$t = q{Correct custom mail sigs is read in and sent out in correct order};
+$info = run("$config1 --mailsig=tests/test.mail.sig --mailsig=tests/test.mail.sig2");
+my $tail = substr($info, -200, 200);
+like($tail, qr{Love,\nMe\n\(all of us, really\)}, $t);
 
 ###
 $info = run($config1);

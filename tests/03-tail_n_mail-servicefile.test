@@ -10,7 +10,7 @@ use Test::More tests => 8;
 
 use vars qw{ $info $t };
 
-my $datadir = '/tmp/tail_n_mail-testing';
+my $datadir = '/tmp/tail_n_mail-testdb';
 my $pidfile = "$datadir/postmaster.pid";
 my $logfile = 'test.logfile';
 my $test_service_conf = "$datadir/test.service.conf";
@@ -64,7 +64,7 @@ sub run {
 ## It also needs some logs (not fake?)
 
 ## initdb - not available everywhere, but let's assume it is for testing purposes
-## socket in /tmp/tnm_testing
+## socket in /tmp/tnm_testdb
 ## Stop the old one if it exists
 cleanup();
 my $COM = "initdb --pgdata $datadir --data-checksums 2>&1";
@@ -81,6 +81,7 @@ logging_collector = on
 log_directory = 'pg_log'
 log_filename = 'postgresql-%Y-%m-%d.log'
 log_statement = all
+listen_addresses = ''
 ";
 close $fh;
 system "pg_ctl -D $datadir -l $logfile start >/dev/null";

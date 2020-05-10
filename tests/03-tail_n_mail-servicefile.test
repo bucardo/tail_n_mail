@@ -20,12 +20,14 @@ sub cleanup {
 
     if (-e $pidfile) {
         open my $fh, '<', $pidfile;
-        <$fh> =~ /([0-9]+)/ or die "Could nto find PID inside $pidfile!\n";
+        <$fh> =~ /([0-9]+)/ or die "Could not find PID inside $pidfile!\n";
         my $pid = $1;
         close $fh;
         kill 'KILL', $pid;
         sleep 1;
     }
+
+    return if $ENV{TNM_NOCLEANUP};
 
     if (-e $datadir) {
         system "rm -fr $datadir";
@@ -73,7 +75,7 @@ my $socketdir = "$datadir/socket";
 mkdir $socketdir;
 open my $fh, '>>', $conf;
 print {$fh} "
-port= 5555
+port = 5555
 unix_socket_directories = '$socketdir'
 logging_collector = on
 log_directory = 'pg_log'

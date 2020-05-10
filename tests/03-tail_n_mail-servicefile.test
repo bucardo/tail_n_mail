@@ -18,16 +18,17 @@ my $test_pgpass = "$datadir/test.pgpass";
 
 sub cleanup {
 
+    my $force = shift || 0;
+
     if (-e $pidfile) {
         open my $fh, '<', $pidfile;
         <$fh> =~ /([0-9]+)/ or die "Could not find PID inside $pidfile!\n";
         my $pid = $1;
         close $fh;
-        kill 'KILL', $pid;
-        sleep 1;
+        eval { kill (0, $pid) && kill ('KILL', $pid) && sleep 1 };
     }
 
-    return if $ENV{TNM_NOCLEANUP};
+    return if $ENV{TNM_NOCLEANUP} and ! $force;
 
     if (-e $datadir) {
         system "rm -fr $datadir";
@@ -66,7 +67,7 @@ sub run {
 ## initdb - not available everywhere, but let's assume it is for testing purposes
 ## socket in /tmp/tnm_testdb
 ## Stop the old one if it exists
-cleanup();
+cleanup('force');
 my $COM = "initdb --pgdata $datadir --data-checksums 2>&1";
 my $result = qx{ $COM };
 like ($result, qr/Success/, 'initdb worked') or BAIL_OUT;

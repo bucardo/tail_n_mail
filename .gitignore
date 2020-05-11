@@ -6,3 +6,6 @@ pg_log
 nytprof*
 gregtest*
 *~
+scrap
+cover_db/
+test.logfile

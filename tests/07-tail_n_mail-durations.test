@@ -1,0 +1,112 @@
+#!perl
+
+## Test 'duration' related code for tail_n_mail
+
+use 5.006;
+use strict;
+use warnings;
+use Data::Dumper;
+use lib 't','.';
+use Test::More tests => 19;
+
+sub run {
+
+    my $arg = shift || '';
+
+	my $COM = "perl tail_n_mail --dryrun --tailnmailrc=tests/rc/tail_n_mail.test.duration.rc --offset=0 $arg";
+
+	my $result = '';
+	eval {
+		$result = qx{$COM 2>&1};
+	};
+	return $@ ? "OOPS: $@\n" : $result;
+}
+
+my $configfile = 'tests/config/testconfig-tail_n_mail.duration';
+
+##
+my $info = run("$configfile --duration 5 --duration_limit 3");
+##
+
+my $t = q{ Tail_n_mail duration test gives correct subject line};
+my $line = $info =~ /Subject: (.+)/ ? $1 : '<no subject>';
+my $host = qx{hostname};
+chomp $host;
+is ($line, "Acme $host Postgres durations 345 : 999", $t);
+
+$t = q{ Tail_n_mail duration test gives correct number of matches per file};
+$line = $info =~ /(Matches from.+?)\n/ ? $1 : '<no matches>';
+is ($line, 'Matches from tests/logs/tail_n_mail.test.duration.log: 999', $t);
+
+$t = q{ Tail_n_mail duration test gives correct minimum duration};
+$line = $info =~ /(Duration minimum:.+?)\n/ ? $1 : '<not found>';
+is ($line, 'Duration minimum: 5 ms', $t);
+
+$t = q{ Tail_n_mail duration test gives correct duration limit (from rc file)};
+$line = $info =~ /(.+duration limit.+?)\n/ ? $1 : '<not found>';
+is ($line, 'Not showing all lines: duration limit is 4', $t);
+
+$t = q{ Tail_n_mail duration test gives correct first match summary};
+my $entry = $info =~ /(\[1\].+?)\n\n/s ? $1 : '<not found>';
+$line = $entry =~ /(between lines.+?)\)/ ? $1 : '<not found>';
+is ($line, 'between lines 88 and 1,467, occurs 11 times', $t);
+
+$t = q{ Tail_n_mail duration test gives correct first match maximum duration};
+$line = $entry =~ /^(Maximum duration: .+?)\n/m ? $1 : '<not found>';
+is ($line, 'Maximum duration: 15.385 ms', $t);
+
+$t = q{ Tail_n_mail duration test gives correct first match minimum duration};
+$line = $entry =~ /^(Minimum duration: .+?)\n/m ? $1 : '<not found>';
+is ($line, 'Minimum duration: 10.813 ms', $t);
+
+$t = q{ Tail_n_mail duration test gives correct first match average duration};
+$line = $entry =~ /^(Average duration: .+?)\n/m ? $1 : '<not found>';
+is ($line, 'Average duration: 12.087 ms', $t);
+
+$t = q{ Tail_n_mail duration test gives correct first match First timestamp};
+$line = $entry =~ /^(First: .+?)\n/m ? $1 : '<not found>';
+is ($line, 'First: 2020-05-08 08:45:33.511 EDT [22781]', $t);
+
+$t = q{Tail_n_mail duration test gives correct first match Last timestamp};
+$line = $entry =~ /^(Last: .+?)\n/m ? $1 : '<not found>';
+is ($line, 'Last:  2020-05-08 08:45:36.127 EDT [22809]', $t);
+
+$t = q{Tail_n_mail duration test only shows up to duration_limit entries (3 exists)};
+like ($info, qr/^\Q[3] /m, $t);
+
+$t = q{Tail_n_mail duration test only shows up to duration_limit entries (4 does not exist)};
+unlike ($info, qr/^\Q[4] /m, $t);
+
+$t = q{Tail_n_mail duration test runs as duration when 'duration' is in the config name};
+like (run($configfile), qr/Maximum duration/, $t);
+
+$t = q{Tail_n_mail duration test runs normal when 'duration' not in the config name};
+my $symlinkfile = 'tests/config/testconfig-tail_n_mail.symlink';
+unlike (run($symlinkfile), qr/Maximum duration/, $t);
+
+$t = q{Tail_n_mail duration test runs as duration when 'duration' arg is given};
+like (run("$symlinkfile --duration 12 --duration_limit 0"), qr/Maximum duration/, $t);
+
+$t = q{Tail_n_mail duration test respects the 'duration' argument};
+unlike (run("$symlinkfile --duration 100 --duration_limit 9999999"), qr/Maximum duration/, $t);
+
+my $configfile2 = 'tests/config/testconfig-tail_n_mail.duration2';
+
+##
+$info = run($configfile2);
+##
+
+$t = q{Tail_n_mail duration test uses configuration file 'duration' value};
+$line = $info =~ /^(Duration minimum: .+?)\n/m ? $1 : '<not found>';
+is ($line, 'Duration minimum: 77 ms', $t);
+
+$t = q{Tail_n_mail duration test uses configuration file 'duration_limit' value};
+$line = $info =~ /(duration limit is [0-9]+)/ ? $1 : '<not found>';
+is ($line, 'duration limit is 4', $t);
+
+$t = q{Tail_n_mail duration test lets argument 'duration' win over configuration file value};
+$info = run("$configfile2 --duration 88");
+$line = $info =~ /^(Duration minimum: .+?)\n/m ? $1 : '<not found>';
+is ($line, 'Duration minimum: 88 ms', $t);
+
+exit;

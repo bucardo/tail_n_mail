@@ -129,7 +129,7 @@ my %arg = (
 ## Handling of canceled autovacuum entries. 0=normal, 1=summary at end, 2=ignore completely
               canceled_autovac => 1,
 ## Set the minimum number of matching duration entries that we care about
-              duration_limit   => 0,
+              duration_limit   => -30,
 ## Set the minimum number of matching tempfile entries that we care about
               tempfile_limit   => 0,
 ## The thousands separator for formatting numbers.
@@ -940,7 +940,7 @@ sub parse_config_file {
         }
         ## Exclude durations below this number
         elsif (/^DURATION:\s*([0-9]+)/) {
-            ## Command line still wins
+            ## Command line still wins (default is negative number)
             if ($arg{duration} < 0) {
                 $arg{duration} = $localopt{duration} = $1;
             }
@@ -948,7 +948,7 @@ sub parse_config_file {
         ## Limit how many duration matches we show
         elsif (/^DURATION_LIMIT:\s*([0-9]+)/) {
             ## Command line still wins
-            if (!$arg{duration_limit}) {
+            if ($arg{duration_limit} < 0) {
                 $arg{duration_limit} = $localopt{duration_limit} = $1;
             }
         }
@@ -1276,7 +1276,9 @@ sub parse_inherit_file {
         ## Duration limit
         elsif (/^DURATION_LIMIT:\s*([0-9]+)/) {
             ## Command line still wins
-            $arg{duration_limit} ||= $1;
+            if ($arg{duration_limit} < 0) {
+                $arg{duration_limit} = $1;
+            }
         }
         ## Exclude tempfiles below this number
         elsif (/^TEMPFILE:\s*([0-9]+)/) {
@@ -2481,6 +2483,9 @@ sub process_line {
     ## Save the raw version
     my $rawstring = $string;
 
+    ## Track durations
+    my $thisduration = 0;
+
     ## Special handling for forced checks, e.g. OS errors
     if (defined $forcematch) {
 
@@ -2491,7 +2496,11 @@ sub process_line {
 
         goto PGPREFIX;
     }
-    ## A forced match skips both checks below
+    elsif ($arg{type} eq 'duration') {
+        return 0 if $string !~ s/^\s*LOG:  duration: ([0-9]+\.[0-9]+) ms\s+//;
+        $thisduration = $1;
+        $string =~ s/^statement: //;
+    }
     else {
 
         ## Bail if it does not match the file-specific regex
@@ -2538,10 +2547,6 @@ sub process_line {
 
     }
 
-    ## If in duration mode, and we have a minimum cutoff, discard faster ones
-    if ($arg{type} eq 'duration' and $arg{duration} >= 0) {
-        return 0 if ($string =~ / duration: ([0-9]+)/o and $1 < $arg{duration});
-    }
 
     $arg{debug} > 2 and warn "MATCH at line $line of $filename\n";
 
@@ -2605,7 +2610,7 @@ sub process_line {
     }
 
     ## Make some adjustments to attempt to compress similar entries
-    if ($arg{flatten} and $arg{type} ne 'duration') {
+    if ($arg{flatten}) {
         $string =~ s/'.+?'::(TEXT|VARCHAR|JSON|JSONB)/'foo'::$1/g;
         ## SELECT func(arg1,arg2,...) or SELECT * FROM func(arg1,arg2,...) or SELECT foo, bar FROM func(arg1,arg2,..) replacement
         $string =~ s{(SELECT\s*(?:\*\s+FROM\s*)?(?:[\w ,]+)?[\w\.]+\s*\()([^*].*?)\)(?!['"])}{
@@ -2848,10 +2853,6 @@ sub process_line {
             $string =~ s/ *$word: /\n$word: /;
             $rawstring =~ s/ *$word: /\n$word: /;
         }
-        if ($arg{type} eq 'duration') {
-            $string =~ s/LOG: duration: ([0-9]+\.[0-9]+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
-            $rawstring =~ s/LOG: duration: ([0-9]+\.[0-9]+ ms) LOG: statement: /DURATION: $1\nSTATEMENT: /o;
-        }
         $rawstring =~ s/^([A-Z]+: ) +/$1/gmo;
     }
 
@@ -2993,6 +2994,13 @@ sub process_line {
 
         }
 
+        ## Track the highest duration
+        if ($arg{type} eq 'duration') {
+            $similar{$string}{maxduration} = $thisduration if $thisduration > ($similar{$string}{maxduration}//0);
+            $similar{$string}{minduration} = $thisduration if $thisduration < ($similar{$string}{minduration}//'infinity');
+            $similar{$string}{totalduration} += $thisduration;
+        }
+
         ## Increment the total count for this string
         $similar{$string}{count}++;
 
@@ -3132,7 +3140,7 @@ sub process_report {
         push @msg => "Timewarp: $arg{timewarp}";
     }
     if ($arg{duration} >= 0) {
-        push @msg => "Minimum duration: $arg{duration} ms";
+        push @msg => "Duration minimum: $arg{duration} ms";
     }
     if ($arg{tempfile} >= 0) {
         push @msg => "Minimum tempfile size: $arg{tempfile} bytes";
@@ -3247,8 +3255,8 @@ sub process_report {
         }
     }
 
-    if ($arg{type} eq 'duration' and $arg{duration_limit} and $grand_total > $arg{duration_limit}) {
-        push @msg => "Not showing all lines: duration limit is $arg{duration_limit}";
+    if ($arg{type} eq 'duration' and $arg{duration_limit} and $grand_total > abs($arg{duration_limit})) {
+        push @msg => "Not showing all lines: duration limit is " . abs($arg{duration_limit});
     }
     if ($arg{type} eq 'tempfile' and $arg{tempfile_limit} and $grand_total > $arg{tempfile_limit}) {
         push @msg => "Not showing all lines: tempfile limit is $arg{tempfile_limit}";
@@ -3542,9 +3550,6 @@ sub lines_of_interest {
 
     my $oldselect = select $lfh;
 
-    our ($current_filename, %sorthelp);
-    undef %sorthelp;
-
     sub sortsub { ## no critic (ProhibitNestedSubs)
 
         my $sorttype = $opt{sortby} || $arg{sortby};
@@ -3553,19 +3558,10 @@ sub lines_of_interest {
         my $bb = $similar{$b};
 
         if ($arg{type} eq 'duration') {
-            if (! exists $sorthelp{$aa}) {
-                my $lstring = $aa->{string} || $aa->{earliest}{string};
-                $sorthelp{$aa} =
-                    $lstring =~ /duration: ([0-9]+\.[0-9]+)/o ? $1 : 0;
-            }
-            if (! exists $sorthelp{$bb}) {
-                my $lstring = $bb->{string} || $bb->{earliest}{string};
-                $sorthelp{$bb} =
-                    $lstring =~ /duration: ([0-9]+\.[0-9]+)/o ? $1 : 0;
-            }
-            return ($sorthelp{$bb} <=> $sorthelp{$aa})
-                    || ($fileorder{$aa->{filename}} <=> $fileorder{$bb->{filename}})
-                    || ($aa->{line} <=> $bb->{line});
+
+            return ($bb->{maxduration} <=> $aa->{maxduration}
+                    || ($aa->{earliest}{time} cmp $bb->{earliest}{time}));
+
         }
 
         ## For tempfile, we want to sort by largest overall tempfile
@@ -3620,7 +3616,12 @@ sub lines_of_interest {
 
         ## Sometimes we don't want to show all the durations
         if ($arg{type} eq 'duration' and $arg{duration_limit}) {
-            last if $count > $arg{duration_limit};
+            last if $count > abs $arg{duration_limit};
+        }
+
+        ## Exclude durations that are too short
+        if ($arg{type} eq 'duration') {
+            next if $f->{maxduration} < $arg{duration};
         }
 
         ## Sometimes we don't want to show all the tempfiles
@@ -3664,6 +3665,10 @@ sub lines_of_interest {
             ## If we are using prefixes, show it here
             if (exists $f->{earliest}{pgprefix} and length $f->{earliest}{pgprefix} and $f->{earliest}{pgprefix} ne '?') {
                 print "$f->{earliest}{pgprefix}\n";
+            }
+
+            if ($arg{type} eq 'duration') {
+                printf "Duration: %s ms\n", $f->{maxduration};
             }
 
             ## Show the actual string, not the flattened version (unless pgbouncer)
@@ -3735,6 +3740,12 @@ sub lines_of_interest {
             }
         }
 
+        if ($arg{type} eq 'duration') {
+            printf "Maximum duration: %s ms\n", $f->{maxduration};
+            printf "Minimum duration: %s ms\n", $f->{minduration};
+            printf "Average duration: %.3f ms\n", $f->{totalduration} / $f->{count};
+        }
+
         ## If we have prefixes available, show those
         my $estring = exists $f->{foundvariant} ? $string : $earliest->{rawstring};
         if (exists $earliest->{pgprefix}) {
@@ -3764,10 +3775,7 @@ sub lines_of_interest {
             print "\n";
         }
 
-
-
     } ## end each item
-
 
     ## Flatten the items for ease of sorting
     my @sorted;

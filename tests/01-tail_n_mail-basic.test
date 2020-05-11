@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 51;
+use Test::More tests => 52;
 
 use vars qw{ $info $t };
 
@@ -69,9 +69,12 @@ my $tail = substr($info, -200, 200);
 like($tail, qr{Love,\nMe}, $t);
 
 $t = q{Correct custom mail sigs is read in and sent out in correct order};
-$info = run("$config1 --mailsig=tests/test.mail.sig --mailsig=tests/test.mail.sig2");
-my $tail = substr($info, -200, 200);
+$info = run("$config1 --mailsig=tests/test.mail.sig --mailsig=tests/test.mail.sig2 --debug");
+$tail = substr($info, -200, 200);
 like($tail, qr{Love,\nMe\n\(all of us, really\)}, $t);
+
+$t = q{Using the --debug option dumps the config information};
+ok ($info =~ /debug_force_rotated/, $t);
 
 ###
 $info = run($config1);

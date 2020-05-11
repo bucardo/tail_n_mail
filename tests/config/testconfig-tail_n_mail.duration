@@ -1,0 +1,9 @@
+## Config file for the tail_n_mail program
+
+EMAIL: someone@example.com
+MAILSUBJECT: Acme HOST Postgres durations UNIQUE : NUMBER
+LOG_LINE_PREFIX: '%m [%p]'
+
+FILE: tests/logs/tail_n_mail.test.duration.log
+
+

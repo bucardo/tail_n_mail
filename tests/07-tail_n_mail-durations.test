@@ -19,6 +19,7 @@ sub run {
 	eval {
 		$result = qx{$COM 2>&1};
 	};
+    chomp $result;
 	return $@ ? "OOPS: $@\n" : $result;
 }
 

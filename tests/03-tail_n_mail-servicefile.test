@@ -1,5 +1,7 @@
 #!perl
 
+## Test service file related code for tail_n_mail
+
 use 5.006;
 use strict;
 use warnings;
@@ -7,8 +9,6 @@ use autodie;
 use Data::Dumper;
 use lib 't','.';
 use Test::More tests => 8;
-
-use vars qw{ $info $t };
 
 my $datadir = '/tmp/tail_n_mail-testdb';
 my $pidfile = "$datadir/postmaster.pid";
@@ -20,7 +20,7 @@ sub cleanup {
 
     my $force = shift || 0;
 
-    if (-e $pidfile) {
+    if (-e $pidfile && ! $ENV{TNM_NOSHUTDOWN}) {
         open my $fh, '<', $pidfile;
         <$fh> =~ /([0-9]+)/ or die "Could not find PID inside $pidfile!\n";
         my $pid = $1;
@@ -47,11 +47,9 @@ END {
 
 sub run {
 
-	my $conf = shift or die "Must supply a config file!\n";
+	my $arg = shift || '';
 
-	my $options = shift || '';
-
-	my $COM = "perl tail_n_mail --dryrun --no-tailnmailrc --service_conf_file=$test_service_conf --pgpass_file=$test_pgpass --offset=0 $conf $options";
+	my $COM = "perl tail_n_mail --dryrun --no-tailnmailrc --service_conf_file=$test_service_conf --pgpass_file=$test_pgpass $arg";
 
 	my $result = '';
 	eval {
@@ -61,16 +59,22 @@ sub run {
 	return $@ ? "OOPS: $@\n" : $result;
 }
 
+my $configfile = 'tests/config/testconfig-tail_n_mail.servicefile --offset 0';
+
 ## We need to fire up a Postgres instance so we can connect to it via a service file
-## It also needs some logs (not fake?)
+## It also needs some logs
 
 ## initdb - not available everywhere, but let's assume it is for testing purposes
 ## socket in /tmp/tnm_testdb
 ## Stop the old one if it exists
 cleanup('force');
+
 my $COM = "initdb --pgdata $datadir --data-checksums 2>&1";
 my $result = qx{ $COM };
-like ($result, qr/Success/, 'initdb worked') or BAIL_OUT;
+$result =~ /Success/ or BAIL_OUT;
+pass (' Tail_n_mail servicefile test created database via initdb call');
+
+## Configure the database and start it up
 my $conf = "$datadir/postgresql.conf";
 my $socketdir = "$datadir/socket";
 mkdir $socketdir;
@@ -87,9 +91,9 @@ listen_addresses = ''
 close $fh;
 system "pg_ctl -D $datadir -l $logfile start >/dev/null";
 
-$t = q{Failure when supplied service.conf file does not exist};
+my $t = q{ Tail_n_mail servicefile test fails when specified service.conf does not exist};
 unlink $test_service_conf if -e $test_service_conf;
-$info = run('tests/config/config_service_1.txt');
+my $info = run($configfile);
 is ($info, "Specified service.conf file does not exist: $test_service_conf", $t );
 open $fh, '>', $test_service_conf;
 print {$fh} "[foobar1]\nhost=$socketdir\nport=5555\ndbname=postgres\n\n";
@@ -97,28 +101,28 @@ print {$fh} "[foobar2]\nhost=$socketdir\nport=5555\ndbname=postgres\n\n";
 close $fh;
 chmod 0600, $test_service_conf;
 
-$t = q{Failure when supplied pgpass file does not exist};
+$t = q{ Tail_n_mail servicefile test fails when specified pgpass file does not exist};
 unlink $test_pgpass if -e $test_pgpass;
-$info = run('tests/config/config_service_1.txt');
+$info = run($configfile);
 is ($info, "Specified pgpass file does not exist: $test_pgpass", $t );
 open $fh, '>', $test_pgpass;
 print {$fh} "blah:blah\n";
 close $fh;
 chmod 0600, $test_pgpass;
 
-$t = q{Service file works when no matching lines in the log file};
-$info = run('tests/config/config_service_1.txt');
+$t = q{ Tail_n_mail servicefile test works when no matching lines in the log file};
+$info = run($configfile);
 is ($info, '', $t);
 
-$t = q{With no matching items and --mailzero, email is sent};
-$info = run('tests/config/config_service_1.txt', '--mailzero');
+$t = q{ Tail_n_mail servicefile test works when no matching lines and --mailzero, email is sent};
+$info = run("$configfile --mailzero");
 like ($info, qr/Unique items: 0/, $t);
 
 ## Create some errors
 system "PGSERVICEFILE=$test_service_conf psql service=foobar1 -c 'SELECT 1/0' 2>/dev/null";
 
-$t = q{With no matching items and --mailzero, email is sent};
-$info = run('tests/config/config_service_1.txt');
+$t = q{ Tail_n_mail servicefile test works when matching lines and --mailzero, email is sent};
+$info = run($configfile);
 like ($info, qr/Unique items: 1\b/, $t);
 
 ## Create a lot more errors
@@ -127,13 +131,16 @@ for my $number (1 .. $numerrors-1) {
     system "PGSERVICEFILE=$test_service_conf psql service=foobar1 -c 'GARBLE $number' 2>/dev/null";
 }
 
-$t = q{Correct number of unique errors is found};
-$info = run('tests/config/config_service_1.txt');
+##
+$info = run($configfile);
+##
+
+$t = q{ Tail_n_mail servicefile test finds correct number of unique errors};
 my $count = $info =~ /(Unique items: [0-9]+)/ ? $1 : '';
 is ($count, "Unique items: $numerrors", $t);
 
-$t = q{Correct number of unique errors is found with multiple pg_read_file chunks};
-$info = run('tests/config/config_service_1.txt', '--pg_read_file_limit=200');
+$t = q{ Tail_n_mail servicefile test finds correct number of unique errors with multiple pg_read_file chunks};
+$info = run("$configfile --pg_read_file_limit=200");
 $count = $info =~ /(Unique items: [0-9]+)/ ? $1 : '';
 is ($count, "Unique items: $numerrors", $t);
 

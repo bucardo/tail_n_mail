@@ -102,7 +102,7 @@ my $summary = $info =~ /(Date: .+?)\n\n/s ? $1 : '<no summary>';
 like ($summary, qr{^Date: \w\w\w \w\w\w [0-9 ][0-9]}m, $t);
 
 $t = q{Test config 1 produces a valid 'Host' line};
-like ($summary, qr{^Host: [\w\.]+$}m, $t);
+like ($summary, qr{^Host: $host}m, $t);
 
 $t = q{Test config 1 produces correct 'Unique items' line};
 like ($summary, qr{^Unique items: 39$}m, $t);

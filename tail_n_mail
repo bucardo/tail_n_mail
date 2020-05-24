@@ -3258,7 +3258,7 @@ sub process_report {
     }
 
     if ($arg{type} eq 'duration' and $arg{duration_limit} and $grand_total > abs($arg{duration_limit})) {
-        push @msg => "Not showing all lines: duration limit is " . abs($arg{duration_limit});
+        push @msg => 'Not showing all lines: duration limit is ' . abs($arg{duration_limit});
     }
     if ($arg{type} eq 'tempfile' and $arg{tempfile_limit} and $grand_total > $arg{tempfile_limit}) {
         push @msg => "Not showing all lines: tempfile limit is $arg{tempfile_limit}";
@@ -3709,12 +3709,12 @@ sub lines_of_interest {
         if ($arg{find_line_number}) {
             if (1 == $filecount) {
                 ## All matches came from a single file
-                printf " (between lines %s and %s, occurs %d times)",
+                printf ' (between lines %s and %s, occurs %d times)',
                     $earliest->{line}, $latest->{line}, $pcount;
             }
             else {
                 ## Matches came from multiple files
-                printf " (between lines %s of %s and %s of %s, occurs %d times)",
+                printf ' (between lines %s of %s and %s of %s, occurs %d times)',
                     $earliest->{line}, $fab{ $earliest->{file} },
                     $latest->{line}, $fab{ $latest->{file} },
                         $pcount;

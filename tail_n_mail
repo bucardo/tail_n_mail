@@ -116,6 +116,8 @@ my %arg = (
               timewarp         => 0,
 ## Show which line number problems are found on. Should be disabled for large/frequent reports
               find_line_number => 1,
+## Show the number of errors per file
+              show_file_numbers => 1,
 ## The maximum bytes we will go back and check per file
               maxsize          => 80_000_000,
 ## Only show X number of matches
@@ -3679,6 +3681,16 @@ sub lines_of_interest {
             next;
         }
 
+        my $perfile = '';
+        if ($arg{show_file_numbers}) {
+            if (1 < keys %{ $f->{filecount} }) {
+                $perfile = sprintf '  (%s)',
+                    join ', ' => map { $f->{filecount}{$_} }
+                        sort { $fab{$a} cmp $fab{$b} } keys %{ $f->{filecount} };
+            }
+        }
+
+
         ## More than one entry means we have an earliest and latest to look at
         my $latest = $f->{latest};
         my $pcount = pretty_number($f->{count});
@@ -3697,20 +3709,22 @@ sub lines_of_interest {
         if ($arg{find_line_number}) {
             if (1 == $filecount) {
                 ## All matches came from a single file
-                printf " (between lines %s and %s, occurs %d times)\n",
+                printf " (between lines %s and %s, occurs %d times)",
                     $earliest->{line}, $latest->{line}, $pcount;
             }
             else {
                 ## Matches came from multiple files
-                printf " (between lines %s of %s and %s of %s, occurs %d times)\n",
+                printf " (between lines %s of %s and %s of %s, occurs %d times)",
                     $earliest->{line}, $fab{ $earliest->{file} },
                     $latest->{line}, $fab{ $latest->{file} },
                         $pcount;
             }
         }
         else {
-            print "  Count: $pcount\n";
+            print "  Count: $pcount";
         }
+
+        print "$perfile\n";
 
         if ($arg{type} eq 'tempfile') {
 

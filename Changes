@@ -13,6 +13,9 @@ Version 3.0.0
   each run. With this change, config files to be easily tracked in git.
   [Greg Sabino Mullane]
 
+* Show a breakdown of how many matches came from each file on multi-file matches
+  [Greg Sabino Mullane]
+
 * Allow service file to have the "latest"
   Format is: SERVICE=name LATEST
   [Greg Sabino Mullane]

@@ -32,9 +32,6 @@ my $app_string = "/* tail_n_mail version $VERSION */";
 ## Default message subject if not set elsewhere. Keywords replaced: FILE HOST NUMBER UNIQUE
 my $DEFAULT_SUBJECT= 'Results for FILE on host: HOST UNIQUE : NUMBER';
 
-## Do some really simple line wrapping for super-long lines
-my $WRAPLIMIT = 990;
-
 ## Set defaults for all the options, then read them in from command line
 my %arg = (
 ## Show a help screen
@@ -72,6 +69,8 @@ my %arg = (
               mailport         => 465,
 ## Send mail as text/html and wrap in PRE for nicer alignment?
               html             => 0,
+## Maximum size before we start wrapping lines
+              wraplimit        => 990,
 ## Are we parsing Postgres logs?
               pgmode           => 1,
 ## What type of Postgres log we are parsing. Can be log, csv, pgbouncer, syslog, or syslog2
@@ -3899,8 +3898,8 @@ sub wrapline {
         $len = $maxsize;
     }
 
-    if ($len >= $WRAPLIMIT) {
-        $line =~ s{(.{$WRAPLIMIT})}{$1\n}g;
+    if ($len >= $arg{wraplimit}) {
+        $line =~ s{(.{$arg{wraplimit}})}{$1\n}g;
     }
 
     if ($waschopped) {

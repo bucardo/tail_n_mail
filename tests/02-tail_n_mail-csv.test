@@ -34,8 +34,6 @@ sub run {
 my $host = qx{hostname};
 chomp $host;
 
-my $num = 2;
-
 ###
 $info = run('tests/config/testconfig-tail_n_mail.2');
 ###

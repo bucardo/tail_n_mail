@@ -112,7 +112,7 @@ like ($summary, qr{^Matches from tests/logs/testlog1.txt: 60$}m, $t);
 
 $t = q{Test config 1 produces a valid 'DRYRUN' line};
 my $dryrun = $info =~ /(DRYRUN: .+)/ ? $1 : '<no dryrun>';
-like ($info, qr{DRYRUN: .+$email}, $t);
+like ($dryrun, qr{DRYRUN: .+$email}, $t);
 
 $t = q{Test config 1 produces correct first item match};
 my $between = $info =~ /(.+?between.+)/ ? $1 : '<no between>';

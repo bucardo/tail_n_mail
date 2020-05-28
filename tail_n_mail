@@ -1812,6 +1812,8 @@ sub parse_file {
             $newfilename = get_latest_service_file($service, $logdir);
             $arg{debug} and warn "Setting newfilename to $newfilename via get_latest_service_file\n";
         }
+
+        ## Get information about this file
         my $remotefileinfo = call_pg_stat_file($service, $newfilename);
         return -2 if ! ref $remotefileinfo;
 
@@ -2222,7 +2224,10 @@ sub call_pg_stat_file {
     ## We need a place to store any errors that come up
     my ($efh, $errorfile) = tempfile('tail_n_mail.pg_stat_file.errors.XXXXXXXX', SUFFIX => '.tnm', UNLINK => 1, TMPDIR => 1);
 
-    my $COM = qq{psql service="$dbservice" -AX -qt -x -c "$app_string select * from pg_stat_file('$dbfilename')" 2>$errorfile};
+    ## Version 9.6 of Postgres has multiple -c options
+    my $datestyle = q{"SET datestyle='ISO'"};
+    my $statcommand = qq{"$app_string select * from pg_stat_file('$dbfilename')"};
+    my $COM = qq{psql service="$dbservice" -AX -qt -x -c $datestyle -c $statcommand 2>$errorfile};
     $arg{debug} and warn "Trying: $COM\n";
     my @statfileinfo = qx/ $COM /;
     if (-s $errorfile) {

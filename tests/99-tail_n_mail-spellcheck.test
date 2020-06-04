@@ -20,7 +20,7 @@ elsif (!eval { require Text::SpellChecker; 1 }) {
 }
 else {
 	opendir my $dir, 'tests' or die qq{Could not open directory 't': $!\n};
-	@testfiles = map { "tests/$_" } grep { /\.test$/ } readdir $dir;
+	@testfiles = map { "tests/$_" } grep { /^[0-9].+\.test$/ } readdir $dir;
 	closedir $dir or die qq{Could not closedir "$dir": $!\n};
 	plan tests => 2+@testfiles;
 }

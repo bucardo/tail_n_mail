@@ -76,6 +76,7 @@ profile-strictness = quiet
 [-ValuesAndExpressions::ProhibitMagicNumbers]
 [-ValuesAndExpressions::ProhibitMixedBooleanOperators]
 [-ValuesAndExpressions::ProhibitNoisyQuotes]
+[-ValuesAndExpressions::ProhibitVersionStrings]
 [-ValuesAndExpressions::RequireConstantOnLeftSideOfEquality]
 [-ValuesAndExpressions::RequireNumberSeparators]
 [-ValuesAndExpressions::RestrictLongStrings]

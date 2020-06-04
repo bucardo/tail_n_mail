@@ -23,7 +23,6 @@ $Data::Dumper::Sortkeys = 1;
 use Getopt::Long   qw( GetOptions          );
 use File::Temp     qw( tempfile            );
 use File::Basename qw( dirname             );
-use List::Util     qw( uniq                );
 use POSIX          qw( strftime localeconv );
 use 5.8.0;
 
@@ -296,8 +295,14 @@ parse_inherited_files();
 parse_state_file();
 
 ## Quick check for duplicated FILE entries
-if (@{$opt{file}} != uniq map { $_->{original } } @{$opt{file}}) {
-    die "Detected duplicate FILE entries - cannot continue\n";
+my %dupefile;
+$dupefile{ $_->{original} }++ for @{ $opt{file} };
+if (grep { $_ > 1 } values %dupefile) {
+    warn "Cannot continue, as the following FILE entries are duplicated:\n";
+    for my $dupe (grep { $dupefile{$_} > 1 } sort keys %dupefile) {
+        warn "  $dupe\n";
+    }
+    exit 1;
 }
 
 ## Set our timeout

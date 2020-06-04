@@ -2760,6 +2760,8 @@ sub process_line {
         $string =~ s{(,\s*)'.+?'(\s*AS\s*\w+\b)}{$1'?'$2)}gio;
         $string =~ s{\(\s+}{(}go;
 
+        $string =~ s{ for PID [0-9]+}{ for PID ?}g;
+
         my $UNIQSTRING = "TAILNMAIL$VERSION";
         if ($string =~ s{(UPDATE\s+[\w\.]+\s+SET\s+)(.+?)(\s+WHERE)}{${1}$UNIQSTRING${3}}) {
             my $sets = $2;

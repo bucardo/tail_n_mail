@@ -9,3 +9,4 @@ gregtest*
 scrap
 cover_db/
 test.logfile
+.#*

@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 54;
+use Test::More tests => 55;
 
 use vars qw{ $info $t };
 
@@ -56,8 +56,13 @@ $info = run("$config1 --start_time=123456789");
 like ($info, qr{format YYYY}, $t);
 
 $t = q{Program works with a correct start_time of 14 digits};
-$info = run("$config1 --start_time='2009-04-01 22:33:44'");
+my $timestamp = '2009-04-01 22:33:44';
+$info = run("$config1 --start_time='$timestamp'");
 like ($info, qr{Subject:}, $t);
+
+$t = q{A start_time argument is echoed in the summary section};
+my $summary = $info =~ /(Date: .+?)\n\n/s ? $1 : '<no summary>';
+like ($summary, qr{^Start time: $timestamp}m, $t);
 
 $t = q{Program fails when an invalid mailsig argument is given};
 $info = run("$config1 --mailsig=nosuchfile");
@@ -98,7 +103,7 @@ my $email = 'someone@example.com';
 like ($headers, qr{^To: $email$}m, $t);
 
 $t = q{Test config 1 produces a valid 'Date' line};
-my $summary = $info =~ /(Date: .+?)\n\n/s ? $1 : '<no summary>';
+$summary = $info =~ /(Date: .+?)\n\n/s ? $1 : '<no summary>';
 like ($summary, qr{^Date: \w\w\w \w\w\w [0-9 ][0-9]}m, $t);
 
 $t = q{Test config 1 produces a valid 'Host' line};

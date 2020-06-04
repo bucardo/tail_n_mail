@@ -271,6 +271,7 @@ for (@{ $arg{file} }) {
 
 ## The start_time must be in a specific format for now
 if ($arg{start_time}) {
+    $arg{original_start_time} = $arg{start_time}; ## For summary display
     $arg{start_time} =~ s/[^0-9]//g;
     14 == length $arg{start_time} or die "Argument start_time must be in the format YYYY-MM-DD HH:MI:SS\n";
 }
@@ -3278,6 +3279,10 @@ sub process_report {
     if ($arg{type} eq 'tempfile' and $arg{tempfile_limit} and $grand_total > $arg{tempfile_limit}) {
         push @msg => "Not showing all lines: tempfile limit is $arg{tempfile_limit}";
     }
+    if ($arg{start_time}) {
+        push @msg => "Start time: $arg{original_start_time}";
+    }
+
 
     ## Note any special problems from file parsing
     for my $file (@problem_files) {

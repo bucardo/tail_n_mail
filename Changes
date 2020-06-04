@@ -8,6 +8,8 @@ Version 3.0.0
 
 * Major version bump!
 
+* Minimum Perl version is now 5.8.0
+
 * Config files are now static, and will not get rewritten. Instead, 
   we start using "state" files to track information that changes 
   each run. With this change, config files to be easily tracked in git.
@@ -37,10 +39,13 @@ Version 3.0.0
 * Allow 'all' as an option to the --skip_report_failing_host option.
   [Greg Sabino Mullane]
 
+* Throw an exception if duplicate FILE entries are loaded
+  [Greg Sabino Mullane]
+
 * Minor adjustments to folding in failed connection attempts, and in deadlock errors.
   [Greg Sabino Mullane]
 
-* Better flattening of EXECUTE arguments
+* Better flattening of EXECUTE arguments, lines with PID arguments
   [Greg Sabino Mullane]
 
 

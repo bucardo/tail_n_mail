@@ -295,7 +295,7 @@ parse_inherited_files();
 ## Read in the state file and merge it in
 parse_state_file();
 
-## Quick sanity ccheck for duplicated FILE entries
+## Quick check for duplicated FILE entries
 if (@{$opt{file}} != uniq map { $_->{original } } @{$opt{file}}) {
     die "Detected duplicate FILE entries - cannot continue\n";
 }

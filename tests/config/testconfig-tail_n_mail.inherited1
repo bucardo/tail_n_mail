@@ -1,0 +1,7 @@
+
+FILE3: SERVICE=foobar1 pg_log/postgresql-%Y-%m-%d.log
+
+
+
+
+

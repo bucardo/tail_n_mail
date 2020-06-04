@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 52;
+use Test::More tests => 54;
 
 use vars qw{ $info $t };
 
@@ -290,5 +290,15 @@ unlike ($info, qr{\Q$expected}s, $t);
 $t = q{Argument 'nofile' limits which FILE lines are used - multiple args};
 $info = run('tests/config/testconfig-tail_n_mail.8 --nofile testlog1 --nofile testlog2');
 is (length $info, 0, $t);
+
+$t = q{Duplicate FILE entries in the same config file throw an exception};
+$info = run('tests/config/testconfig-tail_n_mail.duplicate.files');
+like ($info, qr/duplicate FILE/, $t);
+
+$t = q{Duplicate FILE entries in inherited files throw an exception};
+$info = run('tests/config/testconfig-tail_n_mail.duplicate.files2');
+like ($info, qr/duplicate FILE/, $t);
+
+
 
 exit;

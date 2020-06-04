@@ -1,0 +1,17 @@
+
+EMAIL: someone@example.com
+MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
+LOG_LINE_PREFIX: '%m [%p] '
+
+INCLUDE: ERROR:  
+INCLUDE: FATAL:  
+INCLUDE: PANIC:  
+
+FILE1: SERVICE=foobar1 pg_log/postgresql-%Y-%m-%d.log
+FILE2: SERVICE=foobar2 pg_log/postgresql-%Y-%m-%d.log
+FILE3: SERVICE=foobar1 pg_log/postgresql-%Y-%m-%d.log
+
+
+
+
+

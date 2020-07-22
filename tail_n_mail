@@ -3710,10 +3710,9 @@ sub lines_of_interest {
             if (1 < keys %{ $f->{filecount} }) {
                 $perfile = sprintf '  (%s)',
                     join ', ' => map { $f->{filecount}{$_} }
-                        sort { $fab{$a} cmp $fab{$b} } keys %{ $f->{filecount} };
+                        sort { $f->{filecount}{$b} <=> $f->{filecount}{$a} or $fab{$a} cmp $fab{$b} } keys %{ $f->{filecount} };
             }
         }
-
 
         ## More than one entry means we have an earliest and latest to look at
         my $latest = $f->{latest};
@@ -3727,7 +3726,11 @@ sub lines_of_interest {
         ## How many files did this span?
         my $filecount = scalar keys %{ $f->{filecount} // {} };
 
-        my $filelist = join ', ' => sort map { $fab{$_} } keys %{ $f->{filecount} };
+        my $filelist = join ', ' => map { $fab{$_} } sort {
+            ($arg{show_file_numbers} ? ($f->{filecount}{$b} cmp $f->{filecount}{$a}) : 0)
+                or $fab{$a} cmp $fab{$b}
+            }
+            keys %{ $f->{filecount} };
 
         print " From $filelist" if $matchfiles > 1;
         if ($arg{find_line_number}) {

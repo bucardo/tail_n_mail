@@ -16,6 +16,7 @@ Version 3.0.0
   [Greg Sabino Mullane]
 
 * Show a breakdown of how many matches came from each file on multi-file matches
+  Controlled with the "show_file_numbers" variable (defaults to 1)
   [Greg Sabino Mullane]
 
 * Allow service file to have the "latest"

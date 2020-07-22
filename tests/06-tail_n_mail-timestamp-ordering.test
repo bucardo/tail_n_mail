@@ -41,7 +41,7 @@ is ($matches, "$match1\n$match2", $t);
 
 $t = q{Test config 10 gives correct ordering and number in header line};
 my $headerline = $info =~ /(From .+)/ ? $1 : '<no header>';
-is ($headerline, 'From A, B  Count: 7  (3, 4)', $t);
+is ($headerline, 'From B, A  Count: 7  (4, 3)', $t);
 
 $t = q{Test config 10 gives correct 'First' entries};
 my $first = $info =~ /(First:.+)/ ? $1 : '<no first prefix>';

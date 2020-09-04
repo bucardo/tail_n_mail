@@ -8,7 +8,7 @@ use warnings;
 use autodie;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 8;
+use Test::More tests => 11;
 
 my $datadir = '/tmp/tail_n_mail-testdb';
 my $pidfile = "$datadir/postmaster.pid";
@@ -143,6 +143,17 @@ $t = q{ Tail_n_mail servicefile test finds correct number of unique errors with 
 $info = run("$configfile --pg_read_file_limit=200");
 $count = $info =~ /(Unique items: [0-9]+)/ ? $1 : '';
 is ($count, "Unique items: $numerrors", $t);
+
+##
+$info = run("$configfile --debug-force-rotated --verbose");
+##
+
+$t = q{ Tail_n_mail service file works when called with --debug_force_rotated argument};
+like ($info, qr/Subject:/, "$t (pre-check)");
+my $section = $info =~ s/Subject.+//rs;
+like ($section, qr/File .+ not found, so setting offset to 0/, "$t (warning shows up)");
+$count = $info =~ /(Unique items: [0-9]+)/ ? $1 : '';
+is ($count, "Unique items: $numerrors", "$t (correct item count)");
 
 exit;
 

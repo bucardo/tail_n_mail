@@ -1903,18 +1903,34 @@ sub parse_file {
         ## We may want to check for a .1 file and get information about it
         ## Just in case, skip if we already end in ".1"!
         my $remoterotatedfileinfo = {};
-        if ($read_rotated and $newfilename !~ /\.1$/) {
-            $remoterotatedfileinfo = call_pg_stat_file($service, "$newfilename.1");
-            ## Handle the case when the rotated file is gone: usually means the server was rebuilt
-            ## In that case, we want to be safe and ignore any existing offsets!
-            if ($remoterotatedfileinfo =~ /could not stat file/) {
-                $arg{verbose} and warn "File $newfilename.1 not found, so setting offset to 0\n";
-                $offset = 0 if $lfileinfo->{rotatefilemodtime};
-                ## We want to remove this from the rewritten config file entirely
-                $opt{newrotatefilemodtime}{$filename} = 'filegone';
+        if ($read_rotated and $filename !~ /\.1/) {
+
+            my $rotated_newfilename = "$newfilename.1";
+
+            ## Use pg_ls_dir to verify the file is there before we try pg_stat_file
+            my $remote_file_list = call_pg_ls_dir( $service, dirname($newfilename) );
+
+            if (! exists $remote_file_list->{$rotated_newfilename}) {
+                $opt{newrotatefilemodtime}{$filename} = 'rotated_file_gone';
             }
-            elsif (! ref $remoterotatedfileinfo) {
-                return -2;
+            else {
+
+                $remoterotatedfileinfo = call_pg_stat_file($service, "$rotated_newfilename");
+
+                ## This should be caught by the pg_ls_dir above, but nonetheless:
+                if ($remoterotatedfileinfo =~ /could not stat file/) {
+                    $opt{newrotatefilemodtime}{$filename} = 'rotated_file_gone';
+                }
+                elsif (! ref $remoterotatedfileinfo) {
+                    return -2;
+                }
+            }
+
+            if ($opt{newrotatefilemodtime}{$filename} eq 'rotated_file_gone') {
+                ## The rotated file begin gone usually indicates a rebuilt server
+                ## In this case, it makes sense to set the offset to 0 for the main file
+                $arg{verbose} and warn "File $rotated_newfilename not found, so setting offset to 0\n";
+                $offset = 0 if $lfileinfo->{rotatefilemodtime};
             }
         }
 
@@ -2260,6 +2276,38 @@ sub call_pg_stat_file {
 } ## end of call_pg_stat_file
 
 
+sub call_pg_ls_dir {
+
+    ## Gather a directory listing via a service file entry and pg_ls_dir
+    ## Arguments: two
+    ## 1. Database service name
+    ## 2. Remote directory name
+    ## Returns: hashref with file names as the keys, and an empty hashref as the values
+
+    my ($dbservice, $dbdirname) = @_;
+
+    ## We need a place to store any errors that come up
+    my ($efh, $errorfile) = tempfile('tail_n_mail.pg_ls_dir.errors.XXXXXXXX', SUFFIX => '.tnm', UNLINK => 1, TMPDIR => 1);
+
+    my $COM = qq{psql service="$dbservice" -AX -qt -x -c "$app_string select pg_ls_dir('$dbdirname')" 2>$errorfile};
+    $arg{debug} and warn "Trying: $COM\n";
+    my @lsdirinfo = qx/ $COM /;
+    if (-s $errorfile) {
+        seek $efh, 0, 0;
+        my $errline = <$efh>;
+        chomp $errline;
+        $arg{verbose} and warn "Call to pg_ls_dir failed for service $dbservice and dir $dbdirname ($errline)\n";
+        return $errline;
+    }
+    close $efh;
+
+    my %file_list = map { chomp; (split /\|/, $_, 2)[1] => {} } grep { /\S/ } @lsdirinfo;
+
+    return \%file_list;
+
+} ## end of call_pg_ls_dir
+
+
 sub get_latest_service_file {
 
     ## Figure out the most recent file inside a directory reached via a service file
@@ -2270,41 +2318,25 @@ sub get_latest_service_file {
 
     my ($dbservice, $dbfiledir) = @_;
 
-    ## We need a place to store any errors that come up
-    my ($efh, $errorfile) = tempfile('tail_n_mail.pg_ls_dir.errors.XXXXXXXX', SUFFIX => '.tnm', UNLINK => 1, TMPDIR => 1);
-
-    my $COM = qq{psql service="$dbservice" -AX -qt -x -c "$app_string select pg_ls_dir('$dbfiledir')" 2>$errorfile};
-    $arg{debug} and warn "Trying: $COM\n";
-    my @lsdirinfo = qx/ $COM /;
-    if (-s $errorfile) {
-        seek $efh, 0, 0;
-        my $errline = <$efh>;
-        chomp $errline;
-        $arg{verbose} and warn "Call to pg_ls_dir failed for service $dbservice and dir $dbfiledir ($errline)\n";
-        return $errline;
-    }
-    close $efh;
-
-
-    my %files = map { chomp; (split /\|/, $_, 2)[1] => {} } grep { /\S/ } @lsdirinfo;
+    my $file_list = call_pg_ls_dir( $dbservice, $dbfiledir );
 
     ## If these look like the default postgres log_line_format endings, we can sort it ourselves
-    if ( ! grep { !/[0-9]_[0-9]+\.log/ } keys %files) {
+    if ( ! grep { !/[0-9]_[0-9]+\.log/ } keys %$file_list) {
         $arg{debug} and warn "Doing a natural sort as all files look to be standard format\n";
-        for my $first (reverse sort keys %files) {
+        for my $first (reverse sort keys %$file_list) {
             return "$dbfiledir/$first";
         }
     }
 
     ## Get information about each one
-    for my $filename (keys %files) {
+    for my $filename (keys %$file_list) {
         my $remotefileinfo = call_pg_stat_file($dbservice, "$dbfiledir/$filename");
         ref $remotefileinfo or die "Failed to find information on file $dbfiledir/$filename\n";
-        $files{$filename}{mod} = $remotefileinfo->{modification}
+        $file_list->{$filename}{mod} = $remotefileinfo->{modification}
             or die "No modification time found for $dbfiledir/$filename\n";
     }
 
-    for my $first (sort { $files{$b}{mod} cmp $files{$a}{mod} } keys %files) {
+    for my $first (sort { $file_list->{$b}{mod} cmp $file_list->{$a}{mod} } keys %$file_list) {
         return "$dbfiledir/$first";
     }
 
@@ -3977,7 +4009,7 @@ sub final_cleanup {
         if (exists $opt{newrotatefilemodtime}{$t->{latest}}) {
             my $newrotatemodtime = $opt{newrotatefilemodtime}{$t->{latest}};
             ## Special case where the rotated file has disappeared: remove from config
-            if ($newrotatemodtime eq 'filegone') {
+            if ($newrotatemodtime eq 'rotated_file_gone') {
                 delete $t->{rotatefilemodtime};
                 $changes++;
             }
@@ -4118,3 +4150,5 @@ FILE: /var/log/postgres/postgres-%Y-%m-%d.log
 INCLUDE: ERROR:  
 INCLUDE: FATAL:  
 INCLUDE: PANIC:  
+
+

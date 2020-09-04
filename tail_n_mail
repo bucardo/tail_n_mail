@@ -18,12 +18,13 @@
 
 use strict;
 use warnings;
-use Data::Dumper   qw( Dumper              );
+use Data::Dumper          qw( Dumper              );
 $Data::Dumper::Sortkeys = 1;
-use Getopt::Long   qw( GetOptions          );
-use File::Temp     qw( tempfile            );
-use File::Basename qw( dirname             );
-use POSIX          qw( strftime localeconv );
+use Getopt::Long          qw( GetOptions          );
+use File::Temp            qw( tempfile            );
+use File::Basename        qw( dirname             );
+use File::Spec::Functions qw( catfile             );
+use POSIX                 qw( strftime localeconv );
 use 5.14.0;
 
 our $VERSION = '3.1.0';
@@ -1926,7 +1927,7 @@ sub parse_file {
                 }
             }
 
-            if ($opt{newrotatefilemodtime}{$filename} eq 'rotated_file_gone') {
+            if (($opt{newrotatefilemodtime}{$filename} // '') eq 'rotated_file_gone') {
                 ## The rotated file begin gone usually indicates a rebuilt server
                 ## In this case, it makes sense to set the offset to 0 for the main file
                 $arg{verbose} and warn "File $rotated_newfilename not found, so setting offset to 0\n";
@@ -2301,7 +2302,7 @@ sub call_pg_ls_dir {
     }
     close $efh;
 
-    my %file_list = map { chomp; (split /\|/, $_, 2)[1] => {} } grep { /\S/ } @lsdirinfo;
+    my %file_list = map { chomp; catfile($dbdirname,(split /\|/, $_, 2)[1]) => {} } grep { /\S/ } @lsdirinfo;
 
     return \%file_list;
 
@@ -2330,14 +2331,14 @@ sub get_latest_service_file {
 
     ## Get information about each one
     for my $filename (keys %$file_list) {
-        my $remotefileinfo = call_pg_stat_file($dbservice, "$dbfiledir/$filename");
-        ref $remotefileinfo or die "Failed to find information on file $dbfiledir/$filename\n";
+        my $remotefileinfo = call_pg_stat_file($dbservice, "$filename");
+        ref $remotefileinfo or die "Failed to find information on file $filename\n";
         $file_list->{$filename}{mod} = $remotefileinfo->{modification}
-            or die "No modification time found for $dbfiledir/$filename\n";
+            or die "No modification time found for $filename\n";
     }
 
     for my $first (sort { $file_list->{$b}{mod} cmp $file_list->{$a}{mod} } keys %$file_list) {
-        return "$dbfiledir/$first";
+        return $first;
     }
 
     die "Could not determine a filename for service $dbservice\n";

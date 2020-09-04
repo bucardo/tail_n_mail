@@ -7,8 +7,9 @@ use strict;
 use warnings;
 use autodie;
 use Data::Dumper;
+use File::Copy;
 use lib 't','.';
-use Test::More tests => 11;
+use Test::More tests => 12;
 
 my $datadir = '/tmp/tail_n_mail-testdb';
 my $pidfile = "$datadir/postmaster.pid";
@@ -155,5 +156,14 @@ like ($section, qr/File .+ not found, so setting offset to 0/, "$t (warning show
 $count = $info =~ /(Unique items: [0-9]+)/ ? $1 : '';
 is ($count, "Unique items: $numerrors", "$t (correct item count)");
 
-exit;
+my $logdir = "$datadir/pg_log";
+opendir my ($dh), $logdir;
+my ($pglogfile) = grep { /postgres/ } readdir($dh);
+copy ("$logdir/$pglogfile", "$logdir/$pglogfile.1");
 
+$info = run("$configfile --debug-force-rotated --verbose");
+$count = $info =~ /Matches from SERVICE=foobar1 .*log: ([0-9]+)/ ? $1 : '';
+is ($count, 2*$numerrors, "$t (using rotated file)");
+
+
+exit;

@@ -1910,6 +1910,7 @@ sub parse_file {
 
             ## Use pg_ls_dir to verify the file is there before we try pg_stat_file
             my $remote_file_list = call_pg_ls_dir( $service, dirname($newfilename) );
+            return -2 if ! ref $remote_file_list;
 
             if (! exists $remote_file_list->{$rotated_newfilename}) {
                 $opt{newrotatefilemodtime}{$filename} = 'rotated_file_gone';
@@ -2320,6 +2321,7 @@ sub get_latest_service_file {
     my ($dbservice, $dbfiledir) = @_;
 
     my $file_list = call_pg_ls_dir( $dbservice, $dbfiledir );
+    ref $file_list or die "Could not get a directory listing for service $dbservice";
 
     ## If these look like the default postgres log_line_format endings, we can sort it ourselves
     if ( ! grep { !/[0-9]_[0-9]+\.log/ } keys %$file_list) {

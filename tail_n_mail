@@ -3744,7 +3744,7 @@ sub lines_of_interest {
         if ($arg{show_file_numbers}) {
             if (1 < keys %{ $f->{filecount} }) {
                 $perfile = sprintf '  (%s)',
-                    join ', ' => map { $f->{filecount}{$_} }
+                    join ', ' => map { pretty_number($f->{filecount}{$_}) }
                         sort { $f->{filecount}{$b} <=> $f->{filecount}{$a} or $fab{$a} cmp $fab{$b} } keys %{ $f->{filecount} };
             }
         }

@@ -2665,6 +2665,9 @@ sub process_line {
         ## Flatten array literals
         $string =~ s/'\{.+?\}'/'?'/g;
 
+        ## Any error ending in a specific character
+        $string =~ s{( at character) [0-9]+ (STATEMENT: )}{$1 ? $2};
+
         $string =~ s/'.+?'::(TEXT|VARCHAR|JSON|JSONB)/'foo'::$1/g;
         ## SELECT func(arg1,arg2,...) or SELECT * FROM func(arg1,arg2,...) or SELECT foo, bar FROM func(arg1,arg2,..) replacement
         $string =~ s{(SELECT\s*(?:\*\s+FROM\s*)?(?:[\w ,]+)?[\w\.]+\s*\()([^*].*?)\)(?!['"])}{

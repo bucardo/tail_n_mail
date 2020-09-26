@@ -11,6 +11,8 @@ Version 3.1.0, unreleased
 * Prevent calling pg_stat_dir on rotated file unless pg_ls_dir states it is there
   [Greg Sabino Mullane]
 
+* Query flattening improvements
+
 
 Version 3.0.0, released July 25, 2020
 

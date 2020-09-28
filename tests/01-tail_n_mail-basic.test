@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 55;
+use Test::More tests => 56;
 
 use vars qw{ $info $t };
 
@@ -303,5 +303,13 @@ like ($info, qr/entries are duplicated/, $t);
 $t = q{Duplicate FILE entries in inherited files throw an exception};
 $info = run('tests/config/testconfig-tail_n_mail.duplicate.files2');
 like ($info, qr/entries are duplicated/, $t);
+
+###
+$info = run('tests/config/testconfig-tail_n_mail.8 --show_file_counter=0');
+###
+
+$t = q{Argument 'show_file_counter=0' turns off the automatic counting};
+$chunk = $info =~ /(Matches.+?between lines.+?\n)/s ? $1 : '<no chunk>';
+like ($chunk, qr/\n\Q (between lines 9,542 and 9,586, occurs 5 times)\E/, $t);
 
 exit;

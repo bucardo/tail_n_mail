@@ -116,6 +116,8 @@ my %arg = (
               find_line_number => 1,
 ## Show the number of errors per file
               show_file_numbers => 1,
+## Show a simply counter before each error
+              show_file_counter => 1,
 ## The maximum bytes we will go back and check per file
               maxsize          => 80_000_000,
 ## Only show X number of matches
@@ -181,6 +183,8 @@ GetOptions
    'duration=i',
    'tempfile=i',
    'find_line_number=i',
+   'show_file_numbers=i',
+   'show_file_counter=i',
    'file=s@',
    'skipfilebyregex=s@',
    'sqlstate',
@@ -3693,7 +3697,7 @@ sub lines_of_interest {
             last if $count > $arg{tempfile_limit};
         }
 
-        print "\n[$count]";
+        printf "\n%s", $arg{show_file_counter} ? "[$count] " : ' ';
 
         my $earliest = $f->{earliest};
         my $filename = $earliest->{filename};
@@ -3708,14 +3712,14 @@ sub lines_of_interest {
             }
 
             if ($matchfiles > 1) {
-                printf " From %s%s\n",
+                printf "From %s%s\n",
                     $fab{$filename},
                     $arg{find_line_number}
                        ? (sprintf ' (%s %s)', $earliest->{line} =~ / / ? 'lines' : 'line', $earliest->{line})
                        : '';
             }
             elsif ($arg{find_line_number}) {
-                printf " (from %s %s)\n", $earliest->{line} =~ / / ? 'lines' : 'line', $earliest->{line};
+                printf "(from %s %s)\n", $earliest->{line} =~ / / ? 'lines' : 'line', $earliest->{line};
             }
             else {
                 print "\n";
@@ -3774,12 +3778,12 @@ sub lines_of_interest {
         if ($arg{find_line_number}) {
             if (1 == $filecount) {
                 ## All matches came from a single file
-                printf ' (between lines %s and %s, occurs %d times)',
+                printf '(between lines %s and %s, occurs %d times)',
                     $earliest->{line}, $latest->{line}, $pcount;
             }
             else {
                 ## Matches came from multiple files
-                printf ' (between lines %s of %s and %s of %s, occurs %d times)',
+                printf '(between lines %s of %s and %s of %s, occurs %d times)',
                     $earliest->{line}, $fab{ $earliest->{file} },
                     $latest->{line}, $fab{ $latest->{file} },
                         $pcount;

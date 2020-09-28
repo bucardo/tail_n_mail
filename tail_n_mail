@@ -2307,9 +2307,9 @@ sub call_pg_ls_dir {
     }
     close $efh;
 
-    my %file_list = map { chomp; catfile($dbdirname,(split /\|/, $_, 2)[1]) => {} } grep { /\S/ } @lsdirinfo;
+    my %list_of_files = map { chomp; catfile($dbdirname,(split /\|/, $_, 2)[1]) => {} } grep { /\S/ } @lsdirinfo;
 
-    return \%file_list;
+    return \%list_of_files;
 
 } ## end of call_pg_ls_dir
 

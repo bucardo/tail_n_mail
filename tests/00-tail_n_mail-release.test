@@ -46,6 +46,19 @@ while (<$fh>) {
 close $fh or warn qq{Could not close "$file": $!\n};
 $found or fail "No version found inside of $file!";
 
+$file = 'README.md';
+$found = 0;
+open $fh, '<', $file or die qq{Could not open "$file": $!\n};
+while (<$fh>) {
+	if (/latest version, $vre,/) {
+		push @{$v{$file}} => [$1,$.];
+		$found = 1;
+		last;
+	}
+}
+close $fh or warn qq{Could not close "$file": $!\n};
+$found or fail "No version found inside of $file!";
+
 my $good = 1;
 my $lastver;
 for my $filename (keys %v) {

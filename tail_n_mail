@@ -3697,7 +3697,7 @@ sub lines_of_interest {
             last if $count > $arg{tempfile_limit};
         }
 
-        printf "\n%s", $arg{show_file_counter} ? "[$count] " : ' ';
+        printf "\n%s", $arg{show_file_counter} ? "[$count] " : '';
 
         my $earliest = $f->{earliest};
         my $filename = $earliest->{filename};
@@ -3750,7 +3750,7 @@ sub lines_of_interest {
         my $perfile = '';
         if ($arg{show_file_numbers}) {
             if (1 < keys %{ $f->{filecount} }) {
-                $perfile = sprintf '  (%s)',
+                $perfile = sprintf ' (%s)',
                     join ', ' => map { pretty_number($f->{filecount}{$_}) }
                         sort { $f->{filecount}{$b} <=> $f->{filecount}{$a} or $fab{$a} cmp $fab{$b} } keys %{ $f->{filecount} };
             }

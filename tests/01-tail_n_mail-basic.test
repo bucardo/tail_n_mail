@@ -310,6 +310,6 @@ $info = run('tests/config/testconfig-tail_n_mail.8 --show_file_counter=0');
 
 $t = q{Argument 'show_file_counter=0' turns off the automatic counting};
 $chunk = $info =~ /(Matches.+?between lines.+?\n)/s ? $1 : '<no chunk>';
-like ($chunk, qr/\n\Q (between lines 9,542 and 9,586, occurs 5 times)\E/, $t);
+like ($chunk, qr/\n\Q(between lines 9,542 and 9,586, occurs 5 times)\E/, $t);
 
 exit;

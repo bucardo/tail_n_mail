@@ -1,7 +1,7 @@
 NOECHO = @
 TEST_FILES = tests/[0-9]*.test
 
-test:
+test_release test:
 	$(NOECHO) prove $(TEST_FILES)
 
 fulltest:

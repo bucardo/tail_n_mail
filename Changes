@@ -4,6 +4,12 @@ This file describes the changes made in each version of the tail_n_mail program.
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
 
+Version ??
+
+* Force dryrun mode if the config file has the string 'dryrun' inside it
+  [Greg Sabino Mullane]
+
+
 Version 3.1.0, released September 30, 2020
 
 * Minimum Perl version is now 5.14.0

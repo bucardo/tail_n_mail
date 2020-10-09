@@ -269,6 +269,11 @@ if ($configfile =~ /bouncer/i) {
     $arg{pglog} = 'pgbouncer';
 }
 
+## If the file has the name 'dryrun' in it, force dryrun mode
+if ($configfile =~ /dryrun/) {
+    $arg{dryrun} = 1;
+}
+
 ## Quick expansion of leading tildes for the file argument
 for (@{ $arg{file} }) {
     s{^~/?}{$ENV{HOME}/};

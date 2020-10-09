@@ -2690,6 +2690,9 @@ sub process_line {
             "$select" . (join ',' => @arg) . ')';
         }geix;
 
+        ## Flatten simple LIKE and ILIKE clauses
+        $string =~ s{\b(I?LIKE)\s+'.*?'}{$1 '?'}gi;
+
         my $thisletter = '';
 
         $string =~ s{(VALUES|REPLACE)\s*\((.+)\)}{ ## For emacs: ()()()

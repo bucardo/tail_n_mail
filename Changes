@@ -9,6 +9,9 @@ Version 3.2.0
 * Force dryrun mode if the config file has the string 'dryrun' inside it
   [Greg Sabino Mullane]
 
+* Flattening improvements with LIKE and ILIKE
+
+
 
 Version 3.1.0, released September 30, 2020
 

@@ -106,6 +106,8 @@ my %arg = (
               nomail           => 0,
 ## Flatten similar queries into a canonical form
               flatten          => 1,
+## Force flattening of Postgres items even if not in pgmode
+              pgflatten        => 0,
 ## Hide the flattened version if there is only a single entry
               hideflatten      => 1,
 ## Do not show the STATEMENT for 'conflict with recovery' errors
@@ -190,6 +192,7 @@ GetOptions
    'sqlstate',
    'type=s',
    'flatten!',
+   'pgflatten',
    'hideflatten!',
    'hide_conflict_error_details!',
    'timewarp=i',
@@ -2652,7 +2655,7 @@ sub process_line {
     ## If not in Postgres mode, we avoid all the mangling below
     if (! $pgmode) {
         $pgprefix = '?';
-        goto PGPREFIX;
+        goto PGPREFIX unless $arg{pgflatten};
     }
 
     ## For tempfiles, strip out the size information and store it

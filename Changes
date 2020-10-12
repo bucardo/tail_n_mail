@@ -4,13 +4,16 @@ This file describes the changes made in each version of the tail_n_mail program.
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
 
-Version 3.2.0
+Version 3.2.0 (unreleased)
 
 * Force dryrun mode if the config file has the string 'dryrun' inside it
   [Greg Sabino Mullane]
 
-* Flattening improvements with LIKE and ILIKE
+* Add argument "pgflatten" to allow Postgres flattening for non-Postgres files
+  [Greg Sabino Mullane]
 
+* Flattening improvements with LIKE and ILIKE
+  [Greg Sabino Mullane]
 
 
 Version 3.1.0, released September 30, 2020

@@ -117,6 +117,7 @@ __DATA__
 bucardo
 config
 Deckelmann
+dryrun
 env
 hideflatten
 initdb
@@ -158,6 +159,7 @@ havetimestamp
 HH
 html
 http
+ILIKE
 Johan
 KrzysztofCzajkaTURCOM
 LASTFILE
@@ -173,6 +175,7 @@ nolastfile
 nonparsed
 pgbouncer
 pgformat
+pgflatten
 pglog
 pgpidre
 PID

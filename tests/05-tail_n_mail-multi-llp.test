@@ -39,13 +39,13 @@ like ($headers, qr{^Subject: Acme $host Postgres errors 3 : 7$}m, $t);
 
 my $summary = $info =~ /(Date: .+?)\n\n/s ? $1 : '<no summary>';
 
-$t = q{Test config 1 produces correct 'Matches from' line for file A};
+$t = q{Test config 9 produces correct 'Matches from' line for file A};
 like ($summary, qr{^\QMatches from [A] tests/logs/testlog91.txt: 3\E$}m, $t);
 
-$t = q{Test config 1 produces correct 'Matches from' line for file B};
+$t = q{Test config 9 produces correct 'Matches from' line for file B};
 like ($summary, qr{^\QMatches from [B] tests/logs/testlog92.txt: 1\E$}m, $t);
 
-$t = q{Test config 1 produces correct 'Matches from' line for file C};
+$t = q{Test config 9 produces correct 'Matches from' line for file C};
 like ($summary, qr{^\QMatches from [C] tests/logs/testlog93.txt: 3\E$}m, $t);
 
 $t = q{The log_line_prefix_regex works as intended};

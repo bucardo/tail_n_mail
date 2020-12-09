@@ -51,6 +51,8 @@ my %arg = (
               connect_timeout  => 15,
 ## Stop reading log files after this many bytes. For debugging only!
               debug_partial_read => 0,
+## Stop reading log files after this many matches. For debugging only!
+              debug_partial_matches => 0,
 ## Use the old rotation file
               debug_force_rotated => 0,
 ## Reset the marker of the log file to the current position
@@ -172,6 +174,7 @@ GetOptions
    'quiet',
    'debug',
    'debug_partial_read|debug-partial-read=i',
+   'debug_partial_matches|debug-partial-matches=i',
    'debug_force_rotated|debug-force-rotated',
    'dryrun|dry-run|dry_run',
    'connect_timeout=i',
@@ -610,6 +613,8 @@ NEXTLOG: {
         push @files_parsed => [$logfile, $count];
         $fileorder{$logfile} = ++$filenum;
     }
+
+    last if $arg{debug_partial_matches} and $count > $arg{debug_partial_matches};
 
     redo NEXTLOG;
 }
@@ -1586,6 +1591,10 @@ sub parse_filehandle {
 
       LOGLINE: while (<$fh>) {
 
+            if ($arg{debug_partial_matches} and $count > $arg{debug_partial_matches}) {
+                return $count, $linenumber, undef;
+            }
+
             ## For service files, we need to return this string if we are at the end of the file
             if (eof $fh and $filename =~ /SERVICE=/) {
                 return $count, $linenumber, $_;
@@ -2450,6 +2459,8 @@ sub slurp_via_pg_read_file {
         seek $ofh, 0, 0;
         my ($retcount, $retlines, $retval) = parse_filehandle($ofh, $filename, $pidinfo, $lfileinfo, $current_pid_num, $linenumber);
         $count += $retcount;
+
+        return $count if $arg{debug_partial_matches} and $count > $arg{debug_partial_matches};
 
         $sizeleft -= $bytes;
         $fileoffset += $bytes;

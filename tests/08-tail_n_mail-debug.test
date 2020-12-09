@@ -1,0 +1,53 @@
+#!perl
+
+## Test various debug options
+
+use 5.006;
+use strict;
+use warnings;
+use lib 't','.';
+use Test::More tests => 3;
+
+use vars qw{ $info $t };
+
+sub run {
+
+	my $conf = shift or die "Must supply a config file!\n";
+
+	my $options = shift || '';
+
+	my $COM = "perl tail_n_mail --dryrun --no-tailnmailrc --offset=0 $conf $options";
+
+	my $result = '';
+	eval {
+		$result = qx{$COM 2>&1};
+	};
+	return $@ ? "OOPS: $@\n" : $result;
+}
+
+my $host = qx{hostname};
+chomp $host;
+
+###
+$info = run('tests/config/testconfig-tail_n_mail.1');
+###
+
+$t = q{Test config 1 produces correct Subject line};
+my $headers = $info =~ /(Subject: .+?)\n\n/s ? $1 : '<no headers>';
+like ($headers, qr{^Subject: Acme $host Postgres errors 39 : 60$}m, $t);
+
+my $summary = $info =~ /(Date: .+?)\n\n/s ? $1 : '<no summary>';
+
+$t = q{Test config 1 produces correct 'Matches from' line for file A};
+like ($summary, qr{^\QMatches from tests/logs/testlog1.txt: 60\E$}m, $t);
+
+
+###
+$info = run('tests/config/testconfig-tail_n_mail.1 --debug_partial_matches 10');
+###
+
+$t = q{Test config 1 returns a subset when --debug_partial_matches used};
+$headers = $info =~ /(Subject: .+?)\n\n/s ? $1 : '<no headers>';
+like ($headers, qr{^Subject: Acme $host Postgres errors 9 : 11$}m, $t);
+
+exit;

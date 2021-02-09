@@ -3,6 +3,8 @@ TODO list for the tail_n_mail program.
 
 Also check: https://github.com/bucardo/tail_n_mail/issues
 
+* Support other log_line_prefix items, esp. %x and %v
+
 * Reports in the wild say LATEST can sometimes re-read an older file. Investigate.
 
 * Currently we use a system call to a sorted /bin/ls call. Should be changed to

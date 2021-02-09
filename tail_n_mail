@@ -3800,12 +3800,12 @@ sub lines_of_interest {
         if ($arg{find_line_number}) {
             if (1 == $filecount) {
                 ## All matches came from a single file
-                printf '(between lines %s and %s, occurs %d times)',
+                printf '(between lines %s and %s, occurs %s times)',
                     $earliest->{line}, $latest->{line}, $pcount;
             }
             else {
                 ## Matches came from multiple files
-                printf '(between lines %s of %s and %s of %s, occurs %d times)',
+                printf '(between lines %s of %s and %s of %s, occurs %s times)',
                     $earliest->{line}, $fab{ $earliest->{file} },
                     $latest->{line}, $fab{ $latest->{file} },
                         $pcount;

@@ -437,7 +437,7 @@ while (($llp_num,$llp1) = each %$llprefix) {
   $arg{verbose} and $pgmode and warn "  Log line prefix regex $llp_num/2: $pgpidre{$llp_num}{2}\n";
 
   ## And one more for things that throw out everything except the timestamp
-  ## May not work on against all log_line_prefixes
+  ## May not work against all log_line_prefixes
 
   ## If there is a %q, simply strip everything after it
   ## Otherwise, strip everything past the first escape

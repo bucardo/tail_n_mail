@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use lib 't','.';
-use Test::More tests => 56;
+use Test::More tests => 60;
 
 use vars qw{ $info $t };
 
@@ -16,7 +16,6 @@ sub run {
 	my $options = shift || '';
 
 	my $COM = "perl tail_n_mail --dryrun --no-tailnmailrc --offset=0 $conf $options";
-
 	my $result = '';
 	eval {
 		$result = qx{$COM 2>&1};
@@ -311,5 +310,27 @@ $info = run('tests/config/testconfig-tail_n_mail.8 --show_file_counter=0');
 $t = q{Argument 'show_file_counter=0' turns off the automatic counting};
 $chunk = $info =~ /(Matches.+?between lines.+?\n)/s ? $1 : '<no chunk>';
 like ($chunk, qr/\n\Q(between lines 9,542 and 9,586, occurs 5 times)\E/, $t);
+
+my $configxv = 'tests/config/testconfig-tail_n_mail.xv';
+
+###
+$info = run($configxv);
+###
+
+$t = q{Using %x and %v in the log_line_prefix works as expected (count)};
+$chunk = $info =~ /(Matches from.+?\n)/s ? $1 : '<no chunk>';
+like ($chunk, qr/ 3$/, $t);
+
+$t = q{Using %x and %v in the log_line_prefix works as expected (detail)};
+$expected = 'ERROR: relation "dbd_pg_nonexistentsequence_test" does not exist';
+like ($info, qr/^$expected/m, $t);
+
+$t = q{Using %x and %v in the log_line_prefix works as expected (correct prefix 1)};
+$expected = '2021-02-19 13:00:38.414 EST [30447] 0';
+like ($info, qr/^\Q$expected\E$/m, $t);
+
+$t = q{Using %x and %v in the log_line_prefix works as expected (correct prefix 2)};
+$expected = '2021-02-19 13:00:39.519 EST [30456] 0 3/34';
+like ($info, qr/^\Q$expected\E$/m, $t);
 
 exit;

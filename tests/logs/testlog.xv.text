@@ -1,0 +1,28 @@
+2021-02-19 13:00:38.414 EST [30447] 0  LOG:  database system is ready to accept connections
+2021-02-19 13:00:39.483 EST [30456] 0 3/2 LOG:  statement: SET client_encoding = utf8
+2021-02-19 13:00:39.483 EST [30456] 0 3/0 LOG:  duration: 0.082 ms
+2021-02-19 13:00:39.483 EST [30456] 0 3/3 LOG:  statement: SET array_nulls = ON
+2021-02-19 13:00:39.483 EST [30456] 0 3/0 LOG:  duration: 0.095 ms
+2021-02-19 13:00:39.483 EST [30456] 0 3/4 LOG:  statement: SELECT usesuper FROM pg_user WHERE usename = current_user
+2021-02-19 13:00:39.484 EST [30456] 0 3/0 LOG:  duration: 0.888 ms
+2021-02-19 13:00:39.484 EST [30456] 0 3/5 LOG:  statement: SET LC_MESSAGES = 'C'
+2021-02-19 13:00:39.484 EST [30456] 0 3/0 LOG:  duration: 0.042 ms
+2021-02-19 13:00:39.484 EST [30456] 0 3/6 LOG:  statement: /* DBD::Pg ping test v3.15.0 */
+2021-02-19 13:00:39.485 EST [30456] 0 3/0 LOG:  duration: 0.031 ms
+2021-02-19 13:00:39.485 EST [30456] 0 3/7 LOG:  duration: 0.091 ms  parse <unnamed>: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2021-02-19 13:00:39.485 EST [30456] 0 3/7 LOG:  duration: 0.264 ms  bind <unnamed>: SELECT 1 FROM pg_catalog.pg_class c, pg_catalog.pg_namespace n WHERE n.oid=c.relnamespace AND n.nspname = $1 AND c.relname = $2
+2021-02-19 13:00:39.485 EST [30456] 0 3/7 DETAIL:  parameters: $1 = 'dbd_pg_testschema', $2 = 'dbd_pg_matview'
+2021-02-19 13:00:39.516 EST [30456] 513 3/33 LOG:  execute dbdpg_p30424_4: INSERT INTO dbd_pg_test(id,val) VALUES ($1,$2)
+2021-02-19 13:00:39.516 EST [30456] 513 3/33 DETAIL:  parameters: $1 = '11', $2 = 'Pineapple'
+2021-02-19 13:00:39.516 EST [30456] 513 3/33 LOG:  duration: 0.041 ms
+2021-02-19 13:00:39.516 EST [30456] 513 3/33 LOG:  duration: 0.023 ms  bind dbdpg_p30424_4: INSERT INTO dbd_pg_test(id,val) VALUES ($1,$2)
+2021-02-19 13:00:39.516 EST [30456] 513 3/33 DETAIL:  parameters: $1 = '12', $2 = 'Kiwi'
+2021-02-19 13:00:39.516 EST [30456] 513 3/33 LOG:  execute dbdpg_p30424_4: INSERT INTO dbd_pg_test(id,val) VALUES ($1,$2)
+2021-02-19 13:00:39.516 EST [30456] 513 3/33 DETAIL:  parameters: $1 = '12', $2 = 'Kiwi'
+2021-02-19 13:00:39.516 EST [30456] 513 3/33 LOG:  duration: 0.041 ms
+2021-02-19 13:00:39.516 EST [30456] 513 3/33 LOG:  statement: commit
+2021-02-19 13:00:39.518 EST [30456] 0 3/0 LOG:  duration: 1.111 ms
+2021-02-19 13:00:39.518 EST [30456] 0 3/34 LOG:  statement: begin
+2021-02-19 13:00:39.519 EST [30456] 0 3/34 ERROR:  relation "dbd_pg_nonexistentsequence_test" does not exist
+2021-02-19 13:00:39.519 EST [30456] 0 3/34 STATEMENT:  SELECT pg_catalog.currval($1)
+2021-02-19 13:00:39.520 EST [30456] 0 3/0 ERROR:  current transaction is aborted, commands ignored until end of transaction block

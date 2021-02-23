@@ -1,0 +1,9 @@
+EMAIL: someone@example.com
+MAILSUBJECT: Acme HOST Postgres errors UNIQUE : NUMBER
+FIND_LINE_NUMBER: 0
+LOG_LINE_PREFIX: %m [%p] %x %v 
+
+FILE1: tests/logs/testlog.xv.text
+
+INCLUDE: ERROR:  
+INCLUDE: connections

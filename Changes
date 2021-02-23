@@ -8,6 +8,10 @@ Version 3.3.0, unreleased
 * Support the log_line_prefix variables %x and %v
   [Torsten Förtsch]
 
+* Fix printf wrong format bug
+  [Github issue #37]
+  [Jon Jensen]
+
 
 Version 3.2.0, released December 9, 2020
 

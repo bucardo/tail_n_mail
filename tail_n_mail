@@ -390,6 +390,8 @@ while (($llp_num,$llp1) = each %$llprefix) {
   $llp1 =~ s/%r/\\S*/;
   $llp1 =~ s/%h/\\S*/;
   $llp1 =~ s/%e/[0-9A-Z]{5}/;
+  $llp1 =~ s!%v!(?:[0-9]+/[0-9]+)?!;
+  $llp1 =~ s/%x/[0-9]+/;
   $llp1 =~ s/%q//;
 
   ## The application_name is quite a pain, because it often has whitespace inside of it.
@@ -428,8 +430,9 @@ while (($llp_num,$llp1) = each %$llprefix) {
   $llp2 =~ s/%p/[0-9]+/;
   $llp2 =~ s/%l/[0-9]+/;
   $llp2 =~ s/%q.*//;
-  ## Items not set clusterwide: %u %d %r %h %i %c %s %v %x
-  for my $char (qw/ u d r h i cs v x /) {
+  $llp2 =~ s/%x/[0-9]+/;
+  ## Items not set clusterwide: %u %d %r %h %i %c %s %v
+  for my $char (qw/ u d r h i cs v /) {
     $llp2 =~ s/%$char//g;
   }
 

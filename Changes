@@ -3,7 +3,7 @@ This file describes the changes made in each version of the tail_n_mail program.
 
 Please see http://bucardo.org/tail_n_mail for full documentation.
 
-Version 3.3.0, unreleased
+Version 3.3.0, released February 23, 2021
 
 * Support the log_line_prefix variables %x and %v
   [Torsten Förtsch]

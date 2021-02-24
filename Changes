@@ -114,159 +114,159 @@ Version 2.7.1, released March 11, 2020
 
 Version 2.7.0, released December 12, 2019
 
- * Add new EXCLUDE_VIA_FILE option, to narrow exclusions to specific files.
-   Usage is EXCLUDE_VIA_FILE: exclusion_regex ~ filename_regex
-   [Greg Sabino Mullane]
+* Add new EXCLUDE_VIA_FILE option, to narrow exclusions to specific files.
+  Usage is EXCLUDE_VIA_FILE: exclusion_regex ~ filename_regex
+  [Greg Sabino Mullane]
 
- * Add new INCLUDE_VIA_FILE option, to narrow inclusions to specific files.
-   This will override generic INCLUDE entries.
-   Usage is INCLUDE_VIA_FILE: inclusion_regex ~ filename_regex
-   [Greg Sabino Mullane]
+* Add new INCLUDE_VIA_FILE option, to narrow inclusions to specific files.
+  This will override generic INCLUDE entries.
+  Usage is INCLUDE_VIA_FILE: inclusion_regex ~ filename_regex
+  [Greg Sabino Mullane]
 
  * Add 'yesfile' and 'nofile' arguments to allow quick FILE filtering from the command line
    [Greg Sabino Mullane]
 
- * Better flattening of array literals and date/time errors
-   [Greg Sabino Mullane]
+* Better flattening of array literals and date/time errors
+  [Greg Sabino Mullane]
 
 
 Version 2.6.0, released November 17, 2019
 
- * Add --connect_timeout option (defaults to 15 seconds)
-   [Greg Sabino Mullane]
+* Add --connect_timeout option (defaults to 15 seconds)
+  [Greg Sabino Mullane]
 
- * Add --skip_report_failing_host option, so reports are not sent if the only 
-   problem is a failed connection to a known down host.
-   [Greg Sabino Mullane]
+* Add --skip_report_failing_host option, so reports are not sent if the only 
+  problem is a failed connection to a known down host.
+  [Greg Sabino Mullane]
 
- * Allow options to contain underscores or dashes
-   [Greg Sabino Mullane]
+* Allow options to contain underscores or dashes
+  [Greg Sabino Mullane]
 
- * More flattening improvements
-   [Greg Sabino Mullane]
+* More flattening improvements
+  [Greg Sabino Mullane]
 
 
 Version 2.5.0, released August 28, 2019
 
- * Do not show passwords that appear in the logs as "dsn was .. password="
-   [Greg Sabino Mullane]
+* Do not show passwords that appear in the logs as "dsn was .. password="
+  [Greg Sabino Mullane]
 
- * Allow log line prefix timezone to be numeric (e.g. -05:00) or character (e.g. EST)
-   [Github issue #13]
-   [Greg Sabino Mullane]
+* Allow log line prefix timezone to be numeric (e.g. -05:00) or character (e.g. EST)
+  [Github issue #13]
+  [Greg Sabino Mullane]
 
- * Use Net::SMTP directly instead of Net::SMTP::SSL
-   [Git hub pull request #30 by KrzysztofCzajkaTURCOM]
+* Use Net::SMTP directly instead of Net::SMTP::SSL
+  [Git hub pull request #30 by KrzysztofCzajkaTURCOM]
 
- * Better handling of case where the rotated file has been removed (e.g. replica promotion)
-   [Greg Sabino Mullane]
+* Better handling of case where the rotated file has been removed (e.g. replica promotion)
+  [Greg Sabino Mullane]
 
- * Handle case where log_line_prefix has both %p and %c inside it
-   [Github issue #29]
-   [Greg Sabino Mullane]
+* Handle case where log_line_prefix has both %p and %c inside it
+  [Github issue #29]
+  [Greg Sabino Mullane]
 
- * Better flattening of WAL, pg_hba, and function errors
-   [Greg Sabino Mullane]
+* Better flattening of WAL, pg_hba, and function errors
+  [Greg Sabino Mullane]
 
 
 Version 2.4.0, released April 22, 2019
 
- * Support for pgbouncer logs. Just give your config file the string 'bouncer' in it to activate.
-   [Greg Sabino Mullane]
+* Support for pgbouncer logs. Just give your config file the string 'bouncer' in it to activate.
+  [Greg Sabino Mullane]
 
- * Handle cases in which the log files contain null bytes.
-   [Greg Sabino Mullane]
+* Handle cases in which the log files contain null bytes.
+  [Greg Sabino Mullane]
 
- * Do not attempt to failed service twice, if host is the same but file is different.
-   [Greg Sabino Mullane]
+* Do not attempt to failed service twice, if host is the same but file is different.
+  [Greg Sabino Mullane]
 
- * Output why some files were skipped in the header for serious issues.
-   [Greg Sabino Mullane]
+* Output why some files were skipped in the header for serious issues.
+  [Greg Sabino Mullane]
 
- * Add flattening for non-Postgres files
-   [Greg Sabino Mullane]
+* Add flattening for non-Postgres files
+  [Greg Sabino Mullane]
 
- * Allow custom flattening rules via FLATTEN: in the config file
-   [Greg Sabino Mullane]
+* Allow custom flattening rules via FLATTEN: in the config file
+  [Greg Sabino Mullane]
 
- * Rather than [A], [B], etc., show the service names themselves in the output if all 
-   of the files are using service names (unless the name is the same).
-   Can be forced to the old behavior with --force-letter-output.
-   [Greg Sabino Mullane]
+* Rather than [A], [B], etc., show the service names themselves in the output if all 
+  of the files are using service names (unless the name is the same).
+  Can be forced to the old behavior with --force-letter-output.
+  [Greg Sabino Mullane]
 
- * Better flattening of queries
-   [Greg Sabino Mullane]
+* Better flattening of queries
+  [Greg Sabino Mullane]
 
- * Do not show any file summaries if --mailzero was triggered
-   [Greg Sabino Mullane]
+* Do not show any file summaries if --mailzero was triggered
+  [Greg Sabino Mullane]
 
- * Fix tracking of line number position
-   [Greg Sabino Mullane]
+* Fix tracking of line number position
+  [Greg Sabino Mullane]
 
- * Report pg_read_file failures rather than exiting the whole program
-   [Greg Sabino Mullane]
+* Report pg_read_file failures rather than exiting the whole program
+  [Greg Sabino Mullane]
 
- * Allow pg_read_file to handle very large files smoothly
-   [Greg Sabino Mullane]
+* Allow pg_read_file to handle very large files smoothly
+  [Greg Sabino Mullane]
 
- * Add 'hide_conflict_error_details' option to merge all "conflict with recovery" strings
-   [Greg Sabino Mullane]
+* Add 'hide_conflict_error_details' option to merge all "conflict with recovery" strings
+  [Greg Sabino Mullane]
 
 
 Version 2.3.1, released July 3, 2018
 
- * Add new "bonus include" feature to further control what lines match via INCLUDE.
-   After the INCLUDE string, you can tell it to only include if the prefix matches 
-   the given string, to only match if it does NOT match the given string, and the 
-   same for the filename. Examples:
-   INCLUDE: ERROR: +FILE:foo
-   INCLUDE: syntax error: -PREFIX:@devbox
-   [Github issue #25]
-   [Greg Sabino Mullane]
+* Add new "bonus include" feature to further control what lines match via INCLUDE.
+  After the INCLUDE string, you can tell it to only include if the prefix matches 
+  the given string, to only match if it does NOT match the given string, and the 
+  same for the filename. Examples:
+  INCLUDE: ERROR: +FILE:foo
+  INCLUDE: syntax error: -PREFIX:@devbox
+  [Github issue #25]
+  [Greg Sabino Mullane]
 
- * Better flattening of queries
-   [Greg Sabino Mullane]
+* Better flattening of queries
+  [Greg Sabino Mullane]
 
- * Use the second-arg-true version of pg_stat_file for potential log rotated files
-   [Greg Sabino Mullane]
+* Use the second-arg-true version of pg_stat_file for potential log rotated files
+  [Greg Sabino Mullane]
 
- * Make sure all output in --html mode is escaped
-   [Greg Sabino Mullane]
+* Make sure all output in --html mode is escaped
+  [Greg Sabino Mullane]
 
 
 Version 2.2.0, released May 14, 2018
 
- * Add ---html option, to send text/html emails with <pre> for nicer alignments.
-  [Greg Sabino Mullane]
+* Add ---html option, to send text/html emails with <pre> for nicer alignments.
+ [Greg Sabino Mullane]
 
- * Support for handling files moved by log rotation.
-  [Greg Sabino Mullane]
+* Support for handling files moved by log rotation.
+ [Greg Sabino Mullane]
 
- * Add new argument --skipfilebyregex to allow quick and easy skipping of downed nodes.
-  [Greg Sabino Mullane]
+* Add new argument --skipfilebyregex to allow quick and easy skipping of downed nodes.
+ [Greg Sabino Mullane]
 
- * Add new argument, --nonparsed_statement_size, to control the maximum display size 
-   of "nonparsed" log lines (e.g. OS errors). Defaults to 400 characters.
-  [Greg Sabino Mullane]
+* Add new argument, --nonparsed_statement_size, to control the maximum display size 
+  of "nonparsed" log lines (e.g. OS errors). Defaults to 400 characters.
+ [Greg Sabino Mullane]
 
- * Make sure we do not duplicate include/exclude information from inherited files.
-  [Greg Sabino Mullane]
+* Make sure we do not duplicate include/exclude information from inherited files.
+ [Greg Sabino Mullane]
 
- * Do not write LASTFILE information to the config if using service files
-  [Greg Sabino Mullane]
+* Do not write LASTFILE information to the config if using service files
+ [Greg Sabino Mullane]
 
- * Bunch all non-parsed lines together when possible (e.g. failing archive_command output)
-  [Greg Sabino Mullane]
+* Bunch all non-parsed lines together when possible (e.g. failing archive_command output)
+ [Greg Sabino Mullane]
 
- * Fix minor bug with display of autovac entries with a single matched file
-  [Greg Sabino Mullane]
+* Fix minor bug with display of autovac entries with a single matched file
+ [Greg Sabino Mullane]
 
 
 Version 2.1.0, released March 8, 2018
 
 * Support grabbing log files via Postgres connections, by using service files 
-  and the pg_read_file() function.
-  [Greg Sabino Mullane]
+ and the pg_read_file() function.
+ [Greg Sabino Mullane]
 
 * Allow different log files to have different log_line_prefixes.
   [Greg Sabino Mullane]

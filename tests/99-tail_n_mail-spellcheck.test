@@ -151,6 +151,7 @@ ENV
 filename
 FILEx
 Fiske
+Förtsch
 func
 Github
 GSM
@@ -182,6 +183,7 @@ PID
 POSIX
 Postgres
 pre
+printf
 regex
 regexes
 Sabino
@@ -201,6 +203,7 @@ tempfile
 timestamp
 timestamps
 Tolley
+Torsten
 uniques
 unlink
 Urbański

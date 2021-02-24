@@ -42,6 +42,7 @@ profile-strictness = quiet
 [-logicLAB::RequireSheBang]
 [-logicLAB::RequireVersionFormat]
 [-Miscellanea::ProhibitUnrestrictedNoCritic]
+[-Miscellanea::ProhibitUselessNoCritic]
 [-Miscellanea::RequireRcsKeywords]
 [-Modules::ProhibitExcessMainComplexity]
 [-Modules::RequireVersionVar]

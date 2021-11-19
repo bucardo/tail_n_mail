@@ -3529,7 +3529,7 @@ sub process_report {
                 system $COM;
             }
             elsif ($arg{mailmode} eq 'smtp') {
-                send_smtp_email($from_addr, $emails, $newsubject, $emailfile);
+                send_smtp_email($from_addr, $emails, $emailfile);
             }
             else {
                 die "Unknown mailmode: $mailmode\n";
